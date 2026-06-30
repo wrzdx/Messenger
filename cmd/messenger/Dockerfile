@@ -8,5 +8,4 @@ RUN CGO_ENABLED=0 go build -o /app/cmd/messenger/exe /app/cmd/messenger
 FROM alpine:3.23.5
 WORKDIR /app
 COPY --from=builder /app/cmd/messenger/exe /app
-ENV PROJECT_ROOT=/app
 CMD ["/app/exe"]
