@@ -44,30 +44,37 @@ func (h *HTTPResponseHandler) ErrorResponse(err error, msg string) {
 		statusCode int
 		logFunc    func(string, ...zap.Field)
 	)
+	var canonicalErr error
 
 	switch {
 	case errors.Is(err, core_errors.ErrInvalidArgument):
+		canonicalErr = core_errors.ErrInvalidArgument
 		statusCode = http.StatusBadRequest
 		logFunc = h.log.Warn
 	case errors.Is(err, core_errors.ErrorNotFound):
+		canonicalErr = core_errors.ErrorNotFound
 		statusCode = http.StatusNotFound
 		logFunc = h.log.Debug
 	case errors.Is(err, core_errors.ErrConflict):
+		canonicalErr = core_errors.ErrConflict
 		statusCode = http.StatusConflict
 		logFunc = h.log.Warn
 	case errors.Is(err, core_errors.ErrForbidden):
+		canonicalErr = core_errors.ErrForbidden
 		statusCode = http.StatusForbidden
 		logFunc = h.log.Warn
 	case errors.Is(err, core_errors.ErrUnauthorized):
+		canonicalErr = core_errors.ErrUnauthorized
 		statusCode = http.StatusUnauthorized
 		logFunc = h.log.Warn
 	default:
+		canonicalErr = core_errors.ErrInternalServer
 		statusCode = http.StatusInternalServerError
 		logFunc = h.log.Error
 	}
 
 	logFunc(msg, zap.Error(err))
-	h.errorResponse(statusCode, err, msg)
+	h.errorResponse(statusCode, canonicalErr, msg)
 }
 
 func (h *HTTPResponseHandler) errorResponse(

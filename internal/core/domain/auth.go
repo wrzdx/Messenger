@@ -18,8 +18,6 @@ func NewToken(token string, expires time.Time) Token {
 	}
 }
 
-type AccessToken Token
-type RefreshToken Token
 
 type UserCredentials struct {
 	Username string

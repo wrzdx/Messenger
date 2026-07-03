@@ -16,12 +16,12 @@ type AuthService interface {
 	Login(
 		ctx context.Context,
 		credentials domain.UserCredentials,
-	) (domain.RefreshToken, domain.AccessToken, error)
+	) (domain.Token, domain.Token, error)
 }
 
 func NewUsersHTTPHandler(userService AuthService, secure bool) *AuthHTTPHandler {
 	return &AuthHTTPHandler{
-		secure: secure,
+		secure:      secure,
 		authService: userService,
 	}
 }

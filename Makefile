@@ -88,3 +88,6 @@ swagger-gen:
 		-o docs \
 		--parseInternal \
 		--parseDependency
+
+test-all:
+	@go test ./...

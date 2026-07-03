@@ -36,6 +36,12 @@ func ToContext(ctx context.Context, log *Logger) context.Context {
 	return context.WithValue(ctx, key, log)
 }
 
+func NewTestLogger() *Logger {
+	return &Logger{
+		Logger: zap.NewNop(),
+	}
+}
+
 func NewLogger(config Config) (*Logger, error) {
 	zapLvl := zap.NewAtomicLevel()
 	if err := zapLvl.UnmarshalText([]byte(config.Level)); err != nil {

@@ -22,7 +22,7 @@ func NewJWTProvider(config Config) *JWTProvider {
 func (j *JWTProvider) generate(
 	userID int,
 	ttl time.Duration,
-	tokenType string,
+	tokenType core_auth.TokenType,
 ) (string, time.Time, error) {
 	now := time.Now()
 	expires := now.Add(ttl)
@@ -43,26 +43,24 @@ func (j *JWTProvider) generate(
 
 	signed, err := token.SignedString([]byte(j.config.Secret))
 	if err != nil {
-		return "", time.Time{}, fmt.Errorf("sign token: %w", err)
+		return "", time.Time{}, fmt.Errorf(
+			"sign token: %v: %w",
+			err,
+			core_errors.ErrUnauthorized,
+		)
 	}
 
 	return signed, expires, nil
 }
 
-func (j *JWTProvider) GenerateAccessToken(id int) (core_auth.AccessToken, time.Time, error) {
+func (j *JWTProvider) GenerateAccessToken(id int) (string, time.Time, error) {
 	token, expires, err := j.generate(id, j.config.AccessTokenTTL, core_auth.TokenTypeAccess)
-	if err != nil {
-		return core_auth.AccessToken(token), expires, core_errors.ErrUnauthorized
-	}
-	return core_auth.AccessToken(token), expires, nil
+	return token, expires, err
 }
 
-func (j *JWTProvider) GenerateRefreshToken(id int) (core_auth.RefreshToken, time.Time, error) {
+func (j *JWTProvider) GenerateRefreshToken(id int) (string, time.Time, error) {
 	token, expires, err := j.generate(id, j.config.RefreshTokenTTL, core_auth.TokenTypeRefresh)
-	if err != nil {
-		return core_auth.RefreshToken(token), expires, core_errors.ErrUnauthorized
-	}
-	return core_auth.RefreshToken(token), expires, nil
+	return token, expires, err
 }
 
 func (j *JWTProvider) ParseToken(token string) (core_auth.Claims, error) {

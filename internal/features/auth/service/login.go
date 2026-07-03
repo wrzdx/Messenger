@@ -12,9 +12,9 @@ import (
 func (s *AuthService) Login(
 	ctx context.Context,
 	credentials domain.UserCredentials,
-) (domain.RefreshToken, domain.AccessToken, error) {
+) (domain.Token, domain.Token, error) {
 	if err := credentials.Validate(); err != nil {
-		return domain.RefreshToken{}, domain.AccessToken{}, fmt.Errorf(
+		return domain.Token{}, domain.Token{}, fmt.Errorf(
 			"validate credentials: %w",
 			err,
 		)
@@ -24,7 +24,7 @@ func (s *AuthService) Login(
 		credentials.Username,
 	)
 	if err != nil {
-		return domain.RefreshToken{}, domain.AccessToken{}, fmt.Errorf(
+		return domain.Token{}, domain.Token{}, fmt.Errorf(
 			"get user password hash: %w",
 			err,
 		)
@@ -32,13 +32,13 @@ func (s *AuthService) Login(
 
 	if err := s.hasher.Compare(userAuth.PasswordHash, credentials.Password); err != nil {
 		if errors.Is(err, core_auth.ErrInvalidCredentials) {
-			return domain.RefreshToken{}, domain.AccessToken{}, fmt.Errorf(
+			return domain.Token{}, domain.Token{}, fmt.Errorf(
 				"%v: %w",
 				err,
 				core_errors.ErrUnauthorized,
 			)
 		}
-		return domain.RefreshToken{}, domain.AccessToken{}, fmt.Errorf(
+		return domain.Token{}, domain.Token{}, fmt.Errorf(
 			"compare passwords: %w",
 			core_errors.ErrUnauthorized,
 		)
@@ -46,21 +46,21 @@ func (s *AuthService) Login(
 
 	refresh, refreshExpires, err := s.jwtProvider.GenerateRefreshToken(int(userAuth.UserID))
 	if err != nil {
-		return domain.RefreshToken{}, domain.AccessToken{}, fmt.Errorf(
+		return domain.Token{}, domain.Token{}, fmt.Errorf(
 			"generate refresh token: %w",
 			err,
 		)
 	}
 	access, accessExpires, err := s.jwtProvider.GenerateAccessToken(int(userAuth.UserID))
 	if err != nil {
-		return domain.RefreshToken{}, domain.AccessToken{}, fmt.Errorf(
+		return domain.Token{}, domain.Token{}, fmt.Errorf(
 			"generate access token: %w",
 			err,
 		)
 	}
 
-	refreshDomain := domain.RefreshToken(domain.NewToken(string(refresh), refreshExpires))
-	accessDomain := domain.AccessToken(domain.NewToken(string(access), accessExpires))
+	refreshDomain := domain.NewToken(string(refresh), refreshExpires)
+	accessDomain := domain.NewToken(string(access), accessExpires)
 
 	return refreshDomain, accessDomain, nil
 }
