@@ -4,21 +4,16 @@ import (
 	"bytes"
 	"encoding/json"
 	"messenger/internal/core/domain"
-	core_errors "messenger/internal/core/errors.go"
+	core_errors "messenger/internal/core/errors"
 	core_logger "messenger/internal/core/logger"
 	core_http_response "messenger/internal/core/transport/http/response"
+	core_test_utils "messenger/internal/core/utils/test"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
-)
-
-var (
-	id        = 0
-	createdAt = time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
 )
 
 var tests = []struct {
@@ -149,11 +144,11 @@ func TestCreateUser(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup
 			want := CreateUserResponse{
-				ID:        id,
+				ID:        core_test_utils.ID,
 				Username:  tt.body.Username,
 				FirstName: tt.body.FirstName,
 				LastName:  tt.body.LastName,
-				CreatedAt: createdAt,
+				CreatedAt: core_test_utils.CreatedAt,
 				Bio:       tt.body.Bio,
 			}
 
@@ -163,19 +158,19 @@ func TestCreateUser(t *testing.T) {
 				tt.body.LastName,
 				tt.body.Bio,
 			)
-			WantServiceGotUser.ID = id
-			WantServiceGotUser.CreatedAt = createdAt
+			WantServiceGotUser.ID = core_test_utils.ID
+			WantServiceGotUser.CreatedAt = core_test_utils.CreatedAt
 			serviceGotCreds := domain.NewCredentials(
 				tt.body.Username,
 				tt.body.Password,
 			)
 			service := StubUsersService{
 				ReturnUser: domain.NewUser(
-					id,
+					core_test_utils.ID,
 					tt.body.Username,
 					tt.body.FirstName,
 					tt.body.LastName,
-					createdAt,
+					core_test_utils.CreatedAt,
 					tt.body.Bio,
 				),
 				ReturnError: tt.serviceErr,
@@ -196,8 +191,8 @@ func TestCreateUser(t *testing.T) {
 
 			// Check
 			if service.Called {
-				service.GotUser.ID = id
-				service.GotUser.CreatedAt = createdAt
+				service.GotUser.ID = core_test_utils.ID
+				service.GotUser.CreatedAt = core_test_utils.CreatedAt
 				if diff := cmp.Diff(WantServiceGotUser, service.GotUser); diff != "" {
 					t.Fatalf("ServiceGotUser mismatch (-want +got):\n%s", diff)
 				}
@@ -227,7 +222,7 @@ func TestCreateUser(t *testing.T) {
 				if err := json.NewDecoder(rec.Body).Decode(&gotResponse); err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
-				gotResponse.CreatedAt = createdAt
+				gotResponse.CreatedAt = core_test_utils.CreatedAt
 
 				if diff := cmp.Diff(want, gotResponse); diff != "" {
 					t.Fatalf("CreateUserResponse mismatch (-want +got):\n%s", diff)

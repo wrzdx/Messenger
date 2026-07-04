@@ -12,6 +12,7 @@ type UserModel struct {
 	LastName  *string
 	CreatedAt time.Time
 	Bio       *string
+	PasswordHash string
 }
 
 func UserDomainFromModel(user UserModel) domain.User {

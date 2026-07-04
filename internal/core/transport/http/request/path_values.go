@@ -2,7 +2,7 @@ package core_http_request
 
 import (
 	"fmt"
-	core_errors "messenger/internal/core/errors.go"
+	core_errors "messenger/internal/core/errors"
 	"net/http"
 	"strconv"
 )

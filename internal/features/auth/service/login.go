@@ -6,7 +6,7 @@ import (
 	"fmt"
 	core_auth "messenger/internal/core/auth"
 	"messenger/internal/core/domain"
-	core_errors "messenger/internal/core/errors.go"
+	core_errors "messenger/internal/core/errors"
 )
 
 func (s *AuthService) Login(

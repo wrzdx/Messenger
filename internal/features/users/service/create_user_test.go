@@ -3,19 +3,13 @@ package users_service
 import (
 	"errors"
 	"messenger/internal/core/domain"
-	core_errors "messenger/internal/core/errors.go"
+	core_errors "messenger/internal/core/errors"
+	core_test_utils "messenger/internal/core/utils/test"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
 )
 
-var (
-	id        = 1
-	createdAt = time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
-	hasherError = errors.New("hash failed")
-	repoError = errors.New("db error")
-)
 var tests = []struct {
 	name string
 
@@ -39,7 +33,7 @@ var tests = []struct {
 			Username:  "ivanov",
 			FirstName: "Ivan",
 			LastName:  new("Ivanov"),
-			CreatedAt: createdAt,
+			CreatedAt: core_test_utils.CreatedAt,
 			Bio:       new("I like pizza"),
 		},
 		credentials: domain.NewCredentials(
@@ -48,11 +42,11 @@ var tests = []struct {
 		),
 
 		wantUser: domain.NewUser(
-			id,
+			core_test_utils.ID,
 			"ivanov",
 			"Ivan",
 			new("Ivanov"),
-			createdAt,
+			core_test_utils.CreatedAt,
 			new("I like pizza"),
 		),
 
@@ -66,7 +60,7 @@ var tests = []struct {
 			ID:        domain.UninitializedID,
 			Username:  "abc", // слишком короткий
 			FirstName: "Ivan",
-			CreatedAt: createdAt,
+			CreatedAt: core_test_utils.CreatedAt,
 		},
 		credentials: domain.NewCredentials(
 			"abc",
@@ -85,7 +79,7 @@ var tests = []struct {
 			ID:        domain.UninitializedID,
 			Username:  "ivanov",
 			FirstName: "Ivan",
-			CreatedAt: createdAt,
+			CreatedAt: core_test_utils.CreatedAt,
 		},
 		credentials: domain.UserCredentials{
 			Username: "ivanov",
@@ -104,15 +98,15 @@ var tests = []struct {
 			ID:        domain.UninitializedID,
 			Username:  "ivanov",
 			FirstName: "Ivan",
-			CreatedAt: createdAt,
+			CreatedAt: core_test_utils.CreatedAt,
 		},
 		credentials: domain.NewCredentials(
 			"ivanov",
 			"password",
 		),
 
-		hasherError: hasherError,
-		wantError:   hasherError,
+		hasherError: core_test_utils.HasherError,
+		wantError:   core_test_utils.HasherError,
 
 		wantHasherCalled: true,
 		wantRepoCalled:   false,
@@ -124,15 +118,15 @@ var tests = []struct {
 			ID:        domain.UninitializedID,
 			Username:  "ivanov",
 			FirstName: "Ivan",
-			CreatedAt: createdAt,
+			CreatedAt: core_test_utils.CreatedAt,
 		},
 		credentials: domain.NewCredentials(
 			"ivanov",
 			"password",
 		),
 
-		repoError: repoError,
-		wantError: repoError,
+		repoError: core_test_utils.RepoError,
+		wantError: core_test_utils.RepoError,
 
 		wantHasherCalled: true,
 		wantRepoCalled:   true,
@@ -146,11 +140,11 @@ func TestCreateUser(t *testing.T) {
 			var want domain.User
 			if tt.wantError == nil {
 				want = domain.NewUser(
-					id,
+					core_test_utils.ID,
 					tt.user.Username,
 					tt.user.FirstName,
 					tt.user.LastName,
-					createdAt,
+					core_test_utils.CreatedAt,
 					tt.user.Bio,
 				)
 			}
@@ -171,7 +165,7 @@ func TestCreateUser(t *testing.T) {
 				tt.user.Username,
 				tt.user.FirstName,
 				tt.user.LastName,
-				createdAt,
+				core_test_utils.CreatedAt,
 				tt.user.Bio,
 			)
 			wantHasherGotPsw := tt.credentials.Password

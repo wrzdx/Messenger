@@ -2,7 +2,7 @@ package domain
 
 import (
 	"errors"
-	core_errors "messenger/internal/core/errors.go"
+	core_errors "messenger/internal/core/errors"
 	"testing"
 )
 

@@ -3,7 +3,7 @@ package core_auth_jwt
 import (
 	"fmt"
 	core_auth "messenger/internal/core/auth"
-	core_errors "messenger/internal/core/errors.go"
+	core_errors "messenger/internal/core/errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"

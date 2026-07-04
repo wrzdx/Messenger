@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"messenger/internal/core/domain"
-	core_errors "messenger/internal/core/errors.go"
+	core_errors "messenger/internal/core/errors"
 	core_postgres_pool "messenger/internal/core/repository/postgres/pool"
 )
 

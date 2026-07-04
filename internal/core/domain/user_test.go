@@ -2,7 +2,7 @@ package domain
 
 import (
 	"errors"
-	core_errors "messenger/internal/core/errors.go"
+	core_errors "messenger/internal/core/errors"
 	"strings"
 	"testing"
 )
@@ -35,10 +35,10 @@ func TestUserValidate(t *testing.T) {
 			},
 		},
 		{
-			name: "short first name",
+			name: "missing first name",
 			user: User{
 				Username:  "username",
-				FirstName: "Tom",
+				FirstName: "",
 			},
 		},
 		{

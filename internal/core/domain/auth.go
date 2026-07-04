@@ -2,7 +2,7 @@ package domain
 
 import (
 	"fmt"
-	core_errors "messenger/internal/core/errors.go"
+	core_errors "messenger/internal/core/errors"
 	"time"
 )
 
@@ -17,7 +17,6 @@ func NewToken(token string, expires time.Time) Token {
 		Expires: expires,
 	}
 }
-
 
 type UserCredentials struct {
 	Username string

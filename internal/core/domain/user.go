@@ -2,17 +2,17 @@ package domain
 
 import (
 	"fmt"
-	core_errors "messenger/internal/core/errors.go"
+	core_errors "messenger/internal/core/errors"
 	"time"
 )
 
 type User struct {
-	ID           int
-	Username     string
-	FirstName    string
-	LastName     *string
-	CreatedAt    time.Time
-	Bio          *string
+	ID        int
+	Username  string
+	FirstName string
+	LastName  *string
+	CreatedAt time.Time
+	Bio       *string
 }
 
 func NewUser(

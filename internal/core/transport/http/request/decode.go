@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	core_errors "messenger/internal/core/errors.go"
+	core_errors "messenger/internal/core/errors"
 
 	"github.com/go-playground/validator/v10"
 )
