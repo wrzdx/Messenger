@@ -19,7 +19,7 @@ func (s *UsersService) CreateUser(
 	}
 	passwordHash, err := s.hasher.Hash(credentials.Password)
 	if err != nil {
-		return domain.User{}, fmt.Errorf("hash passoword: %w", err)
+		return domain.User{}, fmt.Errorf("hash password: %w", err)
 	}
 
 	user, err = s.userRepository.CreateUser(ctx, user, string(passwordHash))

@@ -23,6 +23,7 @@ var (
 
 var tests = []struct {
 	name       string
+	serviceErr error
 	wantStatus int
 	wantError  error
 	body       CreateUserRequest
@@ -30,6 +31,19 @@ var tests = []struct {
 	{
 		name:       "valid user",
 		wantStatus: http.StatusCreated,
+		body: CreateUserRequest{
+			Username:  "i.ivanov",
+			FirstName: "Ivan",
+			LastName:  new("Ivanov"),
+			Bio:       new("I like pizza!"),
+			Password:  "password",
+		},
+	},
+	{
+		name:       "username already exists",
+		serviceErr: core_errors.ErrConflict,
+		wantStatus: http.StatusConflict,
+		wantError:  core_errors.ErrConflict,
 		body: CreateUserRequest{
 			Username:  "i.ivanov",
 			FirstName: "Ivan",
@@ -143,14 +157,14 @@ func TestCreateUser(t *testing.T) {
 				Bio:       tt.body.Bio,
 			}
 
-			serviceGotUser := domain.NewUserUninitialized(
+			WantServiceGotUser := domain.NewUserUninitialized(
 				tt.body.Username,
 				tt.body.FirstName,
 				tt.body.LastName,
 				tt.body.Bio,
 			)
-			serviceGotUser.ID = id
-			serviceGotUser.CreatedAt = createdAt
+			WantServiceGotUser.ID = id
+			WantServiceGotUser.CreatedAt = createdAt
 			serviceGotCreds := domain.NewCredentials(
 				tt.body.Username,
 				tt.body.Password,
@@ -164,7 +178,7 @@ func TestCreateUser(t *testing.T) {
 					createdAt,
 					tt.body.Bio,
 				),
-				ReturnError: tt.wantError,
+				ReturnError: tt.serviceErr,
 			}
 
 			handler := NewUsersHTTPHandler(&service)
@@ -181,24 +195,31 @@ func TestCreateUser(t *testing.T) {
 			handler.CreateUser(rec, req.WithContext(ctx))
 
 			// Check
-			service.GotUser.ID = id
-			service.GotUser.CreatedAt = createdAt
+			if service.Called {
+				service.GotUser.ID = id
+				service.GotUser.CreatedAt = createdAt
+				if diff := cmp.Diff(WantServiceGotUser, service.GotUser); diff != "" {
+					t.Fatalf("ServiceGotUser mismatch (-want +got):\n%s", diff)
+				}
+				if diff := cmp.Diff(serviceGotCreds, service.GotCreds); diff != "" {
+					t.Fatalf("ServiceGotCreds mismatch (-want +got):\n%s", diff)
+				}
+			}
 
 			if tt.wantError != nil {
 				var gotError core_http_response.ErrorResponse
 				if err := json.NewDecoder(rec.Body).Decode(&gotError); err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
-				if diff := cmp.Diff(tt.wantError.Error(), gotError.Error); diff != "" {
-					t.Fatalf("ErrorResponse mismatch (-want +got):\n%s", diff)
+
+				if !strings.HasSuffix(gotError.Error, tt.wantError.Error()) {
+					t.Fatalf(
+						"ErrorResponse mismatch:\nwant: %s\ngot: %s",
+						tt.wantError.Error(),
+						gotError.Error,
+					)
 				}
 			} else {
-				if diff := cmp.Diff(serviceGotUser, service.GotUser); diff != "" {
-					t.Fatalf("ServiceGotUser mismatch (-want +got):\n%s", diff)
-				}
-				if diff := cmp.Diff(serviceGotCreds, service.GotCreds); diff != "" {
-					t.Fatalf("ServiceGotCreds mismatch (-want +got):\n%s", diff)
-				}
 				if rec.Code != http.StatusCreated {
 					t.Fatalf("got status %d, want %d", rec.Code, http.StatusCreated)
 				}

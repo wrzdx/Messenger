@@ -59,7 +59,7 @@ func (u *User) Validate() error {
 		)
 	}
 	firstNameLen := len([]rune(u.FirstName))
-	if firstNameLen < 5 || firstNameLen > 32 {
+	if firstNameLen < 1 || firstNameLen > 64 {
 		return fmt.Errorf(
 			"invalid `FirstName` len: %d: %w",
 			firstNameLen,

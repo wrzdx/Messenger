@@ -11,7 +11,7 @@ import (
 	core_http_server "messenger/internal/core/transport/http/server"
 	users_postgres_repository "messenger/internal/features/users/repository/postgres"
 	users_service "messenger/internal/features/users/service"
-	users_transport_http "messenger/internal/features/users/transport"
+	users_transport_http "messenger/internal/features/users/transport/http"
 	"os"
 	"os/signal"
 	"syscall"
