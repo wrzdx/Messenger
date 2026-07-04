@@ -2,6 +2,7 @@ package users_transport_http
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"messenger/internal/core/domain"
 	core_errors "messenger/internal/core/errors"
@@ -17,15 +18,17 @@ import (
 )
 
 var tests = []struct {
-	name       string
-	serviceErr error
-	wantStatus int
-	wantError  error
-	body       CreateUserRequest
+	name              string
+	serviceErr        error
+	wantServiceCalled bool
+	wantStatus        int
+	wantError         error
+	body              CreateUserRequest
 }{
 	{
-		name:       "valid user",
-		wantStatus: http.StatusCreated,
+		name:              "valid user",
+		wantServiceCalled: true,
+		wantStatus:        http.StatusCreated,
 		body: CreateUserRequest{
 			Username:  "i.ivanov",
 			FirstName: "Ivan",
@@ -35,10 +38,11 @@ var tests = []struct {
 		},
 	},
 	{
-		name:       "username already exists",
-		serviceErr: core_errors.ErrConflict,
-		wantStatus: http.StatusConflict,
-		wantError:  core_errors.ErrConflict,
+		name:              "username already exists",
+		wantServiceCalled: true,
+		serviceErr:        core_errors.ErrConflict,
+		wantStatus:        http.StatusConflict,
+		wantError:         core_errors.ErrConflict,
 		body: CreateUserRequest{
 			Username:  "i.ivanov",
 			FirstName: "Ivan",
@@ -152,28 +156,39 @@ func TestCreateUser(t *testing.T) {
 				Bio:       tt.body.Bio,
 			}
 
-			WantServiceGotUser := domain.NewUserUninitialized(
+			wantServiceGotUser := domain.NewUserUninitialized(
 				tt.body.Username,
 				tt.body.FirstName,
 				tt.body.LastName,
 				tt.body.Bio,
 			)
-			WantServiceGotUser.ID = core_test_utils.ID
-			WantServiceGotUser.CreatedAt = core_test_utils.CreatedAt
-			serviceGotCreds := domain.NewCredentials(
+			wantServiceGotUser.ID = core_test_utils.ID
+			wantServiceGotUser.CreatedAt = core_test_utils.CreatedAt
+			wantServiceGotCreds := domain.NewCredentials(
 				tt.body.Username,
 				tt.body.Password,
 			)
+			var serviceGotUser domain.User
+			var serviceGotCreds domain.UserCredentials
+			var serviceCalled bool
 			service := StubUsersService{
-				ReturnUser: domain.NewUser(
-					core_test_utils.ID,
-					tt.body.Username,
-					tt.body.FirstName,
-					tt.body.LastName,
-					core_test_utils.CreatedAt,
-					tt.body.Bio,
-				),
-				ReturnError: tt.serviceErr,
+				CreateUserFn: func(
+					ctx context.Context,
+					user domain.User,
+					credentials domain.UserCredentials,
+				) (domain.User, error) {
+					serviceCalled = true
+					serviceGotUser = user
+					serviceGotCreds = credentials
+					return domain.NewUser(
+						core_test_utils.ID,
+						tt.body.Username,
+						tt.body.FirstName,
+						tt.body.LastName,
+						core_test_utils.CreatedAt,
+						tt.body.Bio,
+					), tt.serviceErr
+				},
 			}
 
 			handler := NewUsersHTTPHandler(&service)
@@ -190,13 +205,20 @@ func TestCreateUser(t *testing.T) {
 			handler.CreateUser(rec, req.WithContext(ctx))
 
 			// Check
-			if service.Called {
-				service.GotUser.ID = core_test_utils.ID
-				service.GotUser.CreatedAt = core_test_utils.CreatedAt
-				if diff := cmp.Diff(WantServiceGotUser, service.GotUser); diff != "" {
+			if serviceCalled != tt.wantServiceCalled {
+				t.Fatalf(
+					"service called = %v, want %v",
+					serviceCalled,
+					tt.wantServiceCalled,
+				)
+			}
+			if serviceCalled {
+				serviceGotUser.ID = core_test_utils.ID
+				serviceGotUser.CreatedAt = core_test_utils.CreatedAt
+				if diff := cmp.Diff(wantServiceGotUser, serviceGotUser); diff != "" {
 					t.Fatalf("ServiceGotUser mismatch (-want +got):\n%s", diff)
 				}
-				if diff := cmp.Diff(serviceGotCreds, service.GotCreds); diff != "" {
+				if diff := cmp.Diff(wantServiceGotCreds, serviceGotCreds); diff != "" {
 					t.Fatalf("ServiceGotCreds mismatch (-want +got):\n%s", diff)
 				}
 			}
@@ -231,8 +253,4 @@ func TestCreateUser(t *testing.T) {
 
 		})
 	}
-}
-
-func Ptr(s string) {
-	panic("unimplemented")
 }

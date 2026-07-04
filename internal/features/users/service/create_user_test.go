@@ -1,6 +1,7 @@
 package users_service
 
 import (
+	"context"
 	"errors"
 	"messenger/internal/core/domain"
 	core_errors "messenger/internal/core/errors"
@@ -148,16 +149,32 @@ func TestCreateUser(t *testing.T) {
 					tt.user.Bio,
 				)
 			}
+			var repoCalled bool
+			var repoGotUser domain.User
+			var repoGotPswHash string
 			stubRepo := StubUsersRepository{
-				ReturnUser:  want,
-				ReturnError: tt.repoError,
+				CreateUserFn: func(
+					ctx context.Context,
+					user domain.User,
+					passwordHash string,
+				) (domain.User, error) {
+					repoCalled = true
+					repoGotUser = user
+					repoGotPswHash = passwordHash
+					return want, tt.repoError
+				},
 			}
 
 			pswHash := tt.credentials.Password + "_hash"
 
+			var hasherCalled bool
+			var hasherGotPsw string
 			stubHasher := StubHasher{
-				ReturnHash:  []byte(pswHash),
-				ReturnError: tt.hasherError,
+				HashFn: func(password string) ([]byte, error) {
+					hasherCalled = true
+					hasherGotPsw = password
+					return []byte(pswHash), tt.hasherError
+				},
 			}
 
 			wantRepoGotUser := domain.NewUser(
@@ -175,28 +192,28 @@ func TestCreateUser(t *testing.T) {
 			gotUser, gotError := service.CreateUser(ctx, tt.user, tt.credentials)
 
 			// Check
-			if stubHasher.Called != tt.wantHasherCalled {
+			if hasherCalled != tt.wantHasherCalled {
 				t.Fatalf("Hasher called = %v, want %v",
-					stubHasher.Called,
+					hasherCalled,
 					tt.wantHasherCalled,
 				)
 			}
-			if stubRepo.Called != tt.wantRepoCalled {
+			if repoCalled != tt.wantRepoCalled {
 				t.Fatalf("Repository called = %v, want %v",
-					stubRepo.Called,
+					repoCalled,
 					tt.wantRepoCalled,
 				)
 			}
-			if stubHasher.Called {
-				if diff := cmp.Diff(stubHasher.GotPassword, wantHasherGotPsw); diff != "" {
+			if hasherCalled {
+				if diff := cmp.Diff(wantHasherGotPsw, hasherGotPsw); diff != "" {
 					t.Fatalf("HasherGotPassword mismatch (-want +got):\n%s", diff)
 				}
 			}
-			if stubRepo.Called {
-				if diff := cmp.Diff(stubRepo.GotUser, wantRepoGotUser); diff != "" {
+			if repoCalled {
+				if diff := cmp.Diff(wantRepoGotUser, repoGotUser); diff != "" {
 					t.Fatalf("RepoGotUser mismatch (-want +got):\n%s", diff)
 				}
-				if diff := cmp.Diff(stubRepo.GotPswHash, pswHash); diff != "" {
+				if diff := cmp.Diff(pswHash, repoGotPswHash); diff != "" {
 					t.Fatalf("RepoGotPswHash mismatch (-want +got):\n%s", diff)
 				}
 			}

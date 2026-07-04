@@ -6,12 +6,11 @@ import (
 )
 
 type StubUsersRepository struct {
-	Called     bool
-	GotUser    domain.User
-	GotPswHash string
-
-	ReturnUser  domain.User
-	ReturnError error
+	CreateUserFn func(
+		ctx context.Context,
+		user domain.User,
+		passwordHash string,
+	) (domain.User, error)
 }
 
 func (s *StubUsersRepository) CreateUser(
@@ -19,26 +18,17 @@ func (s *StubUsersRepository) CreateUser(
 	user domain.User,
 	passwordHash string,
 ) (domain.User, error) {
-	s.Called = true
-	s.GotUser = user
-	s.GotPswHash = passwordHash
-
-	return s.ReturnUser, s.ReturnError
+	return s.CreateUserFn(ctx, user, passwordHash)
 }
 
 type StubHasher struct {
-	Called      bool
-	GotPassword string
-
-	ReturnHash  []byte
-	ReturnError error
+	HashFn    func(password string) ([]byte, error)
+	CompareFn func(hash, password string) error
 }
 
 func (h *StubHasher) Hash(password string) ([]byte, error) {
-	h.Called = true
-	h.GotPassword = password
-	return h.ReturnHash, h.ReturnError
+	return h.HashFn(password)
 }
 func (h *StubHasher) Compare(hash, password string) error {
-	return nil
+	return h.CompareFn(hash, password)
 }
