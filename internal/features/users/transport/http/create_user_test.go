@@ -194,7 +194,7 @@ func TestCreateUser(t *testing.T) {
 			}
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest("", "/users", bytes.NewReader(body))
-			ctx := core_test_utils.GetLoggerContext(req)
+			ctx := core_test_utils.GetLoggerContext(req.Context())
 
 			// Action
 			handler.CreateUser(rec, req.WithContext(ctx))

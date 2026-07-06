@@ -58,6 +58,8 @@ func main() {
 	usersRepository := users_postgres_repository.NewUsersRepository(pool)
 	usersService := users_service.NewUsersService(usersRepository, hasher)
 	usersTranposrtHTTP := users_transport_http.NewUsersHTTPHandler(usersService)
+	
+
 	logger.Debug("initializing HTTP server")
 	httpConfig := core_http_server.NewConfigMust()
 	router := chi.NewRouter()

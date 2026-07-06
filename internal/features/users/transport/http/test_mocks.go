@@ -54,6 +54,7 @@ func (s *StubUsersService) GetUser(
 }
 
 func (s *StubUsersService) DeleteUser(
+	ctx context.Context,
 	id int,
 ) error {
 	return s.DeleteUserFn(id)

@@ -29,10 +29,10 @@ type UsersService interface {
 		id int,
 	) (domain.User, error)
 
-	// DeleteUser(
-	// 	ctx context.Context,
-	// 	id int,
-	// ) error
+	DeleteUser(
+		ctx context.Context,
+		id int,
+	) error
 
 	// PatchUser(
 	// 	ctx context.Context,

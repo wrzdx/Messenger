@@ -2,9 +2,9 @@ package core_test_utils
 
 import (
 	"context"
+	core_auth "messenger/internal/core/auth"
 	core_logger "messenger/internal/core/logger"
 	core_postgres_pool "messenger/internal/core/repository/postgres/pool"
-	"net/http"
 	"testing"
 )
 
@@ -46,7 +46,10 @@ func LoadData(t *testing.T, pool core_postgres_pool.Pool) {
 	}
 }
 
-func GetLoggerContext(r *http.Request) context.Context {
-	ctx := core_logger.ToContext(r.Context(), Log)
-	return ctx
+func GetLoggerContext(ctx context.Context) context.Context {
+	return core_logger.ToContext(ctx, Log)
+}
+
+func GetClaimsContext(ctx context.Context, claims core_auth.Claims) context.Context {
+	return core_auth.WithClaims(ctx, claims)
 }

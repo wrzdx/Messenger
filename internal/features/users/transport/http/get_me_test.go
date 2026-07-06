@@ -2,35 +2,34 @@ package users_transport_http
 
 import (
 	"encoding/json"
+	"fmt"
+	core_auth "messenger/internal/core/auth"
 	"messenger/internal/core/domain"
 	core_errors "messenger/internal/core/errors"
 	core_http_response "messenger/internal/core/transport/http/response"
 	core_test_utils "messenger/internal/core/utils/test"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestGetUser(t *testing.T) {
+func TestGetMe(t *testing.T) {
 	user := core_test_utils.Users[0]
 	tests := []struct {
 		name              string
-		userID            string
 		serviceUser       domain.User
 		serviceErr        error
 		wantUser          UserDTOResponse
-		wantServiceUserId int
+		userID            int
 		wantServiceCalled bool
 		wantStatus        int
 		wantError         error
 	}{
 		{
 			name:        "existing user",
-			userID:      strconv.Itoa(user.ID),
 			serviceUser: user,
 			wantUser: UserDTOResponse{
 				ID:        user.ID,
@@ -40,29 +39,21 @@ func TestGetUser(t *testing.T) {
 				CreatedAt: user.CreatedAt,
 				Bio:       user.Bio,
 			},
-			wantServiceUserId: user.ID,
+			userID:            user.ID,
 			wantServiceCalled: true,
 			wantStatus:        http.StatusOK,
 		},
 		{
 			name:              "non-existing user",
-			userID:            "-1",
-			wantServiceUserId: -1,
+			userID:            -1,
 			wantServiceCalled: true,
 			serviceErr:        core_errors.ErrorNotFound,
 			wantStatus:        http.StatusNotFound,
 			wantError:         core_errors.ErrorNotFound,
 		},
 		{
-			name:              "invalid user id",
-			userID:            "asdf",
-			wantStatus:        http.StatusBadRequest,
-			wantError:         core_errors.ErrInvalidArgument,
-		},
-		{
 			name:              "service error",
-			userID:            "1",
-			wantServiceUserId: 1,
+			userID:            1,
 			wantServiceCalled: true,
 			serviceErr:        core_errors.ErrInternalServer,
 			wantStatus:        http.StatusInternalServerError,
@@ -85,15 +76,18 @@ func TestGetUser(t *testing.T) {
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(
 				http.MethodGet,
-				"/users/"+tt.userID,
+				fmt.Sprintf("/users/%d", tt.userID),
 				nil,
 			)
-			req.SetPathValue("id", tt.userID)
+			claims := core_auth.Claims{
+				UserID: tt.userID,
+			}
 			ctx := core_test_utils.GetLoggerContext(req.Context())
+			ctx = core_test_utils.GetClaimsContext(ctx, claims)
 			handler := NewUsersHTTPHandler(&service)
 
 			// action
-			handler.GetUser(rec, req.WithContext(ctx))
+			handler.GetMe(rec, req.WithContext(ctx))
 
 			// check
 			if serviceCalled != tt.wantServiceCalled {
@@ -105,7 +99,7 @@ func TestGetUser(t *testing.T) {
 			}
 
 			if serviceCalled {
-				if diff := cmp.Diff(tt.wantServiceUserId, serviceGotID); diff != "" {
+				if diff := cmp.Diff(tt.userID, serviceGotID); diff != "" {
 					t.Fatalf("userID mismatch (-want +got):\n%s", diff)
 				}
 			}

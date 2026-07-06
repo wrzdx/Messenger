@@ -197,7 +197,7 @@ func TestGetUsers(t *testing.T) {
 				nil,
 			)
 
-			ctx := core_test_utils.GetLoggerContext(req)
+			ctx := core_test_utils.GetLoggerContext(req.Context())
 			// action
 			handler.GetUsers(rec, req.WithContext(ctx))
 

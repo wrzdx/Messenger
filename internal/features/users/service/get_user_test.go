@@ -2,7 +2,6 @@ package users_service
 
 import (
 	"errors"
-	"messenger/internal/core/domain"
 	core_errors "messenger/internal/core/errors"
 	core_test_utils "messenger/internal/core/utils/test"
 	"testing"
@@ -10,15 +9,13 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestGetUser(t *testing.T) {
+func TestDeleteUser(t *testing.T) {
 	user := core_test_utils.Users[0]
 
 	tests := []struct {
 		name           string
 		userID         int
-		repoUser       domain.User
 		repoErr        error
-		wantUser       domain.User
 		wantRepoID     int
 		wantRepoCalled bool
 		wantError      error
@@ -26,8 +23,6 @@ func TestGetUser(t *testing.T) {
 		{
 			name:           "existing user",
 			userID:         user.ID,
-			repoUser:       user,
-			wantUser:       user,
 			wantRepoID:     user.ID,
 			wantRepoCalled: true,
 		},
@@ -39,13 +34,12 @@ func TestGetUser(t *testing.T) {
 			wantRepoCalled: true,
 			wantError:      core_errors.ErrorNotFound,
 		},
-
 		{
 			name:           "repository error",
 			userID:         user.ID,
+			repoErr:        core_errors.ErrInternalServer,
 			wantRepoID:     user.ID,
 			wantRepoCalled: true,
-			repoErr:        core_errors.ErrInternalServer,
 			wantError:      core_errors.ErrInternalServer,
 		},
 	}
@@ -58,18 +52,18 @@ func TestGetUser(t *testing.T) {
 			)
 
 			repo := StubUsersRepository{
-				GetUserFn: func(id int) (domain.User, error) {
+				DeleteUserFn: func(id int) error {
 					repoCalled = true
 					repoGotID = id
 
-					return tt.repoUser, tt.repoErr
+					return tt.repoErr
 				},
 			}
 
 			hasher := StubHasher{}
 			service := NewUsersService(&repo, &hasher)
 
-			gotUser, gotErr := service.GetUser(t.Context(), tt.userID)
+			gotErr := service.DeleteUser(t.Context(), tt.userID)
 
 			if repoCalled != tt.wantRepoCalled {
 				t.Fatalf(
@@ -87,10 +81,6 @@ func TestGetUser(t *testing.T) {
 
 			if !errors.Is(gotErr, tt.wantError) {
 				t.Fatalf("want %v, got %v", tt.wantError, gotErr)
-			}
-
-			if diff := cmp.Diff(tt.wantUser, gotUser); diff != "" {
-				t.Fatalf("GetUser mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
