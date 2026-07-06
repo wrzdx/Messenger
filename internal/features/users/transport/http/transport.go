@@ -18,11 +18,11 @@ type UsersService interface {
 		credentials domain.UserCredentials,
 	) (domain.User, error)
 
-	// GetUsers(
-	// 	ctx context.Context,
-	// 	limit *int,
-	// 	offset *int,
-	// ) ([]domain.User, error)
+	GetUsers(
+		ctx context.Context,
+		limit *int,
+		offset *int,
+	) ([]domain.User, error)
 
 	// GetUser(
 	// 	ctx context.Context,
@@ -50,5 +50,6 @@ func NewUsersHTTPHandler(usersService UsersService) *UsersHTTPHandler {
 func (h *UsersHTTPHandler) Router() chi.Router {
 	router := chi.NewRouter()
 	router.Post("/", h.CreateUser)
+	router.Get("/", h.GetUsers)
 	return router
 }

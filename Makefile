@@ -112,6 +112,6 @@ test-env-down:
 test-integration:
 	@ export POSTGRES_HOST=localhost && \
 	export POSTGRES_DB=${POSTGRES_TEST_DB} && \
-	go test -tags=integration ${or ${action},./...}
+	go test -tags=integration -count=1 ${or ${action},./...}
 
 
