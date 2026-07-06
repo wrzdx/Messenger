@@ -2,7 +2,6 @@ package users_transport_http
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"messenger/internal/core/domain"
 	core_errors "messenger/internal/core/errors"
@@ -171,7 +170,6 @@ func TestCreateUser(t *testing.T) {
 			var serviceCalled bool
 			service := StubUsersService{
 				CreateUserFn: func(
-					ctx context.Context,
 					user domain.User,
 					credentials domain.UserCredentials,
 				) (domain.User, error) {

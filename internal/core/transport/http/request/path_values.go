@@ -9,6 +9,7 @@ import (
 
 func GetIntPathValue(r *http.Request, key string) (int, error) {
 	pathValue := r.PathValue(key)
+
 	if pathValue == "" {
 		return 0, fmt.Errorf(
 			"no key='%s' in path values: %w",
@@ -23,8 +24,8 @@ func GetIntPathValue(r *http.Request, key string) (int, error) {
 			"path value='%s' by key='%s' not a valid integer: %v: %w",
 			pathValue,
 			key,
-			core_errors.ErrInvalidArgument,
 			err,
+			core_errors.ErrInvalidArgument,
 		)
 	}
 

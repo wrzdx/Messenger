@@ -52,6 +52,6 @@ func (r *UsersRepository) CreateUser(
 		return domain.User{}, fmt.Errorf("scan error: %w", err)
 	}
 
-	userAuthDomain := UserDomainFromModel(userModel)
-	return userAuthDomain, nil
+	userDomain := UserDomainFromModel(userModel)
+	return userDomain, nil
 }

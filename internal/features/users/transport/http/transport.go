@@ -24,10 +24,10 @@ type UsersService interface {
 		offset *int,
 	) ([]domain.User, error)
 
-	// GetUser(
-	// 	ctx context.Context,
-	// 	id int,
-	// ) (domain.User, error)
+	GetUser(
+		ctx context.Context,
+		id int,
+	) (domain.User, error)
 
 	// DeleteUser(
 	// 	ctx context.Context,
@@ -51,5 +51,6 @@ func (h *UsersHTTPHandler) Router() chi.Router {
 	router := chi.NewRouter()
 	router.Post("/", h.CreateUser)
 	router.Get("/", h.GetUsers)
+	router.Get("/{id}", h.GetUser)
 	return router
 }

@@ -10,32 +10,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-var users = []domain.User{
-	{
-		ID:        1,
-		Username:  "user_1",
-		FirstName: "Username",
-		LastName:  new("1"),
-		CreatedAt: core_test_utils.CreatedAt,
-		Bio:       new("I'm user 1"),
-	},
-	{
-		ID:        2,
-		Username:  "user_2",
-		FirstName: "Username",
-		LastName:  new("2"),
-		CreatedAt: core_test_utils.CreatedAt,
-		Bio:       new("I'm user 2"),
-	},
-	{
-		ID:        3,
-		Username:  "user_3",
-		FirstName: "Username",
-		LastName:  new("3"),
-		CreatedAt: core_test_utils.CreatedAt,
-		Bio:       new("I'm user 3"),
-	},
-}
+
 
 func TestGetUsers(t *testing.T) {
 	tests := []struct {
@@ -51,15 +26,15 @@ func TestGetUsers(t *testing.T) {
 		{
 			name:           "return all users",
 			wantRepoCalled: true,
-			repoUsers:      users,
-			wantUsers:      users,
+			repoUsers:      core_test_utils.Users,
+			wantUsers:      core_test_utils.Users,
 		},
 		{
 			name:           "limit users",
 			limit:          new(1),
-			repoUsers:      users[:1],
+			repoUsers:      core_test_utils.Users[:1],
 			wantRepoCalled: true,
-			wantUsers:      users[:1],
+			wantUsers:      core_test_utils.Users[:1],
 		},
 		{
 			name:      "negative limit",
@@ -69,9 +44,9 @@ func TestGetUsers(t *testing.T) {
 		{
 			name:           "offset users",
 			offset:         new(1),
-			repoUsers:      users[1:],
+			repoUsers:      core_test_utils.Users[1:],
 			wantRepoCalled: true,
-			wantUsers:      users[1:],
+			wantUsers:      core_test_utils.Users[1:],
 		},
 		{
 			name:      "negative offset",
@@ -82,16 +57,16 @@ func TestGetUsers(t *testing.T) {
 			name:           "limit offset users",
 			limit:          new(1),
 			offset:         new(1),
-			repoUsers:      users[1:2],
+			repoUsers:      core_test_utils.Users[1:2],
 			wantRepoCalled: true,
 
-			wantUsers: users[1:2],
+			wantUsers: core_test_utils.Users[1:2],
 		},
 		{
 			name:           "empty users",
 			limit:          new(1),
 			offset:         new(2),
-			repoUsers:      users[2:2],
+			repoUsers:      core_test_utils.Users[2:2],
 			wantRepoCalled: true,
 			wantUsers:      []domain.User{},
 		},

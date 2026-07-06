@@ -7,29 +7,24 @@ import (
 
 type StubUsersService struct {
 	CreateUserFn func(
-		ctx context.Context,
 		user domain.User,
 		credentials domain.UserCredentials,
 	) (domain.User, error)
 
 	GetUsersFn func(
-		ctx context.Context,
 		limit *int,
 		offset *int,
 	) ([]domain.User, error)
 
 	GetUserFn func(
-		ctx context.Context,
 		id int,
 	) (domain.User, error)
 
 	DeleteUserFn func(
-		ctx context.Context,
 		id int,
 	) error
 
 	PatchUserFn func(
-		ctx context.Context,
 		id int,
 		patch domain.UserPatch,
 	) (domain.User, error)
@@ -40,7 +35,7 @@ func (s *StubUsersService) CreateUser(
 	user domain.User,
 	creds domain.UserCredentials,
 ) (domain.User, error) {
-	return s.CreateUserFn(ctx, user, creds)
+	return s.CreateUserFn(user, creds)
 }
 
 func (s *StubUsersService) GetUsers(
@@ -48,27 +43,25 @@ func (s *StubUsersService) GetUsers(
 	limit *int,
 	offset *int,
 ) ([]domain.User, error) {
-	return s.GetUsersFn(ctx, limit, offset)
+	return s.GetUsersFn(limit, offset)
 }
 
 func (s *StubUsersService) GetUser(
 	ctx context.Context,
 	id int,
 ) (domain.User, error) {
-	return s.GetUserFn(ctx, id)
+	return s.GetUserFn(id)
 }
 
 func (s *StubUsersService) DeleteUser(
-	ctx context.Context,
 	id int,
 ) error {
-	return s.DeleteUserFn(ctx, id)
+	return s.DeleteUserFn(id)
 }
 
 func (s *StubUsersService) PatchUser(
-	ctx context.Context,
 	id int,
 	patch domain.UserPatch,
 ) (domain.User, error) {
-	return s.PatchUserFn(ctx, id, patch)
+	return s.PatchUserFn(id, patch)
 }

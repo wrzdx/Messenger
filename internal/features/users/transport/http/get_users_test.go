@@ -1,7 +1,6 @@
 package users_transport_http
 
 import (
-	"context"
 	"encoding/json"
 	"messenger/internal/core/domain"
 	core_errors "messenger/internal/core/errors"
@@ -15,33 +14,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 )
-
-var users = []domain.User{
-	{
-		ID:        1,
-		Username:  "user_1",
-		FirstName: "Username",
-		LastName:  new("1"),
-		CreatedAt: core_test_utils.CreatedAt,
-		Bio:       new("I'm user 1"),
-	},
-	{
-		ID:        2,
-		Username:  "user_2",
-		FirstName: "Username",
-		LastName:  new("2"),
-		CreatedAt: core_test_utils.CreatedAt,
-		Bio:       new("I'm user 2"),
-	},
-	{
-		ID:        3,
-		Username:  "user_3",
-		FirstName: "Username",
-		LastName:  new("3"),
-		CreatedAt: core_test_utils.CreatedAt,
-		Bio:       new("I'm user 3"),
-	},
-}
 
 func TestGetUsers(t *testing.T) {
 	tests := []struct {
@@ -61,7 +33,7 @@ func TestGetUsers(t *testing.T) {
 			name:              "return all users",
 			wantServiceCalled: true,
 			wantStatus:        http.StatusOK,
-			serviceUsers:      users,
+			serviceUsers:      core_test_utils.Users,
 			wantUsers: []UserDTOResponse{
 				{
 					ID:        1,
@@ -93,7 +65,7 @@ func TestGetUsers(t *testing.T) {
 			name:              "limit users",
 			limit:             "1",
 			wantServiceLimit:  new(1),
-			serviceUsers:      users[:1],
+			serviceUsers:      core_test_utils.Users[:1],
 			wantServiceCalled: true,
 			wantStatus:        http.StatusOK,
 			wantUsers: []UserDTOResponse{
@@ -117,7 +89,7 @@ func TestGetUsers(t *testing.T) {
 			name:              "offset users",
 			offset:            "1",
 			wantServiceOffset: new(1),
-			serviceUsers:      users[1:],
+			serviceUsers:      core_test_utils.Users[1:],
 			wantServiceCalled: true,
 			wantStatus:        http.StatusOK,
 			wantUsers: []UserDTOResponse{
@@ -141,7 +113,7 @@ func TestGetUsers(t *testing.T) {
 		},
 		{
 			name:       "negative offset",
-			offset:      "-1",
+			offset:     "-1",
 			wantError:  core_errors.ErrInvalidArgument,
 			wantStatus: http.StatusBadRequest,
 		},
@@ -151,7 +123,7 @@ func TestGetUsers(t *testing.T) {
 			offset:            "1",
 			wantServiceLimit:  new(1),
 			wantServiceOffset: new(1),
-			serviceUsers:      users[1:2],
+			serviceUsers:      core_test_utils.Users[1:2],
 			wantServiceCalled: true,
 
 			wantStatus: http.StatusOK,
@@ -172,7 +144,7 @@ func TestGetUsers(t *testing.T) {
 			offset:            "2",
 			wantServiceLimit:  new(1),
 			wantServiceOffset: new(2),
-			serviceUsers:      users[2:2],
+			serviceUsers:      core_test_utils.Users[2:2],
 			wantServiceCalled: true,
 			wantStatus:        http.StatusOK,
 			wantUsers:         []UserDTOResponse{},
@@ -200,7 +172,7 @@ func TestGetUsers(t *testing.T) {
 			)
 
 			service := StubUsersService{
-				GetUsersFn: func(ctx context.Context, limit, offset *int) ([]domain.User, error) {
+				GetUsersFn: func(limit, offset *int) ([]domain.User, error) {
 					serviceCalled = true
 					serviceGotLimit = limit
 					serviceGotOffset = offset
