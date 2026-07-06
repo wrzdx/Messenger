@@ -26,13 +26,14 @@ func LoadData(t *testing.T, pool core_postgres_pool.Pool) {
 	t.Helper()
 	ResetDB(t, pool)
 	query := `
-	INSERT INTO users (username, first_name, last_name, created_at, bio, password_hash)
-	VALUES ($1, $2,$3,$4,$5,$6) 
+	INSERT INTO users (id, username, first_name, last_name, created_at, bio, password_hash)
+	VALUES ($1, $2,$3,$4,$5,$6, $7) 
 	`
 	for _, user := range Users {
 		_, err := pool.Exec(
 			t.Context(),
 			query,
+			user.ID,
 			user.Username,
 			user.FirstName,
 			user.LastName,

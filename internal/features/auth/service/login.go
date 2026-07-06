@@ -13,12 +13,6 @@ func (s *AuthService) Login(
 	ctx context.Context,
 	credentials domain.UserCredentials,
 ) (domain.Token, domain.Token, error) {
-	if err := credentials.Validate(); err != nil {
-		return domain.Token{}, domain.Token{}, fmt.Errorf(
-			"validate credentials: %w",
-			err,
-		)
-	}
 	userAuth, err := s.userRepository.GetUserAuth(
 		ctx,
 		credentials.Username,

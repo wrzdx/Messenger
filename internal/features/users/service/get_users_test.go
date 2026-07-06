@@ -3,14 +3,11 @@ package users_service
 import (
 	"errors"
 	"messenger/internal/core/domain"
-	core_errors "messenger/internal/core/errors"
 	core_test_utils "messenger/internal/core/utils/test"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 )
-
-
 
 func TestGetUsers(t *testing.T) {
 	tests := []struct {
@@ -37,21 +34,11 @@ func TestGetUsers(t *testing.T) {
 			wantUsers:      core_test_utils.Users[:1],
 		},
 		{
-			name:      "negative limit",
-			limit:     new(-1),
-			wantError: core_errors.ErrInvalidArgument,
-		},
-		{
 			name:           "offset users",
 			offset:         new(1),
 			repoUsers:      core_test_utils.Users[1:],
 			wantRepoCalled: true,
 			wantUsers:      core_test_utils.Users[1:],
-		},
-		{
-			name:      "negative offset",
-			offset:     new(-1),
-			wantError: core_errors.ErrInvalidArgument,
 		},
 		{
 			name:           "limit offset users",

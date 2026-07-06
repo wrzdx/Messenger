@@ -3,12 +3,13 @@ package users_service
 import (
 	"context"
 	"messenger/internal/core/domain"
+
+	"github.com/google/uuid"
 )
 
 type StubUsersRepository struct {
 	CreateUserFn func(
 		user domain.User,
-		passwordHash string,
 	) (domain.User, error)
 
 	GetUsersFn func(
@@ -17,15 +18,15 @@ type StubUsersRepository struct {
 	) ([]domain.User, error)
 
 	GetUserFn func(
-		id int,
+		id uuid.UUID,
 	) (domain.User, error)
 
 	DeleteUserFn func(
-		id int,
+		id uuid.UUID,
 	) error
 
 	PatchUserFn func(
-		id int,
+		id uuid.UUID,
 		user domain.User,
 	) (domain.User, error)
 }
@@ -33,9 +34,8 @@ type StubUsersRepository struct {
 func (s *StubUsersRepository) CreateUser(
 	ctx context.Context,
 	user domain.User,
-	passwordHash string,
 ) (domain.User, error) {
-	return s.CreateUserFn(user, passwordHash)
+	return s.CreateUserFn(user)
 }
 
 func (s *StubUsersRepository) GetUsers(
@@ -48,21 +48,21 @@ func (s *StubUsersRepository) GetUsers(
 
 func (s *StubUsersRepository) GetUser(
 	ctx context.Context,
-	id int,
+	id uuid.UUID,
 ) (domain.User, error) {
 	return s.GetUserFn(id)
 }
 
 func (s *StubUsersRepository) DeleteUser(
 	ctx context.Context,
-	id int,
+	id uuid.UUID,
 ) error {
 	return s.DeleteUserFn(id)
 }
 
 func (s *StubUsersRepository) PatchUser(
 	ctx context.Context,
-	id int,
+	id uuid.UUID,
 	user domain.User,
 ) (domain.User, error) {
 	return s.PatchUserFn(id, user)

@@ -16,7 +16,7 @@ type UsersRepository interface {
 	GetUserAuth(
 		ctx context.Context,
 		username string,
-	) (domain.UserAuth, error)
+	) (domain.User, error)
 
 	// UpdateUserPasswordHash(
 	// 	ctx context.Context,

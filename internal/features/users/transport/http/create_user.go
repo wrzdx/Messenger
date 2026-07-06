@@ -1,6 +1,7 @@
 package users_transport_http
 
 import (
+	"fmt"
 	"messenger/internal/core/domain"
 	core_logger "messenger/internal/core/logger"
 	core_http_request "messenger/internal/core/transport/http/request"
@@ -25,24 +26,23 @@ func (h *UsersHTTPHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	var request CreateUserRequest
 	if err := core_http_request.DecodeAndValidateRequest(r, &request); err != nil {
-		responseHandler.ErrorResponse(err, "failed to decode and validate HTTP request")
+		responseHandler.ErrorResponse(
+			http.StatusBadRequest,
+			fmt.Errorf("%w: %v", ErrInvalidArgument, err),
+		)
 		return
 	}
-
-	userDomain := domain.NewUserUninitialized(
+	payload := domain.NewRegisterUserPayload(
 		request.Username,
 		request.FirstName,
 		request.LastName,
 		request.Bio,
-	)
-
-	userCredentials := domain.NewCredentials(
-		request.Username,
 		request.Password,
 	)
-	userDomain, err := h.usersService.CreateUser(ctx, userDomain, userCredentials)
+	userDomain, err := h.usersService.CreateUser(ctx, payload)
 	if err != nil {
-		responseHandler.ErrorResponse(err, "failed to create user")
+		statusCode := mapDomainErrorToStatusCode(err)
+		responseHandler.ErrorResponse(statusCode, err)
 		return
 	}
 

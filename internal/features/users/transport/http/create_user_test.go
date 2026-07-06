@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"messenger/internal/core/domain"
-	core_errors "messenger/internal/core/errors"
 	core_http_response "messenger/internal/core/transport/http/response"
 	core_test_utils "messenger/internal/core/utils/test"
 	"net/http"
@@ -39,9 +38,9 @@ func TestCreateUser(t *testing.T) {
 		{
 			name:              "username already exists",
 			wantServiceCalled: true,
-			serviceErr:        core_errors.ErrConflict,
+			serviceErr:        domain.ErrUserAlreadyExists,
 			wantStatus:        http.StatusConflict,
-			wantError:         core_errors.ErrConflict,
+			wantError:         domain.ErrUserAlreadyExists,
 			body: CreateUserRequest{
 				Username:  "i.ivanov",
 				FirstName: "Ivan",
@@ -53,7 +52,7 @@ func TestCreateUser(t *testing.T) {
 		{
 			name:       "missing username",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_errors.ErrInvalidArgument,
+			wantError:  ErrInvalidArgument,
 			body: CreateUserRequest{
 				FirstName: "Ivan",
 				Password:  "password",
@@ -62,7 +61,7 @@ func TestCreateUser(t *testing.T) {
 		{
 			name:       "username too short",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_errors.ErrInvalidArgument,
+			wantError:  ErrInvalidArgument,
 			body: CreateUserRequest{
 				Username:  "ivan",
 				FirstName: "Ivan",
@@ -72,7 +71,7 @@ func TestCreateUser(t *testing.T) {
 		{
 			name:       "username too long",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_errors.ErrInvalidArgument,
+			wantError:  ErrInvalidArgument,
 			body: CreateUserRequest{
 				Username:  strings.Repeat("a", 33),
 				FirstName: "Ivan",
@@ -82,7 +81,7 @@ func TestCreateUser(t *testing.T) {
 		{
 			name:       "missing first name",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_errors.ErrInvalidArgument,
+			wantError:  ErrInvalidArgument,
 			body: CreateUserRequest{
 				Username: "i.ivanov",
 				Password: "password",
@@ -91,7 +90,7 @@ func TestCreateUser(t *testing.T) {
 		{
 			name:       "first name too long",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_errors.ErrInvalidArgument,
+			wantError:  ErrInvalidArgument,
 			body: CreateUserRequest{
 				Username:  "i.ivanov",
 				FirstName: strings.Repeat("a", 65),
@@ -101,7 +100,7 @@ func TestCreateUser(t *testing.T) {
 		{
 			name:       "last name too long",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_errors.ErrInvalidArgument,
+			wantError:  ErrInvalidArgument,
 			body: CreateUserRequest{
 				Username:  "i.ivanov",
 				FirstName: "Ivan",
@@ -112,7 +111,7 @@ func TestCreateUser(t *testing.T) {
 		{
 			name:       "bio too long",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_errors.ErrInvalidArgument,
+			wantError:  ErrInvalidArgument,
 			body: CreateUserRequest{
 				Username:  "i.ivanov",
 				FirstName: "Ivan",
@@ -123,7 +122,7 @@ func TestCreateUser(t *testing.T) {
 		{
 			name:       "password too short",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_errors.ErrInvalidArgument,
+			wantError:  ErrInvalidArgument,
 			body: CreateUserRequest{
 				Username:  "i.ivanov",
 				FirstName: "Ivan",
@@ -133,7 +132,7 @@ func TestCreateUser(t *testing.T) {
 		{
 			name:       "password too long",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_errors.ErrInvalidArgument,
+			wantError:  ErrInvalidArgument,
 			body: CreateUserRequest{
 				Username:  "i.ivanov",
 				FirstName: "Ivan",
@@ -153,29 +152,27 @@ func TestCreateUser(t *testing.T) {
 				Bio:       tt.body.Bio,
 			}
 
-			wantServiceGotUser := domain.NewUserUninitialized(
+			wantServiceGotPayload := domain.NewRegisterUserPayload(
 				tt.body.Username,
 				tt.body.FirstName,
 				tt.body.LastName,
 				tt.body.Bio,
-			)
-			wantServiceGotUser.ID = core_test_utils.ID
-			wantServiceGotUser.CreatedAt = core_test_utils.CreatedAt
-			wantServiceGotCreds := domain.NewCredentials(
-				tt.body.Username,
 				tt.body.Password,
 			)
-			var serviceGotUser domain.User
-			var serviceGotCreds domain.UserCredentials
+			var servicePayload domain.RegisterUserPayload
 			var serviceCalled bool
 			service := StubUsersService{
 				CreateUserFn: func(
-					user domain.User,
-					credentials domain.UserCredentials,
+					payload domain.RegisterUserPayload,
 				) (domain.User, error) {
 					serviceCalled = true
-					serviceGotUser = user
-					serviceGotCreds = credentials
+					servicePayload = domain.NewRegisterUserPayload(
+						payload.Username,
+						payload.FirstName,
+						payload.LastName,
+						payload.Bio,
+						payload.Password,
+					)
 					return domain.NewUser(
 						core_test_utils.ID,
 						tt.body.Username,
@@ -183,6 +180,7 @@ func TestCreateUser(t *testing.T) {
 						tt.body.LastName,
 						core_test_utils.CreatedAt,
 						tt.body.Bio,
+						core_test_utils.PasswordHash,
 					), tt.serviceErr
 				},
 			}
@@ -208,13 +206,8 @@ func TestCreateUser(t *testing.T) {
 				)
 			}
 			if serviceCalled {
-				serviceGotUser.ID = core_test_utils.ID
-				serviceGotUser.CreatedAt = core_test_utils.CreatedAt
-				if diff := cmp.Diff(wantServiceGotUser, serviceGotUser); diff != "" {
+				if diff := cmp.Diff(wantServiceGotPayload, servicePayload); diff != "" {
 					t.Fatalf("ServiceGotUser mismatch (-want +got):\n%s", diff)
-				}
-				if diff := cmp.Diff(wantServiceGotCreds, serviceGotCreds); diff != "" {
-					t.Fatalf("ServiceGotCreds mismatch (-want +got):\n%s", diff)
 				}
 			}
 
@@ -228,7 +221,7 @@ func TestCreateUser(t *testing.T) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 
-				if !strings.HasSuffix(gotError.Error, tt.wantError.Error()) {
+				if !strings.HasPrefix(gotError.Error, tt.wantError.Error()) {
 					t.Fatalf(
 						"ErrorResponse mismatch:\nwant: %s\ngot: %s",
 						tt.wantError.Error(),

@@ -2,9 +2,7 @@ package core_http_response
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	core_errors "messenger/internal/core/errors"
 	core_logger "messenger/internal/core/logger"
 	"net/http"
 
@@ -33,59 +31,30 @@ func (h *HTTPResponseHandler) HTMLResponse(html []byte) {
 }
 
 func (h *HTTPResponseHandler) PanicResponse(p any, msg string) {
-	statusCode := http.StatusInternalServerError
 	err := fmt.Errorf("unexpected panic: %v", p)
 	h.log.Error(msg, zap.Error(err))
-	h.errorResponse(statusCode, err, msg)
+	h.ErrorResponse(http.StatusInternalServerError, err)
 }
 
-func (h *HTTPResponseHandler) ErrorResponse(err error, msg string) {
+func (h *HTTPResponseHandler) ErrorResponse(statusCode int, err error) {
 	var (
-		statusCode int
-		logFunc    func(string, ...zap.Field)
+		logFunc func(string, ...zap.Field)
 	)
 
-	switch {
-	case errors.Is(err, core_errors.ErrInvalidArgument):
-		statusCode = http.StatusBadRequest
+	switch statusCode {
+	case http.StatusBadRequest,
+		http.StatusConflict,
+		http.StatusForbidden,
+		http.StatusUnauthorized:
 		logFunc = h.log.Warn
-	case errors.Is(err, core_errors.ErrorNotFound):
-		statusCode = http.StatusNotFound
+	case http.StatusNotFound:
 		logFunc = h.log.Debug
-	case errors.Is(err, core_errors.ErrConflict):
-		statusCode = http.StatusConflict
-		logFunc = h.log.Warn
-	case errors.Is(err, core_errors.ErrForbidden):
-		statusCode = http.StatusForbidden
-		logFunc = h.log.Warn
-	case errors.Is(err, core_errors.ErrUnauthorized):
-		statusCode = http.StatusUnauthorized
-		logFunc = h.log.Warn
 	default:
-		statusCode = http.StatusInternalServerError
 		logFunc = h.log.Error
 	}
 
-	logFunc(msg, zap.Error(err))
-	h.errorResponse(statusCode, err, msg)
-}
-
-func (h *HTTPResponseHandler) errorResponse(
-	statusCode int,
-	err error,
-	msg string,
-) {
-	response := ErrorResponse{
-		Message: msg,
-	}
-
-	if err != nil {
-		response.Error = err.Error()
-	} else {
-		response.Error = "unknown error"
-	}
-
-	h.JSONResponse(response, statusCode)
+	logFunc(err.Error())
+	h.JSONResponse(ErrorResponse{Error: err.Error()}, statusCode)
 }
 
 func (h *HTTPResponseHandler) JSONResponse(

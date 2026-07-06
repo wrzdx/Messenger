@@ -3,7 +3,6 @@ package users_service
 import (
 	"errors"
 	"messenger/internal/core/domain"
-	core_errors "messenger/internal/core/errors"
 	core_test_utils "messenger/internal/core/utils/test"
 	"testing"
 
@@ -13,8 +12,7 @@ import (
 var tests = []struct {
 	name string
 
-	user        domain.User
-	credentials domain.UserCredentials
+	user domain.RegisterUserPayload
 
 	hasherError error
 	repoError   error
@@ -28,16 +26,11 @@ var tests = []struct {
 	{
 		name: "valid user",
 
-		user: domain.User{
-			ID:        domain.UninitializedID,
-			Username:  "ivanov",
-			FirstName: "Ivan",
-			LastName:  new("Ivanov"),
-			CreatedAt: core_test_utils.CreatedAt,
-			Bio:       new("I like pizza"),
-		},
-		credentials: domain.NewCredentials(
+		user: domain.NewRegisterUserPayload(
 			"ivanov",
+			"Ivan",
+			new("Ivanov"),
+			new("I like pizza"),
 			"password",
 		),
 
@@ -48,45 +41,40 @@ var tests = []struct {
 			new("Ivanov"),
 			core_test_utils.CreatedAt,
 			new("I like pizza"),
+			core_test_utils.PasswordHash,
 		),
 
 		wantHasherCalled: true,
 		wantRepoCalled:   true,
 	},
 	{
-		name: "invalid user",
+		name: "invalid username",
 
-		user: domain.User{
-			ID:        domain.UninitializedID,
-			Username:  "abc", // слишком короткий
-			FirstName: "Ivan",
-			CreatedAt: core_test_utils.CreatedAt,
-		},
-		credentials: domain.NewCredentials(
+		user: domain.NewRegisterUserPayload(
 			"abc",
+			"Ivan",
+			new("Ivanov"),
+			new("I like pizza"),
 			"password",
 		),
 
-		wantError: core_errors.ErrInvalidArgument,
+		wantError: domain.ErrInvalidUsername,
 
 		wantHasherCalled: false,
 		wantRepoCalled:   false,
 	},
 	{
-		name: "invalid credentials",
+		name: "invalid password",
 
-		user: domain.User{
-			ID:        domain.UninitializedID,
-			Username:  "ivanov",
-			FirstName: "Ivan",
-			CreatedAt: core_test_utils.CreatedAt,
-		},
-		credentials: domain.UserCredentials{
-			Username: "ivanov",
-			Password: "123", // слишком короткий
-		},
+		user: domain.NewRegisterUserPayload(
+			"ivanov",
+			"Ivan",
+			new("Ivanov"),
+			new("I like pizza"),
+			"passwo",
+		),
 
-		wantError: core_errors.ErrInvalidArgument,
+		wantError: domain.ErrInvalidPassword,
 
 		wantHasherCalled: false,
 		wantRepoCalled:   false,
@@ -94,14 +82,11 @@ var tests = []struct {
 	{
 		name: "hasher error",
 
-		user: domain.User{
-			ID:        domain.UninitializedID,
-			Username:  "ivanov",
-			FirstName: "Ivan",
-			CreatedAt: core_test_utils.CreatedAt,
-		},
-		credentials: domain.NewCredentials(
+		user: domain.NewRegisterUserPayload(
 			"ivanov",
+			"Ivan",
+			new("Ivanov"),
+			new("I like pizza"),
 			"password",
 		),
 
@@ -114,14 +99,11 @@ var tests = []struct {
 	{
 		name: "repository error",
 
-		user: domain.User{
-			ID:        domain.UninitializedID,
-			Username:  "ivanov",
-			FirstName: "Ivan",
-			CreatedAt: core_test_utils.CreatedAt,
-		},
-		credentials: domain.NewCredentials(
+		user: domain.NewRegisterUserPayload(
 			"ivanov",
+			"Ivan",
+			new("Ivanov"),
+			new("I like pizza"),
 			"password",
 		),
 
@@ -138,32 +120,32 @@ func TestCreateUser(t *testing.T) {
 		// Setup
 		t.Run(tt.name, func(t *testing.T) {
 			var want domain.User
+			pswHash := tt.user.Password + "_hash"
+
 			if tt.wantError == nil {
 				want = domain.NewUser(
-					core_test_utils.ID,
+					tt.wantUser.ID,
 					tt.user.Username,
 					tt.user.FirstName,
 					tt.user.LastName,
 					core_test_utils.CreatedAt,
 					tt.user.Bio,
+					pswHash,
 				)
 			}
 			var repoCalled bool
 			var repoGotUser domain.User
-			var repoGotPswHash string
 			stubRepo := StubUsersRepository{
 				CreateUserFn: func(
 					user domain.User,
-					passwordHash string,
 				) (domain.User, error) {
 					repoCalled = true
 					repoGotUser = user
-					repoGotPswHash = passwordHash
+					repoGotUser.ID = tt.wantUser.ID
+					repoGotUser.CreatedAt = tt.wantUser.CreatedAt
 					return want, tt.repoError
 				},
 			}
-
-			pswHash := tt.credentials.Password + "_hash"
 
 			var hasherCalled bool
 			var hasherGotPsw string
@@ -176,18 +158,19 @@ func TestCreateUser(t *testing.T) {
 			}
 
 			wantRepoGotUser := domain.NewUser(
-				domain.UninitializedID,
+				tt.wantUser.ID,
 				tt.user.Username,
 				tt.user.FirstName,
 				tt.user.LastName,
-				core_test_utils.CreatedAt,
+				tt.wantUser.CreatedAt,
 				tt.user.Bio,
+				pswHash,
 			)
-			wantHasherGotPsw := tt.credentials.Password
+			wantHasherGotPsw := tt.user.Password
 			service := NewUsersService(&stubRepo, &stubHasher)
 			ctx := t.Context()
 			// Action
-			gotUser, gotError := service.CreateUser(ctx, tt.user, tt.credentials)
+			gotUser, gotError := service.CreateUser(ctx, tt.user)
 
 			// Check
 			if hasherCalled != tt.wantHasherCalled {
@@ -210,9 +193,6 @@ func TestCreateUser(t *testing.T) {
 			if repoCalled {
 				if diff := cmp.Diff(wantRepoGotUser, repoGotUser); diff != "" {
 					t.Fatalf("RepoGotUser mismatch (-want +got):\n%s", diff)
-				}
-				if diff := cmp.Diff(pswHash, repoGotPswHash); diff != "" {
-					t.Fatalf("RepoGotPswHash mismatch (-want +got):\n%s", diff)
 				}
 			}
 			if tt.wantError != nil {

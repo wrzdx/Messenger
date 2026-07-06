@@ -5,33 +5,32 @@ import (
 	"errors"
 	"fmt"
 	"messenger/internal/core/domain"
-	core_errors "messenger/internal/core/errors"
 	core_postgres_pool "messenger/internal/core/repository/postgres/pool"
 )
 
 func (r *UsersRepository) CreateUser(
 	ctx context.Context,
 	user domain.User,
-	passwordHash string,
 ) (domain.User, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OptTimeout())
 	defer cancel()
 
 	query := `
-	INSERT INTO users (username, first_name, last_name, created_at, bio, password_hash)
-	VALUES ($1, $2,$3,$4,$5,$6) 
-	RETURNING id, username, first_name, last_name, created_at, bio;
+	INSERT INTO users (id, username, first_name, last_name, created_at, bio, password_hash)
+	VALUES ($1, $2,$3,$4,$5,$6, $7) 
+	RETURNING id, username, first_name, last_name, created_at, bio, password_hash;
 	`
 	var userModel UserModel
 	err := r.pool.QueryRow(
 		ctx,
 		query,
+		user.ID,
 		user.Username,
 		user.FirstName,
 		user.LastName,
 		user.CreatedAt,
 		user.Bio,
-		passwordHash,
+		user.PasswordHash,
 	).Scan(
 		&userModel.ID,
 		&userModel.Username,
@@ -39,17 +38,17 @@ func (r *UsersRepository) CreateUser(
 		&userModel.LastName,
 		&userModel.CreatedAt,
 		&userModel.Bio,
+		&userModel.PasswordHash,
 	)
 	if err != nil {
 		if errors.Is(err, core_postgres_pool.ErrViolatesUnique) {
 			return domain.User{}, fmt.Errorf(
-				"%v: user with username=%s already exists: %w",
+				"%w: user with username=%s already exists",
 				err,
 				user.Username,
-				core_errors.ErrConflict,
 			)
 		}
-		return domain.User{}, fmt.Errorf("scan error: %w", err)
+		return domain.User{}, fmt.Errorf("%w: scan error", err)
 	}
 
 	userDomain := UserDomainFromModel(userModel)

@@ -8,8 +8,8 @@ import (
 )
 
 type Config struct {
-	Secret  string `envconfig:"SECRET"  required:"true"`
-	AccessTokenTTL time.Duration `envconfig:"ACCESS_TTL" default:"15m"`
+	Secret          string        `envconfig:"SECRET"  required:"true"`
+	AccessTokenTTL  time.Duration `envconfig:"ACCESS_TTL" default:"15m"`
 	RefreshTokenTTL time.Duration `envconfig:"REFRESH_TTL" default:"1h"`
 }
 

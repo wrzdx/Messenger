@@ -2,89 +2,60 @@ package domain
 
 import (
 	"fmt"
-	core_errors "messenger/internal/core/errors"
+	"unicode/utf8"
+
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type User struct {
-	ID        int
-	Username  string
-	FirstName string
-	LastName  *string
-	CreatedAt time.Time
-	Bio       *string
+	ID           uuid.UUID
+	Username     string
+	FirstName    string
+	LastName     *string
+	CreatedAt    time.Time
+	Bio          *string
+	PasswordHash string
 }
 
 func NewUser(
-	id int,
+	id uuid.UUID,
 	username string,
 	firstName string,
 	lastName *string,
 	createdAt time.Time,
 	bio *string,
+	passwordHash string,
 ) User {
 	return User{
-		ID:        id,
-		Username:  username,
-		FirstName: firstName,
-		LastName:  lastName,
-		CreatedAt: createdAt,
-		Bio:       bio,
+		ID:           id,
+		Username:     username,
+		FirstName:    firstName,
+		LastName:     lastName,
+		CreatedAt:    createdAt,
+		Bio:          bio,
+		PasswordHash: passwordHash,
 	}
-}
-
-func NewUserUninitialized(
-	username string,
-	firstName string,
-	lastName *string,
-	bio *string,
-) User {
-	return NewUser(
-		UninitializedID,
-		username,
-		firstName,
-		lastName,
-		time.Now(),
-		bio,
-	)
 }
 
 func (u *User) Validate() error {
-	usernameLen := len([]rune(u.Username))
-	if usernameLen < 5 || usernameLen > 32 {
-		return fmt.Errorf(
-			"invalid `FullName` len: %d: %w",
-			usernameLen,
-			core_errors.ErrInvalidArgument,
-		)
+	if l := utf8.RuneCountInString(u.Username); l < 5 || l > 32 {
+		return ErrInvalidUsername
 	}
-	firstNameLen := len([]rune(u.FirstName))
-	if firstNameLen < 1 || firstNameLen > 64 {
-		return fmt.Errorf(
-			"invalid `FirstName` len: %d: %w",
-			firstNameLen,
-			core_errors.ErrInvalidArgument,
-		)
+	if l := utf8.RuneCountInString(u.FirstName); l < 1 || l > 64 {
+		return ErrInvalidFirstName
 	}
+
 	if u.LastName != nil {
-		lastNameLen := len([]rune(*u.LastName))
-		if lastNameLen > 64 {
-			return fmt.Errorf(
-				"invalid `LastName` len: %d: %w",
-				lastNameLen,
-				core_errors.ErrInvalidArgument,
-			)
+		if l := utf8.RuneCountInString(*u.LastName); l > 64 {
+			return ErrInvalidLastName
 		}
 	}
 
 	if u.Bio != nil {
-		bioLen := len([]rune(*u.Bio))
-		if bioLen > 70 {
-			return fmt.Errorf(
-				"invalid `Bio` len: %d: %w",
-				bioLen,
-				core_errors.ErrInvalidArgument,
-			)
+		if l := utf8.RuneCountInString(*u.Bio); l > 70 {
+			return ErrInvalidBio
 		}
 	}
 
@@ -114,16 +85,10 @@ func NewUserPatch(
 
 func (p *UserPatch) Validate() error {
 	if p.Username.Set && p.Username.Value == nil {
-		return fmt.Errorf(
-			"`Username` can't be patched to NULL: %w",
-			core_errors.ErrInvalidArgument,
-		)
+		return ErrInvalidUsername
 	}
 	if p.FirstName.Set && p.FirstName.Value == nil {
-		return fmt.Errorf(
-			"`FirstName` can't be patched to NULL: %w",
-			core_errors.ErrInvalidArgument,
-		)
+		return ErrInvalidFirstName
 	}
 
 	return nil

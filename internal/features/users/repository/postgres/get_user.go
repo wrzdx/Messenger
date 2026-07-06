@@ -5,18 +5,19 @@ import (
 	"errors"
 	"fmt"
 	"messenger/internal/core/domain"
-	core_errors "messenger/internal/core/errors"
 	core_postgres_pool "messenger/internal/core/repository/postgres/pool"
+
+	"github.com/google/uuid"
 )
 
 func (r *UsersRepository) GetUser(
 	ctx context.Context,
-	id int,
+	id uuid.UUID,
 ) (domain.User, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OptTimeout())
 	defer cancel()
 	query := `
-	SELECT id, username, first_name, last_name, created_at, bio
+	SELECT id, username, first_name, last_name, created_at, bio, password_hash
 	FROM users
 	WHERE id=$1;
 	`
@@ -31,17 +32,18 @@ func (r *UsersRepository) GetUser(
 		&userModel.LastName,
 		&userModel.CreatedAt,
 		&userModel.Bio,
+		&userModel.PasswordHash,
 	)
 	if err != nil {
 		if errors.Is(err, core_postgres_pool.ErrNoRows) {
 			return domain.User{}, fmt.Errorf(
-				"user with id='%d': %w",
+				"%w: user with id='%d'",
+				core_postgres_pool.ErrNoRows,
 				id,
-				core_errors.ErrorNotFound,
 			)
 		}
 
-		return domain.User{}, fmt.Errorf("scan error: %w", err)
+		return domain.User{}, fmt.Errorf("%w: scan error", err)
 	}
 
 	userDomain := UserDomainFromModel(userModel)

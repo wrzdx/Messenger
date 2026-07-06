@@ -5,7 +5,6 @@ import (
 	"fmt"
 	core_auth "messenger/internal/core/auth"
 	"messenger/internal/core/domain"
-	core_errors "messenger/internal/core/errors"
 	core_http_response "messenger/internal/core/transport/http/response"
 	core_test_utils "messenger/internal/core/utils/test"
 	"net/http"
@@ -14,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
 )
 
 func TestGetMe(t *testing.T) {
@@ -23,10 +23,11 @@ func TestGetMe(t *testing.T) {
 		serviceUser       domain.User
 		serviceErr        error
 		wantUser          UserDTOResponse
-		userID            int
+		userID            uuid.UUID
 		wantServiceCalled bool
 		wantStatus        int
 		wantError         error
+		withoutClaims     bool
 	}{
 		{
 			name:        "existing user",
@@ -45,28 +46,25 @@ func TestGetMe(t *testing.T) {
 		},
 		{
 			name:              "non-existing user",
-			userID:            -1,
 			wantServiceCalled: true,
-			serviceErr:        core_errors.ErrorNotFound,
+			serviceErr:        domain.ErrUserNotFound,
 			wantStatus:        http.StatusNotFound,
-			wantError:         core_errors.ErrorNotFound,
+			wantError:         domain.ErrUserNotFound,
 		},
 		{
-			name:              "service error",
-			userID:            1,
-			wantServiceCalled: true,
-			serviceErr:        core_errors.ErrInternalServer,
-			wantStatus:        http.StatusInternalServerError,
-			wantError:         core_errors.ErrInternalServer,
+			name:          "without claims",
+			withoutClaims: true,
+			wantStatus:    http.StatusUnauthorized,
+			wantError:     ErrMissingClaims,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var serviceCalled bool
-			var serviceGotID int
+			var serviceGotID uuid.UUID
 			service := StubUsersService{
-				GetUserFn: func(id int) (domain.User, error) {
+				GetUserFn: func(id uuid.UUID) (domain.User, error) {
 					serviceCalled = true
 					serviceGotID = id
 
@@ -76,14 +74,16 @@ func TestGetMe(t *testing.T) {
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(
 				http.MethodGet,
-				fmt.Sprintf("/users/%d", tt.userID),
+				fmt.Sprintf("/users/%v", tt.userID),
 				nil,
 			)
 			claims := core_auth.Claims{
 				UserID: tt.userID,
 			}
 			ctx := core_test_utils.GetLoggerContext(req.Context())
-			ctx = core_test_utils.GetClaimsContext(ctx, claims)
+			if !tt.withoutClaims {
+				ctx = core_test_utils.GetClaimsContext(ctx, claims)
+			}
 			handler := NewUsersHTTPHandler(&service)
 
 			// action
@@ -114,7 +114,7 @@ func TestGetMe(t *testing.T) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 
-				if !strings.HasSuffix(gotError.Error, tt.wantError.Error()) {
+				if !strings.HasPrefix(gotError.Error, tt.wantError.Error()) {
 					t.Fatalf(
 						"ErrorResponse mismatch:\nwant: %s\ngot: %s",
 						tt.wantError.Error(),

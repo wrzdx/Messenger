@@ -3,12 +3,14 @@ package users_postgres_repository
 import (
 	"context"
 	"fmt"
-	core_errors "messenger/internal/core/errors"
+	core_postgres_pool "messenger/internal/core/repository/postgres/pool"
+
+	"github.com/google/uuid"
 )
 
 func (r *UsersRepository) DeleteUser(
 	ctx context.Context,
-	id int,
+	id uuid.UUID,
 ) error {
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OptTimeout())
 	defer cancel()
@@ -19,11 +21,11 @@ func (r *UsersRepository) DeleteUser(
 
 	cmdTag, err := r.pool.Exec(ctx, query, id)
 	if err != nil {
-		return fmt.Errorf("exec query: %w", err)
+		return fmt.Errorf("%w: exec query", err)
 	}
 
 	if cmdTag.RowsAffected() == 0 {
-		return fmt.Errorf("user with id='%d': %w", id, core_errors.ErrorNotFound)
+		return fmt.Errorf("%w: user with id='%d'", core_postgres_pool.ErrNoRows, id)
 	}
 
 	return nil

@@ -2,11 +2,12 @@ package users_service
 
 import (
 	"errors"
-	core_errors "messenger/internal/core/errors"
+	"messenger/internal/core/domain"
 	core_test_utils "messenger/internal/core/utils/test"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
 )
 
 func TestDeleteUser(t *testing.T) {
@@ -14,9 +15,9 @@ func TestDeleteUser(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		userID         int
+		userID         uuid.UUID
 		repoErr        error
-		wantRepoID     int
+		wantRepoID     uuid.UUID
 		wantRepoCalled bool
 		wantError      error
 	}{
@@ -28,19 +29,9 @@ func TestDeleteUser(t *testing.T) {
 		},
 		{
 			name:           "non-existing user",
-			userID:         -1,
-			repoErr:        core_errors.ErrorNotFound,
-			wantRepoID:     -1,
+			repoErr:        domain.ErrUserNotFound,
 			wantRepoCalled: true,
-			wantError:      core_errors.ErrorNotFound,
-		},
-		{
-			name:           "repository error",
-			userID:         user.ID,
-			repoErr:        core_errors.ErrInternalServer,
-			wantRepoID:     user.ID,
-			wantRepoCalled: true,
-			wantError:      core_errors.ErrInternalServer,
+			wantError:      domain.ErrUserNotFound,
 		},
 	}
 
@@ -48,11 +39,11 @@ func TestDeleteUser(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var (
 				repoCalled bool
-				repoGotID  int
+				repoGotID  uuid.UUID
 			)
 
 			repo := StubUsersRepository{
-				DeleteUserFn: func(id int) error {
+				DeleteUserFn: func(id uuid.UUID) error {
 					repoCalled = true
 					repoGotID = id
 

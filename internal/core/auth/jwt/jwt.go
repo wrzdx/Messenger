@@ -3,10 +3,10 @@ package core_auth_jwt
 import (
 	"fmt"
 	core_auth "messenger/internal/core/auth"
-	core_errors "messenger/internal/core/errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 type JWTProvider struct {
@@ -20,7 +20,7 @@ func NewJWTProvider(config Config) *JWTProvider {
 }
 
 func (j *JWTProvider) generate(
-	userID int,
+	userID uuid.UUID,
 	ttl time.Duration,
 	tokenType core_auth.TokenType,
 ) (string, time.Time, error) {
@@ -44,22 +44,29 @@ func (j *JWTProvider) generate(
 	signed, err := token.SignedString([]byte(j.config.Secret))
 	if err != nil {
 		return "", time.Time{}, fmt.Errorf(
-			"sign token: %v: %w",
+			"sign token: %w",
 			err,
-			core_errors.ErrUnauthorized,
 		)
 	}
 
 	return signed, expires, nil
 }
 
-func (j *JWTProvider) GenerateAccessToken(id int) (string, time.Time, error) {
-	token, expires, err := j.generate(id, j.config.AccessTokenTTL, core_auth.TokenTypeAccess)
+func (j *JWTProvider) GenerateAccessToken(id uuid.UUID) (string, time.Time, error) {
+	token, expires, err := j.generate(
+		id,
+		j.config.AccessTokenTTL,
+		core_auth.TokenTypeAccess,
+	)
 	return token, expires, err
 }
 
-func (j *JWTProvider) GenerateRefreshToken(id int) (string, time.Time, error) {
-	token, expires, err := j.generate(id, j.config.RefreshTokenTTL, core_auth.TokenTypeRefresh)
+func (j *JWTProvider) GenerateRefreshToken(id uuid.UUID) (string, time.Time, error) {
+	token, expires, err := j.generate(
+		id,
+		j.config.RefreshTokenTTL,
+		core_auth.TokenTypeRefresh,
+	)
 	return token, expires, err
 }
 

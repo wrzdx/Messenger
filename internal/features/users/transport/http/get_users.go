@@ -2,7 +2,6 @@ package users_transport_http
 
 import (
 	"fmt"
-	core_errors "messenger/internal/core/errors"
 	core_logger "messenger/internal/core/logger"
 	core_http_request "messenger/internal/core/transport/http/request"
 	core_http_response "messenger/internal/core/transport/http/response"
@@ -11,17 +10,6 @@ import (
 
 type GetUsersResponse []UserDTOResponse
 
-// GetUsers      godoc
-// @Summary     Список пользователей
-// @Description Просмотр списка пользователей с опциональной пагинацией
-// @Tags        users
-// @Produce     json
-// @Param       limit query int false "Размер страницы с пользователями"
-// @Param       offset query int false "Смещение страницы с пользователями"
-// @Success     200 {object} GetUsersResponse "Успешное получение списка пользователей"
-// @Failure     400 {object} core_http_response.ErrorResponse "Bad Request"
-// @Failure     500 {object} core_http_response.ErrorResponse "Internal Server Error"
-// @Router      /users [get]
 func (h *UsersHTTPHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
@@ -29,23 +17,33 @@ func (h *UsersHTTPHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 
 	limit, offset, err := getLimitOffsetQueryParams(r)
 	if err != nil {
-		responseHandler.ErrorResponse(err, "failed to get 'limit/offset' query param")
+		responseHandler.ErrorResponse(
+			http.StatusBadRequest,
+			fmt.Errorf("%w: %v", ErrInvalidArgument, err),
+		)
 		return
 	}
 
 	if limit != nil && *limit < 0 {
-		responseHandler.ErrorResponse(core_errors.ErrInvalidArgument, "limit must be non-negative")
+		responseHandler.ErrorResponse(
+			http.StatusBadRequest,
+			fmt.Errorf("%w: limit must be non-negative", ErrInvalidArgument),
+		)
 		return
 	}
 
 	if offset != nil && *offset < 0 {
-		responseHandler.ErrorResponse(core_errors.ErrInvalidArgument, "offset must be non-negative")
+		responseHandler.ErrorResponse(
+			http.StatusBadRequest,
+			fmt.Errorf("%w: offset must be non-negative", ErrInvalidArgument),
+		)
 		return
 	}
 
 	userDomains, err := h.usersService.GetUsers(ctx, limit, offset)
 	if err != nil {
-		responseHandler.ErrorResponse(err, "failed to get users")
+		statusCode := mapDomainErrorToStatusCode(err)
+		responseHandler.ErrorResponse(statusCode, err)
 		return
 	}
 
@@ -59,14 +57,14 @@ func getLimitOffsetQueryParams(r *http.Request) (*int, *int, error) {
 		limitQueryParamKey  = "limit"
 		offsetQueryParamKey = "offset"
 	)
-	limit, err := core_http_request.GetIntQueryParam(r, limitQueryParamKey)
+	limit, err := core_http_request.GetQueryParam[int](r, limitQueryParamKey)
 	if err != nil {
-		return nil, nil, fmt.Errorf("get 'limit' query param: %w", err)
+		return nil, nil, err
 	}
 
-	offset, err := core_http_request.GetIntQueryParam(r, offsetQueryParamKey)
+	offset, err := core_http_request.GetQueryParam[int](r, offsetQueryParamKey)
 	if err != nil {
-		return nil, nil, fmt.Errorf("get 'offset' query param: %w", err)
+		return nil, nil, err
 	}
 
 	return limit, offset, err

@@ -3,10 +3,12 @@ package users_postgres_repository
 import (
 	"messenger/internal/core/domain"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type UserModel struct {
-	ID           int
+	ID           uuid.UUID
 	Username     string
 	FirstName    string
 	LastName     *string
@@ -23,6 +25,7 @@ func UserDomainFromModel(user UserModel) domain.User {
 		user.LastName,
 		user.CreatedAt,
 		user.Bio,
+		user.PasswordHash,
 	)
 }
 
@@ -36,6 +39,7 @@ func userDomainsFromModels(users []UserModel) []domain.User {
 			user.LastName,
 			user.CreatedAt,
 			user.Bio,
+			user.PasswordHash,
 		)
 	}
 

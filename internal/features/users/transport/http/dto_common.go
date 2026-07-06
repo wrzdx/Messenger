@@ -3,10 +3,12 @@ package users_transport_http
 import (
 	"messenger/internal/core/domain"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type UserDTOResponse struct {
-	ID        int       `json:"id" example:"1"`
+	ID        uuid.UUID `json:"id"`
 	Username  string    `json:"username" validate:"required,min=5,max=32" example:"qwerty"`
 	FirstName string    `json:"first_name" validate:"required,min=1,max=64" example:"Ivan"`
 	LastName  *string   `json:"last_name" validate:"max=64" example:"Ivanov"`

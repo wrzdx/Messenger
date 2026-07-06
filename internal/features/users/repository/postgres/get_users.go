@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"messenger/internal/core/domain"
-	core_errors "messenger/internal/core/errors"
+	core_postgres_pool "messenger/internal/core/repository/postgres/pool"
 )
 
 func (r *UsersRepository) GetUsers(
@@ -16,30 +16,23 @@ func (r *UsersRepository) GetUsers(
 	defer cancel()
 
 	if limit != nil && *limit < 0 {
-		return nil, fmt.Errorf(
-			"limit must be non-negative: %w",
-			core_errors.ErrInvalidArgument,
-		)
+		return nil, core_postgres_pool.ErrNegativeLimit
 	}
 
 	if offset != nil && *offset < 0 {
-		return nil, fmt.Errorf(
-			"offset must be non-negative: %w",
-			core_errors.ErrInvalidArgument,
-		)
+		return nil, core_postgres_pool.ErrNegativeOffset
 	}
 
 	query := `
-	SELECT id, username, first_name, last_name, created_at, bio 
+	SELECT id, username, first_name, last_name, created_at, bio, password_hash
 	FROM users
-	ORDER BY id ASC
 	LIMIT $1
 	OFFSET $2;
 	`
 
 	rows, err := r.pool.Query(ctx, query, limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("select users: %w", err)
+		return nil, fmt.Errorf("%w: select users", err)
 	}
 	defer rows.Close()
 	var userModels []UserModel
@@ -53,16 +46,17 @@ func (r *UsersRepository) GetUsers(
 			&userModel.LastName,
 			&userModel.CreatedAt,
 			&userModel.Bio,
+			&userModel.PasswordHash,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("scan users: %w", err)
+			return nil, fmt.Errorf("%w: scan users", err)
 		}
 
 		userModels = append(userModels, userModel)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("next rows: %w", err)
+		return nil, fmt.Errorf("%w: next rows", err)
 	}
 	userDomains := userDomainsFromModels(userModels)
 

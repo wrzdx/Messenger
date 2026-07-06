@@ -2,7 +2,6 @@ package domain
 
 import (
 	"errors"
-	core_errors "messenger/internal/core/errors"
 	"strings"
 	"testing"
 )
@@ -17,6 +16,7 @@ func TestUserValidate(t *testing.T) {
 	tests := []struct {
 		name string
 		user User
+		err  error
 	}{
 		{
 			name: "valid",
@@ -33,6 +33,7 @@ func TestUserValidate(t *testing.T) {
 				Username:  "usr",
 				FirstName: "Andrew",
 			},
+			err: ErrInvalidUsername,
 		},
 		{
 			name: "missing first name",
@@ -40,6 +41,7 @@ func TestUserValidate(t *testing.T) {
 				Username:  "username",
 				FirstName: "",
 			},
+			err: ErrInvalidFirstName,
 		},
 		{
 			name: "last name too long",
@@ -48,6 +50,7 @@ func TestUserValidate(t *testing.T) {
 				FirstName: "Andrew",
 				LastName:  &longLastName,
 			},
+			err: ErrInvalidLastName,
 		},
 		{
 			name: "bio too long",
@@ -56,6 +59,7 @@ func TestUserValidate(t *testing.T) {
 				FirstName: "Andrew",
 				Bio:       &longBio,
 			},
+			err: ErrInvalidBio,
 		},
 	}
 
@@ -74,7 +78,7 @@ func TestUserValidate(t *testing.T) {
 				t.Fatal("expected validation error")
 			}
 
-			if !errors.Is(err, core_errors.ErrInvalidArgument) {
+			if !errors.Is(err, tt.err) {
 				t.Fatalf("expected ErrInvalidArgument, got %v", err)
 			}
 		})
@@ -87,7 +91,7 @@ func TestUserPatchValidate(t *testing.T) {
 	tests := []struct {
 		name  string
 		patch UserPatch
-		valid bool
+		err   error
 	}{
 		{
 			name: "valid",
@@ -97,7 +101,6 @@ func TestUserPatchValidate(t *testing.T) {
 					Value: &username,
 				},
 			},
-			valid: true,
 		},
 		{
 			name: "username to null",
@@ -106,6 +109,7 @@ func TestUserPatchValidate(t *testing.T) {
 					Set: true,
 				},
 			},
+			err: ErrInvalidUsername,
 		},
 		{
 			name: "first name to null",
@@ -114,6 +118,7 @@ func TestUserPatchValidate(t *testing.T) {
 					Set: true,
 				},
 			},
+			err: ErrInvalidFirstName,
 		},
 	}
 
@@ -121,19 +126,8 @@ func TestUserPatchValidate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.patch.Validate()
 
-			if tt.valid {
-				if err != nil {
-					t.Fatalf("unexpected error: %v", err)
-				}
-				return
-			}
-
-			if err == nil {
-				t.Fatal("expected validation error")
-			}
-
-			if !errors.Is(err, core_errors.ErrInvalidArgument) {
-				t.Fatalf("expected ErrInvalidArgument, got %v", err)
+			if !errors.Is(err, tt.err) {
+				t.Fatalf("want: %v, got %v", tt.err, err)
 			}
 		})
 	}

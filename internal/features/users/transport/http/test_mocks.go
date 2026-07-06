@@ -3,12 +3,13 @@ package users_transport_http
 import (
 	"context"
 	"messenger/internal/core/domain"
+
+	"github.com/google/uuid"
 )
 
 type StubUsersService struct {
 	CreateUserFn func(
-		user domain.User,
-		credentials domain.UserCredentials,
+		payload domain.RegisterUserPayload,
 	) (domain.User, error)
 
 	GetUsersFn func(
@@ -17,25 +18,24 @@ type StubUsersService struct {
 	) ([]domain.User, error)
 
 	GetUserFn func(
-		id int,
+		id uuid.UUID,
 	) (domain.User, error)
 
 	DeleteUserFn func(
-		id int,
+		id uuid.UUID,
 	) error
 
 	PatchUserFn func(
-		id int,
+		id uuid.UUID,
 		patch domain.UserPatch,
 	) (domain.User, error)
 }
 
 func (s *StubUsersService) CreateUser(
 	ctx context.Context,
-	user domain.User,
-	creds domain.UserCredentials,
+	payload domain.RegisterUserPayload,
 ) (domain.User, error) {
-	return s.CreateUserFn(user, creds)
+	return s.CreateUserFn(payload)
 }
 
 func (s *StubUsersService) GetUsers(
@@ -48,20 +48,21 @@ func (s *StubUsersService) GetUsers(
 
 func (s *StubUsersService) GetUser(
 	ctx context.Context,
-	id int,
+	id uuid.UUID,
 ) (domain.User, error) {
 	return s.GetUserFn(id)
 }
 
 func (s *StubUsersService) DeleteUser(
 	ctx context.Context,
-	id int,
+	id uuid.UUID,
 ) error {
 	return s.DeleteUserFn(id)
 }
 
 func (s *StubUsersService) PatchUser(
-	id int,
+	ctx context.Context,
+	id uuid.UUID,
 	patch domain.UserPatch,
 ) (domain.User, error) {
 	return s.PatchUserFn(id, patch)

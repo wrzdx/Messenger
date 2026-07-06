@@ -2,7 +2,6 @@ package users_transport_http
 
 import (
 	core_auth "messenger/internal/core/auth"
-	core_errors "messenger/internal/core/errors"
 	core_logger "messenger/internal/core/logger"
 	core_http_response "messenger/internal/core/transport/http/response"
 	"net/http"
@@ -16,15 +15,19 @@ func (h *UsersHTTPHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 
 	if !ok {
 		responseHandler.ErrorResponse(
-			core_errors.ErrUnauthorized,
-			"claims not found",
+			http.StatusUnauthorized,
+			ErrMissingClaims,
 		)
 		return
 	}
 
 	user, err := h.usersService.GetUser(ctx, claims.UserID)
 	if err != nil {
-		responseHandler.ErrorResponse(err, "failed to get user")
+		statusCode := mapDomainErrorToStatusCode(err)
+		responseHandler.ErrorResponse(
+			statusCode,
+			err,
+		)
 	}
 
 	response := GetUserResponse(userDTOFromDomain(user))

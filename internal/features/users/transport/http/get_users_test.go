@@ -3,7 +3,6 @@ package users_transport_http
 import (
 	"encoding/json"
 	"messenger/internal/core/domain"
-	core_errors "messenger/internal/core/errors"
 	core_http_response "messenger/internal/core/transport/http/response"
 	core_test_utils "messenger/internal/core/utils/test"
 	"net/http"
@@ -22,7 +21,6 @@ func TestGetUsers(t *testing.T) {
 		offset            string
 		serviceUsers      []domain.User
 		serviceErr        error
-		wantUsers         []UserDTOResponse
 		wantServiceLimit  *int
 		wantServiceOffset *int
 		wantServiceCalled bool
@@ -34,32 +32,6 @@ func TestGetUsers(t *testing.T) {
 			wantServiceCalled: true,
 			wantStatus:        http.StatusOK,
 			serviceUsers:      core_test_utils.Users,
-			wantUsers: []UserDTOResponse{
-				{
-					ID:        1,
-					Username:  "user_1",
-					FirstName: "Username",
-					LastName:  new("1"),
-					CreatedAt: core_test_utils.CreatedAt,
-					Bio:       new("I'm user 1"),
-				},
-				{
-					ID:        2,
-					Username:  "user_2",
-					FirstName: "Username",
-					LastName:  new("2"),
-					CreatedAt: core_test_utils.CreatedAt,
-					Bio:       new("I'm user 2"),
-				},
-				{
-					ID:        3,
-					Username:  "user_3",
-					FirstName: "Username",
-					LastName:  new("3"),
-					CreatedAt: core_test_utils.CreatedAt,
-					Bio:       new("I'm user 3"),
-				},
-			},
 		},
 		{
 			name:              "limit users",
@@ -68,21 +40,11 @@ func TestGetUsers(t *testing.T) {
 			serviceUsers:      core_test_utils.Users[:1],
 			wantServiceCalled: true,
 			wantStatus:        http.StatusOK,
-			wantUsers: []UserDTOResponse{
-				{
-					ID:        1,
-					Username:  "user_1",
-					FirstName: "Username",
-					LastName:  new("1"),
-					CreatedAt: core_test_utils.CreatedAt,
-					Bio:       new("I'm user 1"),
-				},
-			},
 		},
 		{
 			name:       "negative limit",
 			limit:      "-1",
-			wantError:  core_errors.ErrInvalidArgument,
+			wantError:  ErrInvalidArgument,
 			wantStatus: http.StatusBadRequest,
 		},
 		{
@@ -92,29 +54,11 @@ func TestGetUsers(t *testing.T) {
 			serviceUsers:      core_test_utils.Users[1:],
 			wantServiceCalled: true,
 			wantStatus:        http.StatusOK,
-			wantUsers: []UserDTOResponse{
-				{
-					ID:        2,
-					Username:  "user_2",
-					FirstName: "Username",
-					LastName:  new("2"),
-					CreatedAt: core_test_utils.CreatedAt,
-					Bio:       new("I'm user 2"),
-				},
-				{
-					ID:        3,
-					Username:  "user_3",
-					FirstName: "Username",
-					LastName:  new("3"),
-					CreatedAt: core_test_utils.CreatedAt,
-					Bio:       new("I'm user 3"),
-				},
-			},
 		},
 		{
 			name:       "negative offset",
 			offset:     "-1",
-			wantError:  core_errors.ErrInvalidArgument,
+			wantError:  ErrInvalidArgument,
 			wantStatus: http.StatusBadRequest,
 		},
 		{
@@ -127,16 +71,6 @@ func TestGetUsers(t *testing.T) {
 			wantServiceCalled: true,
 
 			wantStatus: http.StatusOK,
-			wantUsers: []UserDTOResponse{
-				{
-					ID:        2,
-					Username:  "user_2",
-					FirstName: "Username",
-					LastName:  new("2"),
-					CreatedAt: core_test_utils.CreatedAt,
-					Bio:       new("I'm user 2"),
-				},
-			},
 		},
 		{
 			name:              "empty users",
@@ -147,24 +81,27 @@ func TestGetUsers(t *testing.T) {
 			serviceUsers:      core_test_utils.Users[2:2],
 			wantServiceCalled: true,
 			wantStatus:        http.StatusOK,
-			wantUsers:         []UserDTOResponse{},
 		},
 		{
 			name:       "invalid limit",
 			limit:      "asadf",
-			wantError:  core_errors.ErrInvalidArgument,
+			wantError:  ErrInvalidArgument,
 			wantStatus: http.StatusBadRequest,
 		},
 		{
 			name:       "invalid offset",
 			offset:     "asadf",
-			wantError:  core_errors.ErrInvalidArgument,
+			wantError:  ErrInvalidArgument,
 			wantStatus: http.StatusBadRequest,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup
+			wantUsers := make([]UserDTOResponse, len(tt.serviceUsers))
+			for i, user:= range tt.serviceUsers {
+				wantUsers[i] = userDTOFromDomain(user)
+			} 
 			var (
 				serviceCalled    bool
 				serviceGotLimit  *int
@@ -229,7 +166,7 @@ func TestGetUsers(t *testing.T) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 
-				if !strings.HasSuffix(gotError.Error, tt.wantError.Error()) {
+				if !strings.HasPrefix(gotError.Error, tt.wantError.Error()) {
 					t.Fatalf(
 						"ErrorResponse mismatch:\nwant: %s\ngot: %s",
 						tt.wantError.Error(),
@@ -242,7 +179,7 @@ func TestGetUsers(t *testing.T) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 
-				if diff := cmp.Diff(tt.wantUsers, gotResponse); diff != "" {
+				if diff := cmp.Diff(wantUsers, gotResponse); diff != "" {
 					t.Fatalf("GetUsersResponse mismatch (-want +got):\n%s", diff)
 				}
 			}

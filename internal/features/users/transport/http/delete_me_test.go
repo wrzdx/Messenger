@@ -3,7 +3,7 @@ package users_transport_http
 import (
 	"encoding/json"
 	core_auth "messenger/internal/core/auth"
-	core_errors "messenger/internal/core/errors"
+	"messenger/internal/core/domain"
 	core_http_response "messenger/internal/core/transport/http/response"
 	core_test_utils "messenger/internal/core/utils/test"
 	"net/http"
@@ -12,38 +12,36 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
 )
 
 func TestDeleteMe(t *testing.T) {
 	tests := []struct {
 		name              string
-		userID            int
+		userID            uuid.UUID
 		serviceErr        error
 		wantServiceCalled bool
 		wantStatus        int
 		wantError         error
+		withoutClaims     bool
 	}{
 		{
 			name:              "existing user",
-			userID:            1,
 			wantServiceCalled: true,
 			wantStatus:        http.StatusNoContent,
 		},
 		{
 			name:              "non-existing user",
-			userID:            -1,
-			serviceErr:        core_errors.ErrorNotFound,
+			serviceErr:        domain.ErrUserNotFound,
 			wantServiceCalled: true,
 			wantStatus:        http.StatusNotFound,
-			wantError:         core_errors.ErrorNotFound,
+			wantError:         domain.ErrUserNotFound,
 		},
 		{
-			name:              "service error",
-			userID:            1,
-			serviceErr:        core_errors.ErrInternalServer,
-			wantServiceCalled: true,
-			wantStatus:        http.StatusInternalServerError,
-			wantError:         core_errors.ErrInternalServer,
+			name:          "without claims",
+			withoutClaims: true,
+			wantStatus:    http.StatusUnauthorized,
+			wantError:     ErrMissingClaims,
 		},
 	}
 
@@ -51,11 +49,11 @@ func TestDeleteMe(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var (
 				serviceCalled bool
-				serviceGotID  int
+				serviceGotID  uuid.UUID
 			)
 
 			service := StubUsersService{
-				DeleteUserFn: func(id int) error {
+				DeleteUserFn: func(id uuid.UUID) error {
 					serviceCalled = true
 					serviceGotID = id
 
@@ -75,7 +73,9 @@ func TestDeleteMe(t *testing.T) {
 			}
 
 			ctx := core_test_utils.GetLoggerContext(req.Context())
-			ctx = core_test_utils.GetClaimsContext(ctx, claims)
+			if !tt.withoutClaims {
+				ctx = core_test_utils.GetClaimsContext(ctx, claims)
+			}
 
 			handler := NewUsersHTTPHandler(&service)
 
@@ -107,7 +107,7 @@ func TestDeleteMe(t *testing.T) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 
-				if !strings.HasSuffix(gotError.Error, tt.wantError.Error()) {
+				if !strings.HasPrefix(gotError.Error, tt.wantError.Error()) {
 					t.Fatalf(
 						"ErrorResponse mismatch:\nwant: %s\ngot: %s",
 						tt.wantError.Error(),

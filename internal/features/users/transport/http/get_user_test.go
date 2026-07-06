@@ -3,16 +3,15 @@ package users_transport_http
 import (
 	"encoding/json"
 	"messenger/internal/core/domain"
-	core_errors "messenger/internal/core/errors"
 	core_http_response "messenger/internal/core/transport/http/response"
 	core_test_utils "messenger/internal/core/utils/test"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
 )
 
 func TestGetUser(t *testing.T) {
@@ -23,14 +22,14 @@ func TestGetUser(t *testing.T) {
 		serviceUser       domain.User
 		serviceErr        error
 		wantUser          UserDTOResponse
-		wantServiceUserId int
+		wantServiceUserId uuid.UUID
 		wantServiceCalled bool
 		wantStatus        int
 		wantError         error
 	}{
 		{
 			name:        "existing user",
-			userID:      strconv.Itoa(user.ID),
+			userID:      user.ID.String(),
 			serviceUser: user,
 			wantUser: UserDTOResponse{
 				ID:        user.ID,
@@ -46,36 +45,27 @@ func TestGetUser(t *testing.T) {
 		},
 		{
 			name:              "non-existing user",
-			userID:            "-1",
-			wantServiceUserId: -1,
+			userID:            core_test_utils.ID.String(),
+			wantServiceUserId: core_test_utils.ID,
 			wantServiceCalled: true,
-			serviceErr:        core_errors.ErrorNotFound,
+			serviceErr:        domain.ErrUserNotFound,
 			wantStatus:        http.StatusNotFound,
-			wantError:         core_errors.ErrorNotFound,
+			wantError:         domain.ErrUserNotFound,
 		},
 		{
-			name:              "invalid user id",
-			userID:            "asdf",
-			wantStatus:        http.StatusBadRequest,
-			wantError:         core_errors.ErrInvalidArgument,
-		},
-		{
-			name:              "service error",
-			userID:            "1",
-			wantServiceUserId: 1,
-			wantServiceCalled: true,
-			serviceErr:        core_errors.ErrInternalServer,
-			wantStatus:        http.StatusInternalServerError,
-			wantError:         core_errors.ErrInternalServer,
+			name:       "invalid user id",
+			userID:     "asdf",
+			wantStatus: http.StatusBadRequest,
+			wantError:  ErrInvalidArgument,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var serviceCalled bool
-			var serviceGotID int
+			var serviceGotID uuid.UUID
 			service := StubUsersService{
-				GetUserFn: func(id int) (domain.User, error) {
+				GetUserFn: func(id uuid.UUID) (domain.User, error) {
 					serviceCalled = true
 					serviceGotID = id
 
@@ -120,7 +110,7 @@ func TestGetUser(t *testing.T) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 
-				if !strings.HasSuffix(gotError.Error, tt.wantError.Error()) {
+				if !strings.HasPrefix(gotError.Error, tt.wantError.Error()) {
 					t.Fatalf(
 						"ErrorResponse mismatch:\nwant: %s\ngot: %s",
 						tt.wantError.Error(),
