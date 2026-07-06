@@ -9,6 +9,7 @@ import (
 var (
 	ID          = 1
 	CreatedAt   = time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
+	PasswordHash = "password_hash"
 	HasherError = errors.New("hash failed")
 	RepoError   = errors.New("db error")
 	log         = core_logger.NewTestLogger()

@@ -51,7 +51,7 @@ func TestGetUsers(t *testing.T) {
 		serviceUsers      []domain.User
 		serviceErr        error
 		wantUsers         []UserDTOResponse
-		wantServiceLimit *int
+		wantServiceLimit  *int
 		wantServiceOffset *int
 		wantServiceCalled bool
 		wantStatus        int
@@ -92,7 +92,7 @@ func TestGetUsers(t *testing.T) {
 		{
 			name:              "limit users",
 			limit:             "1",
-			wantServiceLimit: new(1),
+			wantServiceLimit:  new(1),
 			serviceUsers:      users[:1],
 			wantServiceCalled: true,
 			wantStatus:        http.StatusOK,
@@ -108,8 +108,14 @@ func TestGetUsers(t *testing.T) {
 			},
 		},
 		{
+			name:       "negative limit",
+			limit:      "-1",
+			wantError:  core_errors.ErrInvalidArgument,
+			wantStatus: http.StatusBadRequest,
+		},
+		{
 			name:              "offset users",
-			offset:             "1",
+			offset:            "1",
 			wantServiceOffset: new(1),
 			serviceUsers:      users[1:],
 			wantServiceCalled: true,
@@ -134,15 +140,21 @@ func TestGetUsers(t *testing.T) {
 			},
 		},
 		{
+			name:       "negative offset",
+			offset:      "-1",
+			wantError:  core_errors.ErrInvalidArgument,
+			wantStatus: http.StatusBadRequest,
+		},
+		{
 			name:              "limit offset users",
 			limit:             "1",
-			offset:             "1",
-			wantServiceLimit: new(1),
+			offset:            "1",
+			wantServiceLimit:  new(1),
 			wantServiceOffset: new(1),
 			serviceUsers:      users[1:2],
 			wantServiceCalled: true,
 
-			wantStatus:        http.StatusOK,
+			wantStatus: http.StatusOK,
 			wantUsers: []UserDTOResponse{
 				{
 					ID:        2,
@@ -158,7 +170,7 @@ func TestGetUsers(t *testing.T) {
 			name:              "empty users",
 			limit:             "1",
 			offset:            "2",
-			wantServiceLimit: new(1),
+			wantServiceLimit:  new(1),
 			wantServiceOffset: new(2),
 			serviceUsers:      users[2:2],
 			wantServiceCalled: true,
@@ -173,7 +185,7 @@ func TestGetUsers(t *testing.T) {
 		},
 		{
 			name:       "invalid offset",
-			offset:      "asadf",
+			offset:     "asadf",
 			wantError:  core_errors.ErrInvalidArgument,
 			wantStatus: http.StatusBadRequest,
 		},

@@ -76,8 +76,13 @@ func (h *HTTPResponseHandler) errorResponse(
 	msg string,
 ) {
 	response := ErrorResponse{
-		Error:   err.Error(),
 		Message: msg,
+	}
+
+	if err != nil {
+		response.Error = err.Error()
+	} else {
+		response.Error = "unknown error"
 	}
 
 	h.JSONResponse(response, statusCode)

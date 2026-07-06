@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"messenger/internal/core/domain"
+	core_errors "messenger/internal/core/errors"
 )
 
 func (r *UsersRepository) GetUsers(
@@ -13,6 +14,20 @@ func (r *UsersRepository) GetUsers(
 ) ([]domain.User, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OptTimeout())
 	defer cancel()
+
+	if limit != nil && *limit < 0 {
+		return nil, fmt.Errorf(
+			"limit must be non-negative: %w",
+			core_errors.ErrInvalidArgument,
+		)
+	}
+
+	if offset != nil && *offset < 0 {
+		return nil, fmt.Errorf(
+			"offset must be non-negative: %w",
+			core_errors.ErrInvalidArgument,
+		)
+	}
 
 	query := `
 	SELECT id, username, first_name, last_name, created_at, bio 

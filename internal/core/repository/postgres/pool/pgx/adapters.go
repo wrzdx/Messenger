@@ -26,37 +26,39 @@ func (r pgxRow) Scan(dest ...any) error {
 	return nil
 }
 
+func (r pgxRows) Err() error {
+	err := r.Rows.Err()
+	if err != nil {
+		return mapErrors(err)
+	}
+
+	return nil
+}
+
 type pgxCommandTag struct {
 	pgconn.CommandTag
 }
 
-func mapErrors(err error) error {
-	const (
-		pgxViolatesForeignKeyErrorCode = "23503"
-		pgxViolatesUniqueErrorCode = "23505"
-	)
+var violationErrs = map[string]error{
+	"23503": core_postgres_pool.ErrViolatesForeignKey,
+	"23505": core_postgres_pool.ErrViolatesUnique,
+	"23514": core_postgres_pool.ErrViolatesCheck,
+	"22001": core_postgres_pool.ErrTooLongVarchar,
+}
 
+func mapErrors(err error) error {
 	if errors.Is(err, pgx.ErrNoRows) {
 		return core_postgres_pool.ErrNoRows
 	}
 
-	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok {
-		if pgErr.Code == pgxViolatesForeignKeyErrorCode {
-			return fmt.Errorf(
-				"%v: %w",
-				err,
-				core_postgres_pool.ErrViolatesForeignKey,
-			)
-		}
+	mappedErr := core_postgres_pool.ErrUnknown
 
-		if pgErr.Code == pgxViolatesUniqueErrorCode {
-			return fmt.Errorf(
-				"%v: %w",
-				err,
-				core_postgres_pool.ErrViolatesUnique,
-			)
+	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok {
+		violationErr, ok := violationErrs[pgErr.Code]
+		if ok {
+			mappedErr = violationErr
 		}
 	}
 
-	return fmt.Errorf("%v: %w", err, core_postgres_pool.ErrUnknown)
+	return fmt.Errorf("%w: %v", mappedErr, err)
 }
