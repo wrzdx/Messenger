@@ -1,7 +1,6 @@
 package users_service
 
 import (
-	"context"
 	"errors"
 	"messenger/internal/core/domain"
 	core_errors "messenger/internal/core/errors"
@@ -154,7 +153,6 @@ func TestCreateUser(t *testing.T) {
 			var repoGotPswHash string
 			stubRepo := StubUsersRepository{
 				CreateUserFn: func(
-					ctx context.Context,
 					user domain.User,
 					passwordHash string,
 				) (domain.User, error) {

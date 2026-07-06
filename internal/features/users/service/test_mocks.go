@@ -7,9 +7,26 @@ import (
 
 type StubUsersRepository struct {
 	CreateUserFn func(
-		ctx context.Context,
 		user domain.User,
 		passwordHash string,
+	) (domain.User, error)
+
+	GetUsersFn func(
+		limit *int,
+		offset *int,
+	) ([]domain.User, error)
+
+	GetUserFn func(
+		id int,
+	) (domain.User, error)
+
+	DeleteUserFn func(
+		id int,
+	) error
+
+	PatchUserFn func(
+		id int,
+		user domain.User,
 	) (domain.User, error)
 }
 
@@ -18,7 +35,37 @@ func (s *StubUsersRepository) CreateUser(
 	user domain.User,
 	passwordHash string,
 ) (domain.User, error) {
-	return s.CreateUserFn(ctx, user, passwordHash)
+	return s.CreateUserFn(user, passwordHash)
+}
+
+func (s *StubUsersRepository) GetUsers(
+	ctx context.Context,
+	limit *int,
+	offset *int,
+) ([]domain.User, error) {
+	return s.GetUsersFn(limit, offset)
+}
+
+func (s *StubUsersRepository) GetUser(
+	ctx context.Context,
+	id int,
+) (domain.User, error) {
+	return s.GetUserFn(id)
+}
+
+func (s *StubUsersRepository) DeleteUser(
+	ctx context.Context,
+	id int,
+) error {
+	return s.DeleteUserFn(id)
+}
+
+func (s *StubUsersRepository) PatchUser(
+	ctx context.Context,
+	id int,
+	user domain.User,
+) (domain.User, error) {
+	return s.PatchUserFn(id, user)
 }
 
 type StubHasher struct {
