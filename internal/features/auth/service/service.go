@@ -2,36 +2,47 @@ package auth_service
 
 import (
 	"context"
-	core_auth "messenger/internal/core/auth"
 	"messenger/internal/core/domain"
+
+	"github.com/google/uuid"
 )
 
 type AuthService struct {
-	userRepository UsersRepository
-	hasher         core_auth.PasswordHasher
-	jwtProvider    core_auth.JWTProvider
+	authRepository AuthRepository
+	hasher         PasswordHasher
+	jwtProvider    JWTProvider
 }
 
-type UsersRepository interface {
-	GetUserAuth(
+type AuthRepository interface {
+	GetUser(
 		ctx context.Context,
 		username string,
 	) (domain.User, error)
 
-	// UpdateUserPasswordHash(
-	// 	ctx context.Context,
-	// 	username string,
-	// 	passwordHash string,
-	// ) error
+	CreateUser(
+		ctx context.Context,
+		user domain.User,
+	) (domain.User, error)
 }
 
-func NewUsersService(
-	usersRepository UsersRepository,
-	hasher core_auth.PasswordHasher,
-	jwtProvider core_auth.JWTProvider,
+type PasswordHasher interface {
+	Hash(password string) ([]byte, error)
+	Compare(hash, password string) error
+}
+
+type JWTProvider interface {
+	GenerateAccessToken(id uuid.UUID) (domain.Token, error)
+	GenerateRefreshToken(id uuid.UUID) (domain.Token, error)
+	ParseToken(token string) (domain.Claims, error)
+}
+
+func NewAuthService(
+	authRepository AuthRepository,
+	hasher PasswordHasher,
+	jwtProvider JWTProvider,
 ) *AuthService {
 	return &AuthService{
-		userRepository: usersRepository,
+		authRepository: authRepository,
 		hasher:         hasher,
 		jwtProvider:    jwtProvider,
 	}

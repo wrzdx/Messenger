@@ -1,4 +1,4 @@
-package users_service
+package auth_service
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *UsersService) CreateUser(
+func (s *AuthService) CreateUser(
 	ctx context.Context,
 	payload domain.RegisterUserPayload,
 ) (domain.User, error) {
@@ -31,7 +31,7 @@ func (s *UsersService) CreateUser(
 		string(passwordHash),
 	)
 
-	user, err = s.userRepository.CreateUser(ctx, user)
+	user, err = s.authRepository.CreateUser(ctx, user)
 	if err != nil {
 		return domain.User{}, err
 	}

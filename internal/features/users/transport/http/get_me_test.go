@@ -3,7 +3,6 @@ package users_transport_http
 import (
 	"encoding/json"
 	"fmt"
-	core_auth "messenger/internal/core/auth"
 	"messenger/internal/core/domain"
 	core_http_response "messenger/internal/core/transport/http/response"
 	core_test_utils "messenger/internal/core/utils/test"
@@ -55,7 +54,7 @@ func TestGetMe(t *testing.T) {
 			name:          "without claims",
 			withoutClaims: true,
 			wantStatus:    http.StatusUnauthorized,
-			wantError:     ErrMissingClaims,
+			wantError:     core_http_response.ErrMissingClaims,
 		},
 	}
 
@@ -77,7 +76,7 @@ func TestGetMe(t *testing.T) {
 				fmt.Sprintf("/users/%v", tt.userID),
 				nil,
 			)
-			claims := core_auth.Claims{
+			claims := domain.Claims{
 				UserID: tt.userID,
 			}
 			ctx := core_test_utils.GetLoggerContext(req.Context())

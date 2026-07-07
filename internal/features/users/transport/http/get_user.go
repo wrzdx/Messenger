@@ -21,13 +21,13 @@ func (h *UsersHTTPHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		responseHandler.ErrorResponse(
 			http.StatusBadRequest,
-			fmt.Errorf("%w: %v", ErrInvalidArgument, err),
+			fmt.Errorf("%w: %v", core_http_response.ErrInvalidArgument, err),
 		)
 		return
 	}
 	user, err := h.usersService.GetUser(ctx, userID)
 	if err != nil {
-		statusCode := mapDomainErrorToStatusCode(err)
+		statusCode := core_http_response.MapDomainErrorToStatusCode(err)
 		responseHandler.ErrorResponse(statusCode, err)
 		return
 	}

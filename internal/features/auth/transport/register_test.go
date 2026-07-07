@@ -1,4 +1,4 @@
-package users_transport_http
+package auth_transport_http
 
 import (
 	"bytes"
@@ -14,20 +14,20 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestCreateUser(t *testing.T) {
+func TestRegister(t *testing.T) {
 	tests := []struct {
 		name              string
 		serviceErr        error
 		wantServiceCalled bool
 		wantStatus        int
 		wantError         error
-		body              CreateUserRequest
+		body              RegisterRequest
 	}{
 		{
 			name:              "valid user",
 			wantServiceCalled: true,
 			wantStatus:        http.StatusCreated,
-			body: CreateUserRequest{
+			body: RegisterRequest{
 				Username:  "i.ivanov",
 				FirstName: "Ivan",
 				LastName:  new("Ivanov"),
@@ -41,7 +41,7 @@ func TestCreateUser(t *testing.T) {
 			serviceErr:        domain.ErrUserAlreadyExists,
 			wantStatus:        http.StatusConflict,
 			wantError:         domain.ErrUserAlreadyExists,
-			body: CreateUserRequest{
+			body: RegisterRequest{
 				Username:  "i.ivanov",
 				FirstName: "Ivan",
 				LastName:  new("Ivanov"),
@@ -52,8 +52,8 @@ func TestCreateUser(t *testing.T) {
 		{
 			name:       "missing username",
 			wantStatus: http.StatusBadRequest,
-			wantError:  ErrInvalidArgument,
-			body: CreateUserRequest{
+			wantError:  core_http_response.ErrInvalidArgument,
+			body: RegisterRequest{
 				FirstName: "Ivan",
 				Password:  "password",
 			},
@@ -61,8 +61,8 @@ func TestCreateUser(t *testing.T) {
 		{
 			name:       "username too short",
 			wantStatus: http.StatusBadRequest,
-			wantError:  ErrInvalidArgument,
-			body: CreateUserRequest{
+			wantError:  core_http_response.ErrInvalidArgument,
+			body: RegisterRequest{
 				Username:  "ivan",
 				FirstName: "Ivan",
 				Password:  "password",
@@ -71,8 +71,8 @@ func TestCreateUser(t *testing.T) {
 		{
 			name:       "username too long",
 			wantStatus: http.StatusBadRequest,
-			wantError:  ErrInvalidArgument,
-			body: CreateUserRequest{
+			wantError:  core_http_response.ErrInvalidArgument,
+			body: RegisterRequest{
 				Username:  strings.Repeat("a", 33),
 				FirstName: "Ivan",
 				Password:  "password",
@@ -81,8 +81,8 @@ func TestCreateUser(t *testing.T) {
 		{
 			name:       "missing first name",
 			wantStatus: http.StatusBadRequest,
-			wantError:  ErrInvalidArgument,
-			body: CreateUserRequest{
+			wantError:  core_http_response.ErrInvalidArgument,
+			body: RegisterRequest{
 				Username: "i.ivanov",
 				Password: "password",
 			},
@@ -90,8 +90,8 @@ func TestCreateUser(t *testing.T) {
 		{
 			name:       "first name too long",
 			wantStatus: http.StatusBadRequest,
-			wantError:  ErrInvalidArgument,
-			body: CreateUserRequest{
+			wantError:  core_http_response.ErrInvalidArgument,
+			body: RegisterRequest{
 				Username:  "i.ivanov",
 				FirstName: strings.Repeat("a", 65),
 				Password:  "password",
@@ -100,8 +100,8 @@ func TestCreateUser(t *testing.T) {
 		{
 			name:       "last name too long",
 			wantStatus: http.StatusBadRequest,
-			wantError:  ErrInvalidArgument,
-			body: CreateUserRequest{
+			wantError:  core_http_response.ErrInvalidArgument,
+			body: RegisterRequest{
 				Username:  "i.ivanov",
 				FirstName: "Ivan",
 				LastName:  new(strings.Repeat("a", 65)),
@@ -111,8 +111,8 @@ func TestCreateUser(t *testing.T) {
 		{
 			name:       "bio too long",
 			wantStatus: http.StatusBadRequest,
-			wantError:  ErrInvalidArgument,
-			body: CreateUserRequest{
+			wantError:  core_http_response.ErrInvalidArgument,
+			body: RegisterRequest{
 				Username:  "i.ivanov",
 				FirstName: "Ivan",
 				Bio:       new(strings.Repeat("a", 71)),
@@ -122,8 +122,8 @@ func TestCreateUser(t *testing.T) {
 		{
 			name:       "password too short",
 			wantStatus: http.StatusBadRequest,
-			wantError:  ErrInvalidArgument,
-			body: CreateUserRequest{
+			wantError:  core_http_response.ErrInvalidArgument,
+			body: RegisterRequest{
 				Username:  "i.ivanov",
 				FirstName: "Ivan",
 				Password:  "pass",
@@ -132,8 +132,8 @@ func TestCreateUser(t *testing.T) {
 		{
 			name:       "password too long",
 			wantStatus: http.StatusBadRequest,
-			wantError:  ErrInvalidArgument,
-			body: CreateUserRequest{
+			wantError:  core_http_response.ErrInvalidArgument,
+			body: RegisterRequest{
 				Username:  "i.ivanov",
 				FirstName: "Ivan",
 				Password:  strings.Repeat("a", 33),
@@ -143,7 +143,7 @@ func TestCreateUser(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup
-			want := UserDTOResponse{
+			want := RegisterResponse{
 				ID:        core_test_utils.ID,
 				Username:  tt.body.Username,
 				FirstName: tt.body.FirstName,
@@ -161,7 +161,7 @@ func TestCreateUser(t *testing.T) {
 			)
 			var servicePayload domain.RegisterUserPayload
 			var serviceCalled bool
-			service := StubUsersService{
+			service := StubAuthService{
 				CreateUserFn: func(
 					payload domain.RegisterUserPayload,
 				) (domain.User, error) {
@@ -185,7 +185,7 @@ func TestCreateUser(t *testing.T) {
 				},
 			}
 
-			handler := NewUsersHTTPHandler(&service)
+			handler := NewAuthHTTPHandler(&service, false)
 			body, err := json.Marshal(tt.body)
 			if err != nil {
 				t.Fatal(err)
@@ -195,7 +195,7 @@ func TestCreateUser(t *testing.T) {
 			ctx := core_test_utils.GetLoggerContext(req.Context())
 
 			// Action
-			handler.CreateUser(rec, req.WithContext(ctx))
+			handler.Register(rec, req.WithContext(ctx))
 
 			// Check
 			if serviceCalled != tt.wantServiceCalled {
@@ -229,7 +229,7 @@ func TestCreateUser(t *testing.T) {
 					)
 				}
 			} else {
-				var gotResponse UserDTOResponse
+				var gotResponse RegisterResponse
 				if err := json.NewDecoder(rec.Body).Decode(&gotResponse); err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}

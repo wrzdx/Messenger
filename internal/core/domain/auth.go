@@ -1,6 +1,42 @@
 package domain
 
-import "unicode/utf8"
+import (
+	"time"
+	"unicode/utf8"
+
+	"github.com/google/uuid"
+)
+
+type TokenType string
+
+const (
+	TokenTypeAccess  TokenType = "access"
+	TokenTypeRefresh TokenType = "refresh"
+)
+
+type Claims struct {
+	UserID uuid.UUID
+	Type   TokenType
+}
+
+func NewClaims(userID uuid.UUID, tokenType TokenType) Claims {
+	return Claims{
+		UserID: userID,
+		Type:   tokenType,
+	}
+}
+
+type Token struct {
+	Token   string
+	Expires time.Time
+}
+
+func NewToken(token string, expires time.Time) Token {
+	return Token{
+		Token:   token,
+		Expires: expires,
+	}
+}
 
 type RegisterUserPayload struct {
 	Username  string

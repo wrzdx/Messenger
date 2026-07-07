@@ -16,12 +16,12 @@ func (h *UsersHTTPHandler) DeleteMe(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		responseHandler.ErrorResponse(
 			http.StatusUnauthorized,
-			ErrMissingClaims,
+			core_http_response.ErrMissingClaims,
 		)
 		return
 	}
 	if err := h.usersService.DeleteUser(ctx, claims.UserID); err != nil {
-		statusCode := mapDomainErrorToStatusCode(err)
+		statusCode := core_http_response.MapDomainErrorToStatusCode(err)
 		responseHandler.ErrorResponse(statusCode, err)
 		return
 	}

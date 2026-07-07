@@ -13,21 +13,30 @@ type AuthHTTPHandler struct {
 }
 
 type AuthService interface {
+	Register(
+		ctx context.Context,
+		payload domain.RegisterUserPayload,
+	) (domain.User, error)
 	Login(
 		ctx context.Context,
-		credentials domain.UserCredentials,
+		username string,
+		password string,
 	) (domain.Token, domain.Token, error)
 }
 
-func NewUsersHTTPHandler(userService AuthService, secure bool) *AuthHTTPHandler {
+func NewAuthHTTPHandler(
+	authService AuthService,
+	secure bool,
+) *AuthHTTPHandler {
 	return &AuthHTTPHandler{
 		secure:      secure,
-		authService: userService,
+		authService: authService,
 	}
 }
 
 func (h *AuthHTTPHandler) Router() chi.Router {
 	router := chi.NewRouter()
 	router.Post("/login", h.Login)
+	router.Post("/register", h.Register)
 	return router
 }

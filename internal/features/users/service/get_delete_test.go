@@ -51,8 +51,7 @@ func TestDeleteUser(t *testing.T) {
 				},
 			}
 
-			hasher := StubHasher{}
-			service := NewUsersService(&repo, &hasher)
+			service := NewUsersService(&repo)
 
 			gotErr := service.DeleteUser(t.Context(), tt.userID)
 

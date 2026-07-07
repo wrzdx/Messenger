@@ -1,4 +1,4 @@
-package users_transport_http
+package auth_transport_http
 
 import (
 	"fmt"
@@ -7,9 +7,12 @@ import (
 	core_http_request "messenger/internal/core/transport/http/request"
 	core_http_response "messenger/internal/core/transport/http/response"
 	"net/http"
+	"time"
+
+	"github.com/google/uuid"
 )
 
-type CreateUserRequest struct {
+type RegisterRequest struct {
 	Username  string  `json:"username" validate:"required,min=5,max=32" example:"qwerty"`
 	FirstName string  `json:"first_name" validate:"required,min=1,max=64" example:"Ivan"`
 	LastName  *string `json:"last_name" validate:"omitempty,max=64" example:"Ivanov"`
@@ -17,18 +20,25 @@ type CreateUserRequest struct {
 	Password  string  `json:"password" validate:"required,min=8,max=32" example:"password"`
 }
 
-type CreateUserResponse UserDTOResponse
+type RegisterResponse struct {
+	ID        uuid.UUID `json:"id"`
+	Username  string    `json:"username" validate:"required,min=5,max=32" example:"qwerty"`
+	FirstName string    `json:"first_name" validate:"required,min=1,max=64" example:"Ivan"`
+	LastName  *string   `json:"last_name" validate:"max=64" example:"Ivanov"`
+	CreatedAt time.Time `json:"created_at" example:"2026-02-26T10:30:00Z"`
+	Bio       *string   `json:"bio" validate:"max=70" example:"We didn't choose this path. Circumstance chose it for us. We're simply trying to keep climbing."`
+}
 
-func (h *UsersHTTPHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHTTPHandler) Register(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
 	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
 
-	var request CreateUserRequest
+	var request RegisterRequest
 	if err := core_http_request.DecodeAndValidateRequest(r, &request); err != nil {
 		responseHandler.ErrorResponse(
 			http.StatusBadRequest,
-			fmt.Errorf("%w: %v", ErrInvalidArgument, err),
+			fmt.Errorf("%w: %v", core_http_response.ErrInvalidArgument, err),
 		)
 		return
 	}
@@ -39,13 +49,20 @@ func (h *UsersHTTPHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		request.Bio,
 		request.Password,
 	)
-	userDomain, err := h.usersService.CreateUser(ctx, payload)
+	userDomain, err := h.authService.Register(ctx, payload)
 	if err != nil {
-		statusCode := mapDomainErrorToStatusCode(err)
+		statusCode := core_http_response.MapDomainErrorToStatusCode(err)
 		responseHandler.ErrorResponse(statusCode, err)
 		return
 	}
 
-	response := CreateUserResponse(userDTOFromDomain(userDomain))
+	response := RegisterResponse{
+		userDomain.ID,
+		userDomain.Username,
+		userDomain.FirstName,
+		userDomain.LastName,
+		userDomain.CreatedAt,
+		userDomain.Bio,
+	}
 	responseHandler.JSONResponse(response, http.StatusCreated)
 }

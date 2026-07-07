@@ -1,7 +1,7 @@
 package auth_transport_http
 
 import (
-	"messenger/internal/core/domain"
+	"fmt"
 	core_logger "messenger/internal/core/logger"
 	core_http_request "messenger/internal/core/transport/http/request"
 	core_http_response "messenger/internal/core/transport/http/response"
@@ -10,7 +10,7 @@ import (
 
 type LoginRequest struct {
 	Username string `json:"username" example:"qwerty"`
-	Password string `json:"password" validate:"required,min=8,max=32" example:"password"`
+	Password string `json:"password" example:"password"`
 }
 
 type LoginResponse struct {
@@ -23,14 +23,21 @@ func (h *AuthHTTPHandler) Login(w http.ResponseWriter, r *http.Request) {
 	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
 	var request LoginRequest
 	if err := core_http_request.DecodeAndValidateRequest(r, &request); err != nil {
-		responseHandler.ErrorResponse(err, "failed to decode and validate HTTP request")
+		responseHandler.ErrorResponse(
+			http.StatusBadRequest,
+			fmt.Errorf("%w: %v", core_http_response.ErrInvalidArgument, err),
+		)
 		return
 	}
 
-	userCredentials := domain.NewCredentials(request.Username, request.Password)
-	refresh, access, err := h.authService.Login(ctx, userCredentials)
+	refresh, access, err := h.authService.Login(
+		ctx,
+		request.Username,
+		request.Password,
+	)
 	if err != nil {
-		responseHandler.ErrorResponse(err, "failed to create user")
+		statusCode := core_http_response.MapDomainErrorToStatusCode(err)
+		responseHandler.ErrorResponse(statusCode, err)
 		return
 	}
 	response := LoginResponse{

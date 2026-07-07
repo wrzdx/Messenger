@@ -67,15 +67,3 @@ func (s *StubUsersRepository) PatchUser(
 ) (domain.User, error) {
 	return s.PatchUserFn(id, user)
 }
-
-type StubHasher struct {
-	HashFn    func(password string) ([]byte, error)
-	CompareFn func(hash, password string) error
-}
-
-func (h *StubHasher) Hash(password string) ([]byte, error) {
-	return h.HashFn(password)
-}
-func (h *StubHasher) Compare(hash, password string) error {
-	return h.CompareFn(hash, password)
-}

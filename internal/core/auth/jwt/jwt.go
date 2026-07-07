@@ -2,7 +2,7 @@ package core_auth_jwt
 
 import (
 	"fmt"
-	core_auth "messenger/internal/core/auth"
+	"messenger/internal/core/domain"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -22,18 +22,17 @@ func NewJWTProvider(config Config) *JWTProvider {
 func (j *JWTProvider) generate(
 	userID uuid.UUID,
 	ttl time.Duration,
-	tokenType core_auth.TokenType,
-) (string, time.Time, error) {
+	tokenType domain.TokenType,
+) (domain.Token, error) {
 	now := time.Now()
 	expires := now.Add(ttl)
 
 	claims := jwtClaims{
-		Claims: core_auth.Claims{
-			UserID:    userID,
-			Type:      tokenType,
-			IssuedAt:  now,
-			ExpiresAt: expires,
-		},
+		UserID:    userID,
+		Type:      tokenType,
+		IssuedAt:  now,
+		ExpiresAt: expires,
+
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(expires),
@@ -43,34 +42,34 @@ func (j *JWTProvider) generate(
 
 	signed, err := token.SignedString([]byte(j.config.Secret))
 	if err != nil {
-		return "", time.Time{}, fmt.Errorf(
+		return domain.Token{}, fmt.Errorf(
 			"sign token: %w",
 			err,
 		)
 	}
 
-	return signed, expires, nil
+	domainToken := domain.NewToken(signed, expires)
+
+	return domainToken, nil
 }
 
-func (j *JWTProvider) GenerateAccessToken(id uuid.UUID) (string, time.Time, error) {
-	token, expires, err := j.generate(
+func (j *JWTProvider) GenerateAccessToken(id uuid.UUID) (domain.Token, error) {
+	return j.generate(
 		id,
 		j.config.AccessTokenTTL,
-		core_auth.TokenTypeAccess,
+		domain.TokenTypeAccess,
 	)
-	return token, expires, err
 }
 
-func (j *JWTProvider) GenerateRefreshToken(id uuid.UUID) (string, time.Time, error) {
-	token, expires, err := j.generate(
+func (j *JWTProvider) GenerateRefreshToken(id uuid.UUID) (domain.Token, error) {
+	return j.generate(
 		id,
 		j.config.RefreshTokenTTL,
-		core_auth.TokenTypeRefresh,
+		domain.TokenTypeRefresh,
 	)
-	return token, expires, err
 }
 
-func (j *JWTProvider) ParseToken(token string) (core_auth.Claims, error) {
+func (j *JWTProvider) ParseToken(token string) (domain.Claims, error) {
 	var claims jwtClaims
 
 	_, err := jwt.ParseWithClaims(
@@ -81,8 +80,10 @@ func (j *JWTProvider) ParseToken(token string) (core_auth.Claims, error) {
 		},
 	)
 	if err != nil {
-		return core_auth.Claims{}, fmt.Errorf("parse JWT: %w", err)
+		return domain.Claims{}, fmt.Errorf("parse JWT: %w", err)
 	}
 
-	return claims.Claims, nil
+	domainClaims := domain.NewClaims(claims.UserID, claims.Type)
+
+	return domainClaims, nil
 }

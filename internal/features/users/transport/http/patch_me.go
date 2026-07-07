@@ -23,7 +23,7 @@ func (h *UsersHTTPHandler) PatchMe(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		responseHandler.ErrorResponse(
 			http.StatusUnauthorized,
-			ErrMissingClaims,
+			core_http_response.ErrMissingClaims,
 		)
 		return
 	}
@@ -32,7 +32,7 @@ func (h *UsersHTTPHandler) PatchMe(w http.ResponseWriter, r *http.Request) {
 	if err := core_http_request.DecodeAndValidateRequest(r, &request); err != nil {
 		responseHandler.ErrorResponse(
 			http.StatusBadRequest,
-			fmt.Errorf("%w: %v", ErrInvalidArgument, err))
+			fmt.Errorf("%w: %v", core_http_response.ErrInvalidArgument, err))
 		return
 	}
 
@@ -40,7 +40,7 @@ func (h *UsersHTTPHandler) PatchMe(w http.ResponseWriter, r *http.Request) {
 
 	userDomain, err := h.usersService.PatchUser(ctx, claims.UserID, userPatch)
 	if err != nil {
-		statusCode := mapDomainErrorToStatusCode(err)
+		statusCode := core_http_response.MapDomainErrorToStatusCode(err)
 		responseHandler.ErrorResponse(statusCode, err)
 		return
 	}

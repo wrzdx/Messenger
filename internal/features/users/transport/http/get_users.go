@@ -19,7 +19,11 @@ func (h *UsersHTTPHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		responseHandler.ErrorResponse(
 			http.StatusBadRequest,
-			fmt.Errorf("%w: %v", ErrInvalidArgument, err),
+			fmt.Errorf(
+				"%w: %v",
+				core_http_response.ErrInvalidArgument,
+				err,
+			),
 		)
 		return
 	}
@@ -27,7 +31,10 @@ func (h *UsersHTTPHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	if limit != nil && *limit < 0 {
 		responseHandler.ErrorResponse(
 			http.StatusBadRequest,
-			fmt.Errorf("%w: limit must be non-negative", ErrInvalidArgument),
+			fmt.Errorf(
+				"%w: limit must be non-negative",
+				core_http_response.ErrInvalidArgument,
+			),
 		)
 		return
 	}
@@ -35,14 +42,17 @@ func (h *UsersHTTPHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	if offset != nil && *offset < 0 {
 		responseHandler.ErrorResponse(
 			http.StatusBadRequest,
-			fmt.Errorf("%w: offset must be non-negative", ErrInvalidArgument),
+			fmt.Errorf(
+				"%w: offset must be non-negative",
+				core_http_response.ErrInvalidArgument,
+			),
 		)
 		return
 	}
 
 	userDomains, err := h.usersService.GetUsers(ctx, limit, offset)
 	if err != nil {
-		statusCode := mapDomainErrorToStatusCode(err)
+		statusCode := core_http_response.MapDomainErrorToStatusCode(err)
 		responseHandler.ErrorResponse(statusCode, err)
 		return
 	}

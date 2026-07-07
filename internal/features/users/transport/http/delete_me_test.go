@@ -2,7 +2,6 @@ package users_transport_http
 
 import (
 	"encoding/json"
-	core_auth "messenger/internal/core/auth"
 	"messenger/internal/core/domain"
 	core_http_response "messenger/internal/core/transport/http/response"
 	core_test_utils "messenger/internal/core/utils/test"
@@ -41,7 +40,7 @@ func TestDeleteMe(t *testing.T) {
 			name:          "without claims",
 			withoutClaims: true,
 			wantStatus:    http.StatusUnauthorized,
-			wantError:     ErrMissingClaims,
+			wantError:     core_http_response.ErrMissingClaims,
 		},
 	}
 
@@ -68,7 +67,7 @@ func TestDeleteMe(t *testing.T) {
 				nil,
 			)
 
-			claims := core_auth.Claims{
+			claims := domain.Claims{
 				UserID: tt.userID,
 			}
 

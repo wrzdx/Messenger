@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	core_auth "messenger/internal/core/auth"
 	"messenger/internal/core/domain"
 	core_http_response "messenger/internal/core/transport/http/response"
 	core_test_utils "messenger/internal/core/utils/test"
@@ -93,7 +92,7 @@ func TestPatchMe(t *testing.T) {
 		{
 			name:       "username too short",
 			wantStatus: http.StatusBadRequest,
-			wantError:  ErrInvalidArgument,
+			wantError:  core_http_response.ErrInvalidArgument,
 			body: map[string]any{
 				"username": "abc",
 			},
@@ -101,7 +100,7 @@ func TestPatchMe(t *testing.T) {
 		{
 			name:       "username too long",
 			wantStatus: http.StatusBadRequest,
-			wantError:  ErrInvalidArgument,
+			wantError:  core_http_response.ErrInvalidArgument,
 			body: map[string]any{
 				"username": strings.Repeat("a", 33),
 			},
@@ -109,7 +108,7 @@ func TestPatchMe(t *testing.T) {
 		{
 			name:       "username is null",
 			wantStatus: http.StatusBadRequest,
-			wantError:  ErrInvalidArgument,
+			wantError:  core_http_response.ErrInvalidArgument,
 			body: map[string]any{
 				"username": nil,
 			},
@@ -117,7 +116,7 @@ func TestPatchMe(t *testing.T) {
 		{
 			name:       "first name is null",
 			wantStatus: http.StatusBadRequest,
-			wantError:  ErrInvalidArgument,
+			wantError:  core_http_response.ErrInvalidArgument,
 			body: map[string]any{
 				"first_name": nil,
 			},
@@ -182,7 +181,7 @@ func TestPatchMe(t *testing.T) {
 				bytes.NewReader(data),
 			)
 
-			claims := core_auth.Claims{
+			claims := domain.Claims{
 				UserID: user.ID,
 			}
 

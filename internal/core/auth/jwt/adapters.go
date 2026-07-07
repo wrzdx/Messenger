@@ -1,12 +1,17 @@
 package core_auth_jwt
 
 import (
-	core_auth "messenger/internal/core/auth"
+	"messenger/internal/core/domain"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 type jwtClaims struct {
-	core_auth.Claims
+	UserID    uuid.UUID        `json:"user_id"`
+	Type      domain.TokenType `json:"type"`
+	IssuedAt  time.Time        `json:"issued_at"`
+	ExpiresAt time.Time        `json:"expires_at"`
 	jwt.RegisteredClaims
 }

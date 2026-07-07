@@ -44,7 +44,7 @@ func TestGetUsers(t *testing.T) {
 		{
 			name:       "negative limit",
 			limit:      "-1",
-			wantError:  ErrInvalidArgument,
+			wantError:  core_http_response.ErrInvalidArgument,
 			wantStatus: http.StatusBadRequest,
 		},
 		{
@@ -58,7 +58,7 @@ func TestGetUsers(t *testing.T) {
 		{
 			name:       "negative offset",
 			offset:     "-1",
-			wantError:  ErrInvalidArgument,
+			wantError:  core_http_response.ErrInvalidArgument,
 			wantStatus: http.StatusBadRequest,
 		},
 		{
@@ -85,13 +85,13 @@ func TestGetUsers(t *testing.T) {
 		{
 			name:       "invalid limit",
 			limit:      "asadf",
-			wantError:  ErrInvalidArgument,
+			wantError:  core_http_response.ErrInvalidArgument,
 			wantStatus: http.StatusBadRequest,
 		},
 		{
 			name:       "invalid offset",
 			offset:     "asadf",
-			wantError:  ErrInvalidArgument,
+			wantError:  core_http_response.ErrInvalidArgument,
 			wantStatus: http.StatusBadRequest,
 		},
 	}

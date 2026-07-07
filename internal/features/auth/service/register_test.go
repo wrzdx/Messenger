@@ -1,4 +1,4 @@
-package users_service
+package auth_service
 
 import (
 	"errors"
@@ -135,7 +135,7 @@ func TestCreateUser(t *testing.T) {
 			}
 			var repoCalled bool
 			var repoGotUser domain.User
-			stubRepo := StubUsersRepository{
+			stubRepo := StubAuthRepository{
 				CreateUserFn: func(
 					user domain.User,
 				) (domain.User, error) {
@@ -157,6 +157,10 @@ func TestCreateUser(t *testing.T) {
 				},
 			}
 
+			stubJWTProvider := StubJWTProvider{}
+
+			
+
 			wantRepoGotUser := domain.NewUser(
 				tt.wantUser.ID,
 				tt.user.Username,
@@ -167,7 +171,7 @@ func TestCreateUser(t *testing.T) {
 				pswHash,
 			)
 			wantHasherGotPsw := tt.user.Password
-			service := NewUsersService(&stubRepo, &stubHasher)
+			service := NewAuthService(&stubRepo, &stubHasher, &stubJWTProvider)
 			ctx := t.Context()
 			// Action
 			gotUser, gotError := service.CreateUser(ctx, tt.user)

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"messenger/internal/core/domain"
-	core_postgres_pool "messenger/internal/core/repository/postgres/pool"
 )
 
 func (r *UsersRepository) GetUsers(
@@ -16,11 +15,11 @@ func (r *UsersRepository) GetUsers(
 	defer cancel()
 
 	if limit != nil && *limit < 0 {
-		return nil, core_postgres_pool.ErrNegativeLimit
+		return nil, domain.ErrNegativeLimit
 	}
 
 	if offset != nil && *offset < 0 {
-		return nil, core_postgres_pool.ErrNegativeOffset
+		return nil, domain.ErrNegativeOffset
 	}
 
 	query := `

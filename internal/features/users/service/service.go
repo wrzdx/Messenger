@@ -1,21 +1,44 @@
 package users_service
 
 import (
-	core_auth "messenger/internal/core/auth"
+	"context"
 	"messenger/internal/core/domain"
+
+	"github.com/google/uuid"
 )
 
 type UsersService struct {
-	hasher         core_auth.PasswordHasher
-	userRepository domain.UsersRepository
+	userRepository UsersRepository
+}
+
+type UsersRepository interface {
+	GetUsers(
+		ctx context.Context,
+		limit *int,
+		offset *int,
+	) ([]domain.User, error)
+
+	GetUser(
+		ctx context.Context,
+		id uuid.UUID,
+	) (domain.User, error)
+
+	DeleteUser(
+		ctx context.Context,
+		id uuid.UUID,
+	) error
+
+	PatchUser(
+		ctx context.Context,
+		id uuid.UUID,
+		user domain.User,
+	) (domain.User, error)
 }
 
 func NewUsersService(
-	usersRepository domain.UsersRepository,
-	hasher core_auth.PasswordHasher,
+	usersRepository UsersRepository,
 ) *UsersService {
 	return &UsersService{
 		userRepository: usersRepository,
-		hasher:         hasher,
 	}
 }

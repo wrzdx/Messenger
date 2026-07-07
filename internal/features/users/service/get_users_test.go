@@ -76,8 +76,8 @@ func TestGetUsers(t *testing.T) {
 					return tt.repoUsers, tt.repoErr
 				},
 			}
-			hasher := StubHasher{}
-			service := NewUsersService(&repo, &hasher)
+
+			service := NewUsersService(&repo)
 
 			// action
 			gotUsers, gotErr := service.GetUsers(t.Context(), tt.limit, tt.offset)

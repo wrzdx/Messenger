@@ -5,7 +5,6 @@ package users_postgres_repository
 import (
 	"errors"
 	"messenger/internal/core/domain"
-	core_postgres_pool "messenger/internal/core/repository/postgres/pool"
 	core_pgx_pool "messenger/internal/core/repository/postgres/pool/pgx"
 	core_test_utils "messenger/internal/core/utils/test"
 	"testing"
@@ -36,7 +35,7 @@ func TestGetUsers(t *testing.T) {
 			name:      "negative limit",
 			users:     nil,
 			limit:     new(-1),
-			wantError: core_postgres_pool.ErrNegativeLimit,
+			wantError: domain.ErrNegativeLimit,
 		},
 		{
 			name:   "offset users",
@@ -47,7 +46,7 @@ func TestGetUsers(t *testing.T) {
 			name:      "negative offset",
 			users:     nil,
 			offset:    new(-1),
-			wantError: core_postgres_pool.ErrNegativeOffset,
+			wantError: domain.ErrNegativeOffset,
 		},
 		{
 			name:   "limit offset users",
