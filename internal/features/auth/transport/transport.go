@@ -18,15 +18,17 @@ type AuthService interface {
 	Register(
 		ctx context.Context,
 		payload domain.RegisterUserPayload,
-	) (
-		domain.User,
-		core_auth.AuthTokens,
-		error,
-	)
+	) (domain.User, core_auth.AuthTokens, error)
+
 	Login(
 		ctx context.Context,
 		username string,
 		password string,
+	) (core_auth.AuthTokens, error)
+
+	Refresh(
+		ctx context.Context,
+		token string,
 	) (core_auth.AuthTokens, error)
 }
 
@@ -39,6 +41,10 @@ type CookieManager interface {
 	ClearRefreshToken(
 		w http.ResponseWriter,
 	)
+
+	GetRefreshToken(
+		r *http.Request,
+	) (string, error)
 }
 
 func NewAuthHTTPHandler(
@@ -55,5 +61,7 @@ func (h *AuthHTTPHandler) Router() chi.Router {
 	router := chi.NewRouter()
 	router.Post("/login", h.Login)
 	router.Post("/register", h.Register)
+	router.Post("/logout", h.Logout)
+	router.Post("/refresh", h.Refresh)
 	return router
 }

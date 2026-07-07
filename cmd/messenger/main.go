@@ -82,14 +82,16 @@ func main() {
 	router.Use(
 		core_http_middleware.CORS(httpConfig.AllowedOrigins),
 		core_http_middleware.RequestID(),
-		core_http_middleware.Logger(logger),
+		core_http_middleware.Logging(logger),
 		core_http_middleware.Trace(),
-		core_http_middleware.Panic(),
+		core_http_middleware.Recovery(),
 	)
 
+	authMW := core_http_middleware.Auth(jwtProvider)
+
 	routerV1 := chi.NewRouter()
-	routerV1.Mount("/users", usersTranposrtHTTP.Router())
 	routerV1.Mount("/auth", authTransportHTTP.Router())
+	routerV1.Mount("/users", usersTranposrtHTTP.Router(authMW))
 
 	router.Mount("/api/v1", routerV1)
 	httpServer := core_http_server.NewHTTPServer(

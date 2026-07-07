@@ -18,26 +18,22 @@ func (h *UsersHTTPHandler) ChangePassword(w http.ResponseWriter, r *http.Request
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
 	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
-	userID, ok := core_auth.UserIDFromContext(ctx)
+	userID := core_auth.MustUserIDFromContext(ctx)
 
 	var request ChangePasswordRequest
 
-	if !ok {
-		responseHandler.ErrorResponse(
-			core_http_response.MapError(core_http_response.ErrMissingClaims),
-		)
-		return
-	}
-
 	if err := core_http_request.DecodeAndValidateRequest(r, &request); err != nil {
+		err = fmt.Errorf(
+			"%v: %w",
+			err,
+			core_http_response.ErrInvalidArgument,
+		)
 		responseHandler.ErrorResponse(
-			core_http_response.MapError(
-				fmt.Errorf(
-					"%v: %w",
-					err,
-					core_http_response.ErrInvalidArgument,
-				),
-			),
+			core_http_response.Error{
+				Error:   err,
+				Status:  http.StatusBadRequest,
+				Message: err.Error(),
+			},
 		)
 		return
 	}

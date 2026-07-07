@@ -135,7 +135,7 @@ func TestCreateUser(t *testing.T) {
 			}
 			var repoCalled bool
 			var repoGotUser domain.User
-			stubRepo := StubAuthRepository{
+			stubRepo := StubsUserRepository{
 				CreateUserFn: func(
 					user domain.User,
 				) (domain.User, error) {

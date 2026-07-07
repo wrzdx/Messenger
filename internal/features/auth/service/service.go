@@ -9,12 +9,17 @@ import (
 )
 
 type AuthService struct {
-	authRepository AuthRepository
-	hasher         Hasher
-	jwtProvider    JWTProvider
+	usersRepository UsersRepository
+	hasher          Hasher
+	jwtProvider     JWTProvider
 }
 
-type AuthRepository interface {
+type UsersRepository interface {
+	GetUser(
+		ctx context.Context,
+		id uuid.UUID,
+	) (domain.User, error)
+
 	GetUserByUsername(
 		ctx context.Context,
 		username string,
@@ -37,13 +42,13 @@ type JWTProvider interface {
 }
 
 func NewAuthService(
-	authRepository AuthRepository,
+	userRepository UsersRepository,
 	hasher Hasher,
 	jwtProvider JWTProvider,
 ) *AuthService {
 	return &AuthService{
-		authRepository: authRepository,
-		hasher:         hasher,
-		jwtProvider:    jwtProvider,
+		usersRepository: userRepository,
+		hasher:          hasher,
+		jwtProvider:     jwtProvider,
 	}
 }

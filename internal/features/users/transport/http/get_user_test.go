@@ -56,7 +56,7 @@ func TestGetUser(t *testing.T) {
 			name:       "invalid user id",
 			userID:     "asdf",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.MapError(core_http_response.ErrInvalidArgument).Message,
+			wantError:  core_http_response.ErrInvalidArgument.Error(),
 		},
 	}
 

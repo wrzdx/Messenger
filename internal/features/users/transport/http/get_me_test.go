@@ -26,7 +26,6 @@ func TestGetMe(t *testing.T) {
 		wantServiceCalled bool
 		wantStatus        int
 		wantError         string
-		withoutClaims     bool
 	}{
 		{
 			name:        "existing user",
@@ -51,12 +50,6 @@ func TestGetMe(t *testing.T) {
 
 			wantError: core_http_response.MapError(domain.ErrUserNotFound).Message,
 		},
-		{
-			name:          "without claims",
-			withoutClaims: true,
-			wantStatus:    http.StatusUnauthorized,
-			wantError:     core_http_response.MapError(core_http_response.ErrMissingClaims).Message,
-		},
 	}
 
 	for _, tt := range tests {
@@ -79,9 +72,7 @@ func TestGetMe(t *testing.T) {
 			)
 
 			ctx := core_test_utils.GetLoggerContext(req.Context())
-			if !tt.withoutClaims {
-				ctx = core_auth.WithUserID(ctx, tt.userID)
-			}
+			ctx = core_auth.WithUserID(ctx, tt.userID)
 			handler := NewUsersHTTPHandler(&service)
 
 			// action

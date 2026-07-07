@@ -91,13 +91,13 @@ func TestGetUsers(t *testing.T) {
 		{
 			name:       "invalid limit",
 			limit:      "asadf",
-			wantError:  core_http_response.MapError(core_http_response.ErrInvalidArgument).Message,
+			wantError:  core_http_response.ErrInvalidArgument.Error(),
 			wantStatus: http.StatusBadRequest,
 		},
 		{
 			name:      "invalid offset",
 			offset:    "asadf",
-			wantError: core_http_response.MapError(core_http_response.ErrInvalidArgument).Message,
+			wantError: core_http_response.ErrInvalidArgument.Error(),
 
 			wantStatus: http.StatusBadRequest,
 		},

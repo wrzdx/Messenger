@@ -18,7 +18,6 @@ type Error struct {
 }
 
 var (
-	ErrMissingClaims   = errors.New("missing claims")
 	ErrInvalidArgument = errors.New("invalid argument")
 )
 
@@ -26,8 +25,6 @@ var errorMap = []struct {
 	err    error
 	status int
 }{
-	{ErrMissingClaims, http.StatusUnauthorized},
-	{ErrInvalidArgument, http.StatusBadRequest},
 	{domain.ErrInvalidUsername, http.StatusBadRequest},
 	{domain.ErrInvalidFirstName, http.StatusBadRequest},
 	{domain.ErrInvalidLastName, http.StatusBadRequest},
@@ -40,22 +37,19 @@ var errorMap = []struct {
 
 	{domain.ErrUserAlreadyExists, http.StatusConflict},
 	{domain.ErrInvalidCredentials, http.StatusUnauthorized},
+	{domain.ErrInvalidAccessToken, http.StatusUnauthorized},
+	{domain.ErrInvalidRefreshToken, http.StatusUnauthorized},
 	{domain.ErrUserNotFound, http.StatusNotFound},
+	{domain.ErrWrongPassword, http.StatusForbidden},
 }
 
 func MapError(err error) Error {
 	for _, e := range errorMap {
 		if errors.Is(err, e.err) {
-			var msg string
-			if errors.Is(e.err, ErrInvalidArgument) {
-				msg = err.Error()
-			} else {
-				msg = e.err.Error()
-			}
 			return Error{
 				Error:   err,
 				Status:  e.status,
-				Message: msg,
+				Message: e.err.Error(),
 			}
 		}
 	}

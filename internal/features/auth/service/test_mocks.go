@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type StubAuthRepository struct {
+type StubsUserRepository struct {
 	CreateUserFn func(
 		user domain.User,
 	) (domain.User, error)
@@ -16,20 +16,31 @@ type StubAuthRepository struct {
 	GetUserByUsernameFn func(
 		username string,
 	) (domain.User, error)
+
+	GetUserFn func(
+		id uuid.UUID,
+	) (domain.User, error)
 }
 
-func (s *StubAuthRepository) CreateUser(
+func (s *StubsUserRepository) CreateUser(
 	ctx context.Context,
 	user domain.User,
 ) (domain.User, error) {
 	return s.CreateUserFn(user)
 }
 
-func (s *StubAuthRepository) GetUserByUsername(
+func (s *StubsUserRepository) GetUserByUsername(
 	ctx context.Context,
 	username string,
 ) (domain.User, error) {
 	return s.GetUserByUsernameFn(username)
+}
+
+func (s *StubsUserRepository) GetUser(
+	ctx context.Context,
+	id uuid.UUID,
+) (domain.User, error) {
+	return s.GetUserFn(id)
 }
 
 type StubHasher struct {

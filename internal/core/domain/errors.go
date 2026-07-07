@@ -14,7 +14,11 @@ var (
 	ErrNegativeLimit  = errors.New("limit must be non-negative")
 	ErrNegativeOffset = errors.New("offset must be non-negative")
 
-	ErrUserAlreadyExists  = errors.New("already exists")
-	ErrUserNotFound       = errors.New("not found")
+	ErrUserAlreadyExists  = errors.New("user already exists")
+	ErrUserNotFound       = errors.New("user not found")
 	ErrInvalidCredentials = errors.New("invalid credentials")
+	ErrWrongPassword      = errors.New("wrong password")
+
+	ErrInvalidRefreshToken = errors.New("invalid refresh token")
+	ErrInvalidAccessToken  = errors.New("invalid access token")
 )

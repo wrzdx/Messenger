@@ -126,7 +126,7 @@ func TestLogin(t *testing.T) {
 				jwtUserID      = core_test_utils.ID
 			)
 
-			stubRepo := StubAuthRepository{
+			stubRepo := StubsUserRepository{
 				GetUserByUsernameFn: func(
 					username string,
 				) (domain.User, error) {

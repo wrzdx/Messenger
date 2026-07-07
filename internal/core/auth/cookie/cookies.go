@@ -25,6 +25,17 @@ func NewCookieManager(
 	}
 }
 
+func (c *CookieManager) GetRefreshToken(
+	r *http.Request,
+) (string, error) {
+	cookie, err := r.Cookie(refreshCookieName)
+	if err != nil {
+		return "", err
+	}
+
+	return cookie.Value, nil
+}
+
 func (c *CookieManager) SetRefreshToken(
 	w http.ResponseWriter,
 	token string,

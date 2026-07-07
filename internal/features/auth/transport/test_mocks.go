@@ -20,6 +20,10 @@ type StubAuthService struct {
 		username string,
 		password string,
 	) (core_auth.AuthTokens, error)
+
+	RefreshFn func(
+		token string,
+	) (core_auth.AuthTokens, error)
 }
 
 func (s *StubAuthService) Register(
@@ -30,6 +34,9 @@ func (s *StubAuthService) Register(
 	core_auth.AuthTokens,
 	error,
 ) {
+	if s.CreateUserFn == nil {
+		return domain.User{}, core_auth.AuthTokens{}, nil
+	}
 	return s.CreateUserFn(payload)
 }
 
@@ -38,7 +45,20 @@ func (s *StubAuthService) Login(
 	username string,
 	password string,
 ) (core_auth.AuthTokens, error) {
+	if s.LoginFn == nil {
+		return core_auth.AuthTokens{}, nil
+	}
 	return s.LoginFn(username, password)
+}
+
+func (s *StubAuthService) Refresh(
+	ctx context.Context,
+	token string,
+) (core_auth.AuthTokens, error) {
+	if s.LoginFn == nil {
+		return core_auth.AuthTokens{}, nil
+	}
+	return s.RefreshFn(token)
 }
 
 type StubCookieManager struct {
@@ -65,4 +85,10 @@ func (m *StubCookieManager) ClearRefreshToken(
 	if m.ClearRefreshTokenFn != nil {
 		m.ClearRefreshTokenFn(w)
 	}
+}
+
+func (m *StubCookieManager) GetRefreshToken(
+	r *http.Request,
+) (string, error) {
+	return "", nil
 }

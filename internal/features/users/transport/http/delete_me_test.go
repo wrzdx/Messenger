@@ -22,7 +22,6 @@ func TestDeleteMe(t *testing.T) {
 		wantServiceCalled bool
 		wantStatus        int
 		wantError         string
-		withoutClaims     bool
 	}{
 		{
 			name:              "existing user",
@@ -35,12 +34,6 @@ func TestDeleteMe(t *testing.T) {
 			wantServiceCalled: true,
 			wantStatus:        http.StatusNotFound,
 			wantError:         core_http_response.MapError(domain.ErrUserNotFound).Message,
-		},
-		{
-			name:          "without claims",
-			withoutClaims: true,
-			wantStatus:    http.StatusUnauthorized,
-			wantError:     core_http_response.MapError(core_http_response.ErrMissingClaims).Message,
 		},
 	}
 
@@ -68,9 +61,7 @@ func TestDeleteMe(t *testing.T) {
 			)
 
 			ctx := core_test_utils.GetLoggerContext(req.Context())
-			if !tt.withoutClaims {
-				ctx = core_auth.WithUserID(ctx, tt.userID)
-			}
+			ctx = core_auth.WithUserID(ctx, tt.userID)
 
 			handler := NewUsersHTTPHandler(&service)
 

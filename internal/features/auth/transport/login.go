@@ -24,13 +24,15 @@ func (h *AuthHTTPHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var request LoginRequest
 	if err := core_http_request.DecodeAndValidateRequest(r, &request); err != nil {
 		responseHandler.ErrorResponse(
-			core_http_response.MapError(
-				fmt.Errorf(
+			core_http_response.Error{
+				Error: fmt.Errorf(
 					"%v: %w",
 					err,
 					core_http_response.ErrInvalidArgument,
 				),
-			),
+				Status:  http.StatusBadRequest,
+				Message: err.Error(),
+			},
 		)
 		return
 	}

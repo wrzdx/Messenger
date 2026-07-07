@@ -66,7 +66,7 @@ func TestChangePassword(t *testing.T) {
 			wantGetUserCalled: true,
 			wantCompareCalled: true,
 
-			wantError: domain.ErrInvalidCredentials,
+			wantError: domain.ErrWrongPassword,
 		},
 		{
 			name:        "invalid new password",

@@ -43,7 +43,7 @@ func (s *AuthService) Register(
 		)
 	}
 
-	user, err = s.authRepository.CreateUser(ctx, user)
+	user, err = s.usersRepository.CreateUser(ctx, user)
 	if err != nil {
 		return domain.User{}, core_auth.AuthTokens{}, err
 	}

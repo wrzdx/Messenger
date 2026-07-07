@@ -3,6 +3,7 @@ package users_transport_http
 import (
 	"context"
 	"messenger/internal/core/domain"
+	core_http_middleware "messenger/internal/core/transport/http/middleware"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -48,13 +49,17 @@ func NewUsersHTTPHandler(usersService UsersService) *UsersHTTPHandler {
 	}
 }
 
-func (h *UsersHTTPHandler) Router() chi.Router {
+func (h *UsersHTTPHandler) Router(authMW core_http_middleware.Middleware) chi.Router {
 	router := chi.NewRouter()
 	router.Get("/", h.GetUsers)
-	router.Get("/me", h.GetMe)
 	router.Get("/{id}", h.GetUser)
-	router.Patch("/me", h.PatchMe)
-	router.Delete("/me", h.DeleteMe)
-	router.Put("/me/password", h.ChangePassword)
+	router.Group(func(r chi.Router) {
+		r.Use(authMW)
+		r.Get("/me", h.GetMe)
+		r.Patch("/me", h.PatchMe)
+		r.Delete("/me", h.DeleteMe)
+		r.Put("/me/password", h.ChangePassword)
+	})
+
 	return router
 }

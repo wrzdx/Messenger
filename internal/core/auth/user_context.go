@@ -21,3 +21,11 @@ func UserIDFromContext(ctx context.Context) (uuid.UUID, bool) {
 func WithUserID(ctx context.Context, userID uuid.UUID) context.Context {
 	return context.WithValue(ctx, key, userID)
 }
+
+func MustUserIDFromContext(ctx context.Context) uuid.UUID {
+	userID, ok := UserIDFromContext(ctx)
+	if !ok {
+		panic("no user id in context")
+	}
+	return userID
+}

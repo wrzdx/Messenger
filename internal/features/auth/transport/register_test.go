@@ -53,7 +53,7 @@ func TestRegister(t *testing.T) {
 		{
 			name:       "missing username",
 			wantStatus: http.StatusBadRequest,
-			wantError:  "username is required: invalid argument",
+			wantError:  "username is required",
 			body: RegisterRequest{
 				FirstName: "Ivan",
 				Password:  "password",
@@ -86,7 +86,7 @@ func TestRegister(t *testing.T) {
 		{
 			name:       "missing first name",
 			wantStatus: http.StatusBadRequest,
-			wantError:  "first_name is required: invalid argument",
+			wantError:  "first_name is required",
 			body: RegisterRequest{
 				Username: "i.ivanov",
 				Password: "password",

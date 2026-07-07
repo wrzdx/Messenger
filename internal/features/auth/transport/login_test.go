@@ -48,7 +48,7 @@ func TestLogin(t *testing.T) {
 		{
 			name:       "missing username",
 			wantStatus: http.StatusBadRequest,
-			wantError:  "username is required: invalid argument",
+			wantError:  "username is required",
 			body: LoginRequest{
 				Password: "password",
 			},
@@ -56,7 +56,7 @@ func TestLogin(t *testing.T) {
 		{
 			name:       "missing password",
 			wantStatus: http.StatusBadRequest,
-			wantError:  "password is required: invalid argument",
+			wantError:  "password is required",
 			body: LoginRequest{
 				Username: "i.ivanov",
 			},
