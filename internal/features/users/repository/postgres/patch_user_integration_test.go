@@ -3,8 +3,8 @@ package users_postgres_repository
 import (
 	"errors"
 	"messenger/internal/core/domain"
-	core_postgres_pool "messenger/internal/core/repository/postgres/pool"
-	core_pgx_pool "messenger/internal/core/repository/postgres/pool/pgx"
+	core_postgres "messenger/internal/core/repository/postgres"
+	core_pgx_pool "messenger/internal/core/repository/postgres/pgx"
 	core_test_utils "messenger/internal/core/utils/test"
 	"testing"
 
@@ -50,7 +50,7 @@ func TestPatchUser(t *testing.T) {
 			name:      "user not found",
 			id:        uuid.New(),
 			user:      core_test_utils.Users[0],
-			wantError: core_postgres_pool.ErrNoRows,
+			wantError: core_postgres.ErrNoRows,
 		},
 		{
 			name: "duplicate username",
@@ -64,7 +64,7 @@ func TestPatchUser(t *testing.T) {
 				nil,
 				core_test_utils.PasswordHash,
 			),
-			wantError: core_postgres_pool.ErrViolatesUnique,
+			wantError: core_postgres.ErrViolatesUnique,
 			before: func(t *testing.T, repo *UsersRepository) {
 				_, err := repo.CreateUser(
 					t.Context(),
@@ -90,11 +90,16 @@ func TestPatchUser(t *testing.T) {
 	}
 	defer pool.Close()
 
-	core_test_utils.LoadData(t, pool)
-	repository := NewUsersRepository(pool)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			core_test_utils.LoadData(t, pool)
+			tx, err := pool.Begin(t.Context())
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer tx.Rollback(t.Context())
+			core_test_utils.LoadData(t, tx)
+			repository := NewUsersRepository(tx)
+			core_test_utils.LoadData(t, tx)
 
 			if tt.before != nil {
 				tt.before(t, repository)
@@ -119,7 +124,7 @@ func TestPatchUser(t *testing.T) {
 
 			var userModel UserModel
 
-			err := pool.QueryRow(
+			err = tx.QueryRow(
 				t.Context(),
 				`
     SELECT id, username, first_name, last_name, created_at, bio, password_hash

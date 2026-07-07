@@ -1,6 +1,6 @@
 //go:build integration
 
-package users_postgres_repository
+package auth_postgres_repository
 
 import (
 	"errors"
@@ -22,7 +22,7 @@ func TestCreateUser(t *testing.T) {
 		name      string
 		user      domain.User
 		wantError error
-		before    func(t *testing.T, repo *UsersRepository)
+		before    func(t *testing.T, repo *AuthRepository)
 	}{
 		{
 			name: "valid user",
@@ -149,7 +149,7 @@ func TestCreateUser(t *testing.T) {
 				PasswordHash: core_test_utils.PasswordHash,
 			},
 			wantError: domain.ErrUserAlreadyExists,
-			before: func(t *testing.T, repo *UsersRepository) {
+			before: func(t *testing.T, repo *AuthRepository) {
 				_, err := repo.CreateUser(
 					t.Context(),
 					domain.User{
@@ -183,7 +183,7 @@ func TestCreateUser(t *testing.T) {
 			}
 			defer tx.Rollback(t.Context())
 			repository := NewUsersRepository(tx)
-			core_test_utils.ResetDB(t, tx)
+			core_test_utils.LoadData(t, tx)
 			if tt.before != nil {
 				tt.before(t, repository)
 			}

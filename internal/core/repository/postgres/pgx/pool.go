@@ -3,9 +3,10 @@ package core_pgx_pool
 import (
 	"context"
 	"fmt"
-	core_postgres_pool "messenger/internal/core/repository/postgres/pool"
+	core_postgres "messenger/internal/core/repository/postgres"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -52,7 +53,7 @@ func (p *Pool) Query(
 	ctx context.Context,
 	sql string,
 	args ...any,
-) (core_postgres_pool.Rows, error) {
+) (core_postgres.Rows, error) {
 	rows, err := p.Pool.Query(ctx, sql, args...)
 	if err != nil {
 		return nil, err
@@ -65,7 +66,7 @@ func (p *Pool) QueryRow(
 	ctx context.Context,
 	sql string,
 	args ...any,
-) core_postgres_pool.Row {
+) core_postgres.Row {
 	row := p.Pool.QueryRow(ctx, sql, args...)
 	return pgxRow{row}
 }
@@ -74,11 +75,81 @@ func (p *Pool) Exec(
 	ctx context.Context,
 	sql string,
 	arguments ...any,
-) (core_postgres_pool.CommandTag, error) {
+) (core_postgres.CommandTag, error) {
 	tag, err := p.Pool.Exec(ctx, sql, arguments...)
 	if err != nil {
 		return nil, err
 	}
 
 	return pgxCommandTag{tag}, nil
+}
+
+func (p *Pool) Begin(ctx context.Context) (core_postgres.Tx, error) {
+	tx, err := p.Pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Tx{
+		tx: tx,
+		optTimout: p.optTimout,
+	}, nil
+}
+
+type Tx struct {
+	tx        pgx.Tx
+	optTimout time.Duration
+}
+
+func (t *Tx) OptTimeout() time.Duration {
+	return t.optTimout
+}
+
+func (t *Tx) Query(
+	ctx context.Context,
+	sql string,
+	args ...any,
+) (core_postgres.Rows, error) {
+	rows, err := t.tx.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	return pgxRows{rows}, nil
+}
+
+func (t *Tx) QueryRow(
+	ctx context.Context,
+	sql string,
+	args ...any,
+) core_postgres.Row {
+	row := t.tx.QueryRow(ctx, sql, args...)
+	return pgxRow{row}
+}
+
+func (t *Tx) Exec(
+	ctx context.Context,
+	sql string,
+	arguments ...any,
+) (core_postgres.CommandTag, error) {
+	tag, err := t.tx.Exec(ctx, sql, arguments...)
+	if err != nil {
+		return nil, err
+	}
+
+	return pgxCommandTag{tag}, nil
+}
+
+func (t *Tx) Commit(ctx context.Context) error {
+	if err := t.tx.Commit(ctx); err != nil {
+		return mapErrors(err)
+	}
+	return nil
+}
+
+func (t *Tx) Rollback(ctx context.Context) error {
+	if err := t.tx.Rollback(ctx); err != nil {
+		return mapErrors(err)
+	}
+	return nil
 }

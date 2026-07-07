@@ -13,7 +13,7 @@ func (r *UsersRepository) PatchUser(
 	id uuid.UUID,
 	user domain.User,
 ) (domain.User, error) {
-	ctx, cancel := context.WithTimeout(ctx, r.pool.OptTimeout())
+	ctx, cancel := context.WithTimeout(ctx, r.db.OptTimeout())
 	defer cancel()
 
 	query := `
@@ -33,7 +33,7 @@ func (r *UsersRepository) PatchUser(
 		bio,
 		password_hash;`
 
-	row := r.pool.QueryRow(
+	row := r.db.QueryRow(
 		ctx,
 		query,
 		user.Username,

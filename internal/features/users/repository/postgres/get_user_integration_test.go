@@ -5,7 +5,7 @@ package users_postgres_repository
 import (
 	"errors"
 	"messenger/internal/core/domain"
-	core_pgx_pool "messenger/internal/core/repository/postgres/pool/pgx"
+	core_pgx_pool "messenger/internal/core/repository/postgres/pgx"
 	core_test_utils "messenger/internal/core/utils/test"
 	"testing"
 
@@ -38,12 +38,16 @@ func TestGetUser(t *testing.T) {
 	}
 	defer pool.Close()
 
-	core_test_utils.LoadData(t, pool)
-
-	repository := NewUsersRepository(pool)
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tx, err := pool.Begin(t.Context())
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer tx.Rollback(t.Context())
+			core_test_utils.LoadData(t, tx)
+
+			repository := NewUsersRepository(tx)
 			gotUser, gotErr := repository.GetUser(t.Context(), tt.userID)
 			tt.wantUser.PasswordHash = gotUser.PasswordHash
 			if !errors.Is(gotErr, tt.wantError) {

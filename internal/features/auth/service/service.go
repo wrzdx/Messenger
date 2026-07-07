@@ -14,7 +14,7 @@ type AuthService struct {
 }
 
 type AuthRepository interface {
-	GetUser(
+	GetUserByUsername(
 		ctx context.Context,
 		username string,
 	) (domain.User, error)

@@ -13,16 +13,15 @@ func (r *UsersRepository) ChangePassword(
 	id uuid.UUID,
 	passwordHash string,
 ) error {
-	ctx, cancel := context.WithTimeout(ctx, r.pool.OptTimeout())
+	ctx, cancel := context.WithTimeout(ctx, r.db.OptTimeout())
 	defer cancel()
 
 	query := `
 	UPDATE users
-	SET 
-		password_hash=$1
+	SET password_hash=$1
 	WHERE id=$2;`
 
-	cmdTag, err := r.pool.Exec(ctx, query, passwordHash, id)
+	cmdTag, err := r.db.Exec(ctx, query, passwordHash, id)
 	if err != nil {
 		return fmt.Errorf("exec query: %w", err)
 	}

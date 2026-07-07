@@ -5,7 +5,7 @@ package users_postgres_repository
 import (
 	"errors"
 	"messenger/internal/core/domain"
-	core_pgx_pool "messenger/internal/core/repository/postgres/pool/pgx"
+	core_pgx_pool "messenger/internal/core/repository/postgres/pgx"
 	core_test_utils "messenger/internal/core/utils/test"
 	"testing"
 
@@ -35,11 +35,15 @@ func TestDeleteUser(t *testing.T) {
 	}
 	defer pool.Close()
 
-	repository := NewUsersRepository(pool)
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			core_test_utils.LoadData(t, pool)
+			tx, err := pool.Begin(t.Context())
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer tx.Rollback(t.Context())
+			repository := NewUsersRepository(tx)
+			core_test_utils.LoadData(t, tx)
 
 			gotErr := repository.DeleteUser(t.Context(), tt.userID)
 

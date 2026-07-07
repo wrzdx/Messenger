@@ -5,14 +5,14 @@ import (
 	core_auth "messenger/internal/core/auth"
 	"messenger/internal/core/domain"
 	core_logger "messenger/internal/core/logger"
-	core_postgres_pool "messenger/internal/core/repository/postgres/pool"
+	core_postgres "messenger/internal/core/repository/postgres"
 	"testing"
 )
 
-func ResetDB(t *testing.T, pool core_postgres_pool.Pool) {
+func ResetDB(t *testing.T, db core_postgres.DB) {
 	t.Helper()
 
-	_, err := pool.Exec(t.Context(), `
+	_, err := db.Exec(t.Context(), `
 		TRUNCATE TABLE
 			users
 		RESTART IDENTITY
@@ -23,15 +23,15 @@ func ResetDB(t *testing.T, pool core_postgres_pool.Pool) {
 	}
 }
 
-func LoadData(t *testing.T, pool core_postgres_pool.Pool) {
+func LoadData(t *testing.T, db core_postgres.DB) {
 	t.Helper()
-	ResetDB(t, pool)
+	ResetDB(t, db)
 	query := `
 	INSERT INTO users (id, username, first_name, last_name, created_at, bio, password_hash)
 	VALUES ($1, $2,$3,$4,$5,$6, $7) 
 	`
 	for _, user := range Users {
-		_, err := pool.Exec(
+		_, err := db.Exec(
 			t.Context(),
 			query,
 			user.ID,

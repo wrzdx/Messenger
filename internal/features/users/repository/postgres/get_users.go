@@ -13,7 +13,7 @@ func (r *UsersRepository) GetUsers(
 	if err := pagination.Validate(); err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(ctx, r.pool.OptTimeout())
+	ctx, cancel := context.WithTimeout(ctx, r.db.OptTimeout())
 	defer cancel()
 
 	query := `
@@ -23,7 +23,7 @@ func (r *UsersRepository) GetUsers(
 	OFFSET $2;
 	`
 
-	rows, err := r.pool.Query(ctx, query, pagination.Limit, pagination.Offset)
+	rows, err := r.db.Query(ctx, query, pagination.Limit, pagination.Offset)
 	if err != nil {
 		return nil, fmt.Errorf("select users: %w", err)
 	}

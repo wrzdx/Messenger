@@ -5,7 +5,7 @@ import (
 	"fmt"
 	core_config "messenger/internal/core/config"
 	core_logger "messenger/internal/core/logger"
-	core_pgx_pool "messenger/internal/core/repository/postgres/pool/pgx"
+	core_pgx_pool "messenger/internal/core/repository/postgres/pgx"
 	core_http_middleware "messenger/internal/core/transport/http/middleware"
 	core_http_server "messenger/internal/core/transport/http/server"
 	"os"

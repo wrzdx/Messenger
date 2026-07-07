@@ -11,7 +11,7 @@ func (s *AuthService) Login(
 	username string,
 	password string,
 ) (domain.Token, domain.Token, error) {
-	user, err := s.authRepository.GetUser(
+	user, err := s.authRepository.GetUserByUsername(
 		ctx,
 		username,
 	)

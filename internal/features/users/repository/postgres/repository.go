@@ -1,13 +1,13 @@
 package users_postgres_repository
 
-import core_postgres_pool "messenger/internal/core/repository/postgres/pool"
+import core_postgres "messenger/internal/core/repository/postgres"
 
 type UsersRepository struct {
-	pool core_postgres_pool.Pool
+	db core_postgres.DB
 }
 
-func NewUsersRepository(pool core_postgres_pool.Pool) *UsersRepository {
+func NewUsersRepository(db core_postgres.DB) *UsersRepository {
 	return &UsersRepository{
-		pool: pool,
+		db: db,
 	}
 }

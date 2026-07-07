@@ -1,4 +1,4 @@
-package users_postgres_repository
+package auth_postgres_repository
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	core_postgres "messenger/internal/core/repository/postgres"
 )
 
-func (r *UsersRepository) CreateUser(
+func (r *AuthRepository) CreateUser(
 	ctx context.Context,
 	user domain.User,
 ) (domain.User, error) {

@@ -24,7 +24,7 @@ func (s *StubAuthRepository) CreateUser(
 	return s.CreateUserFn(user)
 }
 
-func (s *StubAuthRepository) GetUser(
+func (s *StubAuthRepository) GetUserByUsername(
 	ctx context.Context,
 	username string,
 ) (domain.User, error) {
