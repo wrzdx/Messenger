@@ -16,7 +16,7 @@ type PatchUserResponse UserDTOResponse
 func (h *UsersHTTPHandler) PatchMe(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
-	claims, ok := core_auth.ClaimsFromContext(ctx)
+	userID, ok := core_auth.UserIDFromContext(ctx)
 	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
 	if !ok {
 		responseHandler.ErrorResponse(
@@ -41,7 +41,7 @@ func (h *UsersHTTPHandler) PatchMe(w http.ResponseWriter, r *http.Request) {
 
 	userPatch := UserPatchFromRequest(request)
 
-	userDomain, err := h.usersService.PatchUser(ctx, claims.UserID, userPatch)
+	userDomain, err := h.usersService.PatchUser(ctx, userID, userPatch)
 	if err != nil {
 		responseHandler.ErrorResponse(core_http_response.MapError(err))
 		return

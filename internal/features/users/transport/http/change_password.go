@@ -18,8 +18,8 @@ func (h *UsersHTTPHandler) ChangePassword(w http.ResponseWriter, r *http.Request
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
 	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
+	userID, ok := core_auth.UserIDFromContext(ctx)
 
-	claims, ok := core_auth.ClaimsFromContext(ctx)
 	var request ChangePasswordRequest
 
 	if !ok {
@@ -44,7 +44,7 @@ func (h *UsersHTTPHandler) ChangePassword(w http.ResponseWriter, r *http.Request
 
 	if err := h.usersService.ChangePassword(
 		ctx,
-		claims.UserID,
+		userID,
 		request.OldPassword,
 		request.NewPassword,
 	); err != nil {

@@ -3,6 +3,7 @@ package auth_transport_http
 import (
 	"bytes"
 	"encoding/json"
+	core_auth "messenger/internal/core/auth"
 	"messenger/internal/core/domain"
 	core_http_response "messenger/internal/core/transport/http/response"
 	core_test_utils "messenger/internal/core/utils/test"
@@ -157,13 +158,17 @@ func TestRegister(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup
-			want := RegisterResponse{
+			userResponse := UserResponse{
 				ID:        core_test_utils.ID,
 				Username:  tt.body.Username,
 				FirstName: tt.body.FirstName,
 				LastName:  tt.body.LastName,
 				CreatedAt: core_test_utils.CreatedAt,
 				Bio:       tt.body.Bio,
+			}
+
+			want := RegisterResponse{
+				User: userResponse,
 			}
 
 			wantServiceGotPayload := domain.NewRegisterUserPayload(
@@ -178,7 +183,7 @@ func TestRegister(t *testing.T) {
 			service := StubAuthService{
 				CreateUserFn: func(
 					payload domain.RegisterUserPayload,
-				) (domain.User, error) {
+				) (domain.User, core_auth.AuthTokens, error) {
 					serviceCalled = true
 					servicePayload = domain.NewRegisterUserPayload(
 						payload.Username,
@@ -195,11 +200,11 @@ func TestRegister(t *testing.T) {
 						core_test_utils.CreatedAt,
 						tt.body.Bio,
 						core_test_utils.PasswordHash,
-					), tt.serviceErr
+					), core_auth.AuthTokens{}, tt.serviceErr
 				},
 			}
 
-			handler := NewAuthHTTPHandler(&service, false)
+			handler := NewAuthHTTPHandler(&service, &StubCookieManager{})
 			body, err := json.Marshal(tt.body)
 			if err != nil {
 				t.Fatal(err)
@@ -247,7 +252,7 @@ func TestRegister(t *testing.T) {
 				if err := json.NewDecoder(rec.Body).Decode(&gotResponse); err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
-				gotResponse.CreatedAt = core_test_utils.CreatedAt
+				gotResponse.User.CreatedAt = core_test_utils.CreatedAt
 
 				if diff := cmp.Diff(want, gotResponse); diff != "" {
 					t.Fatalf("CreateUserResponse mismatch (-want +got):\n%s", diff)

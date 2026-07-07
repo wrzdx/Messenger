@@ -14,6 +14,7 @@ var (
 	CreatedAt    = time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
 	PasswordHash = "password_hash"
 	HasherError  = errors.New("hash failed")
+	JWTError     = errors.New("JWT Error")
 	RepoError    = errors.New("db error")
 	Log          = core_logger.NewTestLogger()
 )

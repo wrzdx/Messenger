@@ -182,7 +182,7 @@ func TestCreateUser(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer tx.Rollback(t.Context())
-			repository := NewUsersRepository(tx)
+			repository := NewAuthRepository(tx)
 			core_test_utils.LoadData(t, tx)
 			if tt.before != nil {
 				tt.before(t, repository)

@@ -172,7 +172,7 @@ func TestCreateUser(t *testing.T) {
 			service := NewAuthService(&stubRepo, &stubHasher, &stubJWTProvider)
 			ctx := t.Context()
 			// Action
-			gotUser, gotError := service.CreateUser(ctx, tt.user)
+			gotUser, _, gotError := service.Register(ctx, tt.user)
 
 			// Check
 			if hasherCalled != tt.wantHasherCalled {

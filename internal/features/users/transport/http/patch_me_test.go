@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	core_auth "messenger/internal/core/auth"
 	"messenger/internal/core/domain"
 	core_http_response "messenger/internal/core/transport/http/response"
 	core_test_utils "messenger/internal/core/utils/test"
@@ -214,12 +215,8 @@ func TestPatchMe(t *testing.T) {
 				bytes.NewReader(data),
 			)
 
-			claims := domain.Claims{
-				UserID: user.ID,
-			}
-
 			ctx := core_test_utils.GetLoggerContext(req.Context())
-			ctx = core_test_utils.GetClaimsContext(ctx, claims)
+			ctx = core_auth.WithUserID(ctx, user.ID)
 
 			rec := httptest.NewRecorder()
 

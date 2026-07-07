@@ -7,7 +7,8 @@ import (
 )
 
 type ErrorResponse struct {
-	Error string `json:"error"   example:"Error description"`
+	Error   string `json:"error"`
+	Details string `json:"details,omitempty"`
 }
 
 type Error struct {
@@ -45,10 +46,16 @@ var errorMap = []struct {
 func MapError(err error) Error {
 	for _, e := range errorMap {
 		if errors.Is(err, e.err) {
+			var msg string
+			if errors.Is(e.err, ErrInvalidArgument) {
+				msg = err.Error()
+			} else {
+				msg = e.err.Error()
+			}
 			return Error{
-				Error:   e.err,
+				Error:   err,
 				Status:  e.status,
-				Message: e.err.Error(),
+				Message: msg,
 			}
 		}
 	}

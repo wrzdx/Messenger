@@ -9,8 +9,8 @@ import (
 )
 
 type LoginRequest struct {
-	Username string `json:"username" example:"qwerty"`
-	Password string `json:"password" example:"password"`
+	Username string `json:"username" validate:"required" example:"qwerty"`
+	Password string `json:"password" validate:"required" example:"password"`
 }
 
 type LoginResponse struct {
@@ -26,7 +26,7 @@ func (h *AuthHTTPHandler) Login(w http.ResponseWriter, r *http.Request) {
 		responseHandler.ErrorResponse(
 			core_http_response.MapError(
 				fmt.Errorf(
-					"%v: %w",
+					"%w: %w",
 					err,
 					core_http_response.ErrInvalidArgument,
 				),
@@ -35,7 +35,7 @@ func (h *AuthHTTPHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	refresh, access, err := h.authService.Login(
+	tokens, err := h.authService.Login(
 		ctx,
 		request.Username,
 		request.Password,
@@ -45,16 +45,9 @@ func (h *AuthHTTPHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response := LoginResponse{
-		Access: access.Token,
+		Access: tokens.Access,
 	}
-	cookie := &http.Cookie{
-		Name:     "refresh_token",
-		Value:    refresh.Token,
-		Secure:   h.secure,
-		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
-		Expires:  refresh.Expires,
-	}
-	http.SetCookie(w, cookie)
+
+	h.cookieManger.SetRefreshToken(w, tokens.Refresh)
 	responseHandler.JSONResponse(response, http.StatusCreated)
 }

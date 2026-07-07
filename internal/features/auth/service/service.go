@@ -2,6 +2,7 @@ package auth_service
 
 import (
 	"context"
+	core_auth "messenger/internal/core/auth"
 	"messenger/internal/core/domain"
 
 	"github.com/google/uuid"
@@ -31,9 +32,8 @@ type Hasher interface {
 }
 
 type JWTProvider interface {
-	GenerateAccessToken(id uuid.UUID) (domain.Token, error)
-	GenerateRefreshToken(id uuid.UUID) (domain.Token, error)
-	ParseToken(token string) (domain.Claims, error)
+	GenerateTokens(id uuid.UUID) (core_auth.AuthTokens, error)
+	ParseToken(token string) (core_auth.Claims, error)
 }
 
 func NewAuthService(

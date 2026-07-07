@@ -3,6 +3,7 @@ package users_transport_http
 import (
 	"bytes"
 	"encoding/json"
+	core_auth "messenger/internal/core/auth"
 	"messenger/internal/core/domain"
 	core_http_response "messenger/internal/core/transport/http/response"
 	core_test_utils "messenger/internal/core/utils/test"
@@ -128,12 +129,7 @@ func TestChangePassword(t *testing.T) {
 			ctx := core_test_utils.GetLoggerContext(req.Context())
 
 			if !tt.withoutClaims {
-				ctx = core_test_utils.GetClaimsContext(
-					ctx,
-					domain.Claims{
-						UserID: tt.userID,
-					},
-				)
+				ctx = core_auth.WithUserID(ctx, tt.userID)
 			}
 
 			handler.ChangePassword(rec, req.WithContext(ctx))

@@ -2,20 +2,22 @@ package core_auth
 
 import (
 	"context"
-	"messenger/internal/core/domain"
+
+	"github.com/google/uuid"
 )
 
-type claimsContextKey struct{}
+type userIDContextKey struct{}
 
 var (
-	claimsKey = claimsContextKey{}
+	key = userIDContextKey{}
 )
 
-func WithClaims(ctx context.Context, claims domain.Claims) context.Context {
-	return context.WithValue(ctx, claimsKey, claims)
+func UserIDFromContext(ctx context.Context) (uuid.UUID, bool) {
+	userID, ok := ctx.Value(key).(uuid.UUID)
+
+	return userID, ok
 }
 
-func ClaimsFromContext(ctx context.Context) (domain.Claims, bool) {
-	claims, ok := ctx.Value(claimsKey).(domain.Claims)
-	return claims, ok
+func WithUserID(ctx context.Context, userID uuid.UUID) context.Context {
+	return context.WithValue(ctx, key, userID)
 }

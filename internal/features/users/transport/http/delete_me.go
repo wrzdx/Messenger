@@ -10,7 +10,7 @@ import (
 func (h *UsersHTTPHandler) DeleteMe(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
-	claims, ok := core_auth.ClaimsFromContext(ctx)
+	userID, ok := core_auth.UserIDFromContext(ctx)
 	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
 
 	if !ok {
@@ -19,7 +19,7 @@ func (h *UsersHTTPHandler) DeleteMe(w http.ResponseWriter, r *http.Request) {
 		)
 		return
 	}
-	if err := h.usersService.DeleteUser(ctx, claims.UserID); err != nil {
+	if err := h.usersService.DeleteUser(ctx, userID); err != nil {
 		responseHandler.ErrorResponse(core_http_response.MapError(err))
 		return
 	}

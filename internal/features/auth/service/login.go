@@ -3,6 +3,7 @@ package auth_service
 import (
 	"context"
 	"fmt"
+	core_auth "messenger/internal/core/auth"
 	"messenger/internal/core/domain"
 )
 
@@ -10,36 +11,29 @@ func (s *AuthService) Login(
 	ctx context.Context,
 	username string,
 	password string,
-) (domain.Token, domain.Token, error) {
+) (core_auth.AuthTokens, error) {
 	user, err := s.authRepository.GetUserByUsername(
 		ctx,
 		username,
 	)
 	if err != nil {
-		return domain.Token{}, domain.Token{}, domain.ErrInvalidCredentials
+		return core_auth.AuthTokens{}, domain.ErrInvalidCredentials
 	}
 
 	if err := s.hasher.Compare(user.PasswordHash, password); err != nil {
-		return domain.Token{}, domain.Token{}, fmt.Errorf(
+		return core_auth.AuthTokens{}, fmt.Errorf(
 			"compare passwords: %w",
 			err,
 		)
 	}
 
-	refresh, err := s.jwtProvider.GenerateRefreshToken(user.ID)
+	tokens, err := s.jwtProvider.GenerateTokens(user.ID)
 	if err != nil {
-		return domain.Token{}, domain.Token{}, fmt.Errorf(
+		return core_auth.AuthTokens{}, fmt.Errorf(
 			"generate refresh token: %w",
 			err,
 		)
 	}
-	access, err := s.jwtProvider.GenerateAccessToken(user.ID)
-	if err != nil {
-		return domain.Token{}, domain.Token{}, fmt.Errorf(
-			"generate access token: %w",
-			err,
-		)
-	}
 
-	return refresh, access, nil
+	return tokens, nil
 }

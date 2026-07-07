@@ -91,7 +91,7 @@ func (p *Pool) Begin(ctx context.Context) (core_postgres.Tx, error) {
 	}
 
 	return &Tx{
-		tx: tx,
+		tx:        tx,
 		optTimout: p.optTimout,
 	}, nil
 }

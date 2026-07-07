@@ -6,7 +6,7 @@ type AuthRepository struct {
 	db core_postgres.DB
 }
 
-func NewUsersRepository(db core_postgres.DB) *AuthRepository {
+func NewAuthRepository(db core_postgres.DB) *AuthRepository {
 	return &AuthRepository{
 		db: db,
 	}
