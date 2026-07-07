@@ -26,7 +26,7 @@ func (h *AuthHTTPHandler) Login(w http.ResponseWriter, r *http.Request) {
 		responseHandler.ErrorResponse(
 			core_http_response.MapError(
 				fmt.Errorf(
-					"%w: %w",
+					"%v: %w",
 					err,
 					core_http_response.ErrInvalidArgument,
 				),

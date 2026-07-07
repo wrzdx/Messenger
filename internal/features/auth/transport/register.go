@@ -38,13 +38,12 @@ func (h *AuthHTTPHandler) Register(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
 	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
-
 	var request RegisterRequest
 	if err := core_http_request.DecodeAndValidateRequest(r, &request); err != nil {
 		responseHandler.ErrorResponse(
 			core_http_response.MapError(
 				fmt.Errorf(
-					"%w: %w",
+					"%v: %w",
 					err,
 					core_http_response.ErrInvalidArgument,
 				),
