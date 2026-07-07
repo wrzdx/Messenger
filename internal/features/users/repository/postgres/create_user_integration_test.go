@@ -148,7 +148,7 @@ func TestCreateUser(t *testing.T) {
 				CreatedAt:    core_test_utils.CreatedAt,
 				PasswordHash: core_test_utils.PasswordHash,
 			},
-			wantError: core_postgres_pool.ErrViolatesUnique,
+			wantError: domain.ErrUserAlreadyExists,
 			before: func(t *testing.T, repo *UsersRepository) {
 				_, err := repo.CreateUser(
 					t.Context(),

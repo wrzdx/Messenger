@@ -5,7 +5,6 @@ package users_postgres_repository
 import (
 	"errors"
 	"messenger/internal/core/domain"
-	core_postgres_pool "messenger/internal/core/repository/postgres/pool"
 	core_pgx_pool "messenger/internal/core/repository/postgres/pool/pgx"
 	core_test_utils "messenger/internal/core/utils/test"
 	"testing"
@@ -29,7 +28,7 @@ func TestGetUser(t *testing.T) {
 		{
 			name:      "non-existing user",
 			userID:    core_test_utils.ID,
-			wantError: core_postgres_pool.ErrNoRows,
+			wantError: domain.ErrUserNotFound,
 		},
 	}
 

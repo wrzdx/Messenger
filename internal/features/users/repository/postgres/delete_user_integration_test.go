@@ -4,7 +4,7 @@ package users_postgres_repository
 
 import (
 	"errors"
-	core_postgres_pool "messenger/internal/core/repository/postgres/pool"
+	"messenger/internal/core/domain"
 	core_pgx_pool "messenger/internal/core/repository/postgres/pool/pgx"
 	core_test_utils "messenger/internal/core/utils/test"
 	"testing"
@@ -25,7 +25,7 @@ func TestDeleteUser(t *testing.T) {
 		{
 			name:      "non-existing user",
 			userID:    core_test_utils.ID,
-			wantError: core_postgres_pool.ErrNoRows,
+			wantError: domain.ErrUserNotFound,
 		},
 	}
 
@@ -49,7 +49,7 @@ func TestDeleteUser(t *testing.T) {
 
 			if tt.wantError == nil {
 				_, err := repository.GetUser(t.Context(), tt.userID)
-				if !errors.Is(err, core_postgres_pool.ErrNoRows) {
+				if !errors.Is(err, domain.ErrUserNotFound) {
 					t.Fatalf("user was not deleted")
 				}
 			}

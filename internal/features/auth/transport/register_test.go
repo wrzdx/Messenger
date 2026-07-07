@@ -20,7 +20,7 @@ func TestRegister(t *testing.T) {
 		serviceErr        error
 		wantServiceCalled bool
 		wantStatus        int
-		wantError         error
+		wantError         string
 		body              RegisterRequest
 	}{
 		{
@@ -40,7 +40,7 @@ func TestRegister(t *testing.T) {
 			wantServiceCalled: true,
 			serviceErr:        domain.ErrUserAlreadyExists,
 			wantStatus:        http.StatusConflict,
-			wantError:         domain.ErrUserAlreadyExists,
+			wantError:         core_http_response.MapError(domain.ErrUserAlreadyExists).Message,
 			body: RegisterRequest{
 				Username:  "i.ivanov",
 				FirstName: "Ivan",
@@ -52,16 +52,18 @@ func TestRegister(t *testing.T) {
 		{
 			name:       "missing username",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.ErrInvalidArgument,
+			wantError:  core_http_response.MapError(core_http_response.ErrInvalidArgument).Message,
 			body: RegisterRequest{
 				FirstName: "Ivan",
 				Password:  "password",
 			},
 		},
 		{
-			name:       "username too short",
-			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.ErrInvalidArgument,
+			name:              "username too short",
+			wantStatus:        http.StatusBadRequest,
+			wantServiceCalled: true,
+			serviceErr:        domain.ErrInvalidUsername,
+			wantError:         core_http_response.MapError(domain.ErrInvalidUsername).Message,
 			body: RegisterRequest{
 				Username:  "ivan",
 				FirstName: "Ivan",
@@ -69,9 +71,11 @@ func TestRegister(t *testing.T) {
 			},
 		},
 		{
-			name:       "username too long",
-			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.ErrInvalidArgument,
+			name:              "username too long",
+			wantStatus:        http.StatusBadRequest,
+			wantServiceCalled: true,
+			serviceErr:        domain.ErrInvalidUsername,
+			wantError:         core_http_response.MapError(domain.ErrInvalidUsername).Message,
 			body: RegisterRequest{
 				Username:  strings.Repeat("a", 33),
 				FirstName: "Ivan",
@@ -81,16 +85,18 @@ func TestRegister(t *testing.T) {
 		{
 			name:       "missing first name",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.ErrInvalidArgument,
+			wantError:  core_http_response.MapError(core_http_response.ErrInvalidArgument).Message,
 			body: RegisterRequest{
 				Username: "i.ivanov",
 				Password: "password",
 			},
 		},
 		{
-			name:       "first name too long",
-			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.ErrInvalidArgument,
+			name:              "first name too long",
+			wantStatus:        http.StatusBadRequest,
+			wantServiceCalled: true,
+			serviceErr:        domain.ErrInvalidFirstName,
+			wantError:         core_http_response.MapError(domain.ErrInvalidFirstName).Message,
 			body: RegisterRequest{
 				Username:  "i.ivanov",
 				FirstName: strings.Repeat("a", 65),
@@ -98,9 +104,11 @@ func TestRegister(t *testing.T) {
 			},
 		},
 		{
-			name:       "last name too long",
-			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.ErrInvalidArgument,
+			name:              "last name too long",
+			wantStatus:        http.StatusBadRequest,
+			wantServiceCalled: true,
+			serviceErr:        domain.ErrInvalidLastName,
+			wantError:         core_http_response.MapError(domain.ErrInvalidLastName).Message,
 			body: RegisterRequest{
 				Username:  "i.ivanov",
 				FirstName: "Ivan",
@@ -109,9 +117,11 @@ func TestRegister(t *testing.T) {
 			},
 		},
 		{
-			name:       "bio too long",
-			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.ErrInvalidArgument,
+			name:              "bio too long",
+			wantStatus:        http.StatusBadRequest,
+			wantServiceCalled: true,
+			serviceErr:        domain.ErrInvalidBio,
+			wantError:         core_http_response.MapError(domain.ErrInvalidBio).Message,
 			body: RegisterRequest{
 				Username:  "i.ivanov",
 				FirstName: "Ivan",
@@ -120,9 +130,11 @@ func TestRegister(t *testing.T) {
 			},
 		},
 		{
-			name:       "password too short",
-			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.ErrInvalidArgument,
+			name:              "password too short",
+			wantStatus:        http.StatusBadRequest,
+			wantServiceCalled: true,
+			serviceErr:        domain.ErrInvalidPassword,
+			wantError:         core_http_response.MapError(domain.ErrInvalidPassword).Message,
 			body: RegisterRequest{
 				Username:  "i.ivanov",
 				FirstName: "Ivan",
@@ -130,9 +142,11 @@ func TestRegister(t *testing.T) {
 			},
 		},
 		{
-			name:       "password too long",
-			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.ErrInvalidArgument,
+			name:              "password too long",
+			wantStatus:        http.StatusBadRequest,
+			wantServiceCalled: true,
+			serviceErr:        domain.ErrInvalidPassword,
+			wantError:         core_http_response.MapError(domain.ErrInvalidPassword).Message,
 			body: RegisterRequest{
 				Username:  "i.ivanov",
 				FirstName: "Ivan",
@@ -215,16 +229,16 @@ func TestRegister(t *testing.T) {
 				t.Fatalf("got status %d, want %d", rec.Code, tt.wantStatus)
 			}
 
-			if tt.wantError != nil {
+			if tt.wantError != "" {
 				var gotError core_http_response.ErrorResponse
 				if err := json.NewDecoder(rec.Body).Decode(&gotError); err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
 
-				if !strings.HasSuffix(gotError.Error, tt.wantError.Error()) {
+				if gotError.Error != tt.wantError {
 					t.Fatalf(
 						"ErrorResponse mismatch:\nwant: %s\ngot: %s",
-						tt.wantError.Error(),
+						tt.wantError,
 						gotError.Error,
 					)
 				}

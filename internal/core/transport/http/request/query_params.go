@@ -15,7 +15,7 @@ func GetQueryParam[T any](r *http.Request, key string) (*T, error) {
 		return nil, nil
 	}
 
-	var target T 
+	var target T
 
 	switch any(&target).(type) {
 	case *int:

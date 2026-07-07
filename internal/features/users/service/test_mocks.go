@@ -29,6 +29,8 @@ type StubUsersRepository struct {
 		id uuid.UUID,
 		user domain.User,
 	) (domain.User, error)
+
+	ChangePasswordFn func(id uuid.UUID, hash string) error
 }
 
 func (s *StubUsersRepository) CreateUser(
@@ -40,10 +42,9 @@ func (s *StubUsersRepository) CreateUser(
 
 func (s *StubUsersRepository) GetUsers(
 	ctx context.Context,
-	limit *int,
-	offset *int,
+	pagination domain.Pagination,
 ) ([]domain.User, error) {
-	return s.GetUsersFn(limit, offset)
+	return s.GetUsersFn(pagination.Limit, pagination.Offset)
 }
 
 func (s *StubUsersRepository) GetUser(
@@ -68,10 +69,22 @@ func (s *StubUsersRepository) PatchUser(
 	return s.PatchUserFn(id, user)
 }
 
+func (s *StubUsersRepository) ChangePassword(
+	ctx context.Context,
+	id uuid.UUID,
+	newPasswordHash string,
+) error {
+	return s.ChangePasswordFn(id, newPasswordHash)
+}
+
 type StubHasher struct {
+	HashFn    func(password string) (string, error)
 	CompareFn func(hash, password string) error
 }
 
+func (h *StubHasher) Hash(password string) (string, error) {
+	return h.HashFn(password)
+}
 func (h *StubHasher) Compare(hash, password string) error {
 	return h.CompareFn(hash, password)
 }

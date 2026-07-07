@@ -39,7 +39,7 @@ func (r *UsersRepository) GetUser(
 			return domain.User{}, fmt.Errorf(
 				"user with id='%d': %w",
 				id,
-				core_postgres_pool.ErrNoRows,
+				domain.ErrUserNotFound,
 			)
 		}
 

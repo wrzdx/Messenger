@@ -40,22 +40,23 @@ func NewUser(
 }
 
 func (u *User) Validate() error {
-	if l := utf8.RuneCountInString(u.Username); l < 5 || l > 32 {
-		return ErrInvalidUsername
+	if err := ValidateUsername(u.Username); err != nil {
+		return err
 	}
-	if l := utf8.RuneCountInString(u.FirstName); l < 1 || l > 64 {
-		return ErrInvalidFirstName
+
+	if err := ValidateFirstName(u.FirstName); err != nil {
+		return err
 	}
 
 	if u.LastName != nil {
-		if l := utf8.RuneCountInString(*u.LastName); l > 64 {
-			return ErrInvalidLastName
+		if err := ValidateLastName(*u.LastName); err != nil {
+			return err
 		}
 	}
 
 	if u.Bio != nil {
-		if l := utf8.RuneCountInString(*u.Bio); l > 70 {
-			return ErrInvalidBio
+		if err := ValidateBio(*u.Bio); err != nil {
+			return err
 		}
 	}
 
@@ -84,14 +85,39 @@ func NewUserPatch(
 }
 
 func (p *UserPatch) Validate() error {
-	if p.Username.Set && p.Username.Value == nil {
-		return ErrInvalidUsername
+	if p.Username.Set {
+		if p.Username.Value == nil {
+			return ErrNullUsername
+		}
+		if err := ValidateUsername(*p.Username.Value); err != nil {
+			return err
+		}
 	}
-	if p.FirstName.Set && p.FirstName.Value == nil {
-		return ErrInvalidFirstName
+
+	if p.FirstName.Set {
+		if p.FirstName.Value == nil {
+			return ErrNullFirstname
+		}
+		if err := ValidateFirstName(*p.FirstName.Value); err != nil {
+			return err
+		}
+	}
+
+	if p.LastName.Set && p.LastName.Value != nil {
+		if err := ValidateLastName(*p.LastName.Value); err != nil {
+			return err
+		}
+	}
+
+	if p.Bio.Set && p.Bio.Value != nil {
+		if err := ValidateBio(*p.Bio.Value); err != nil {
+			return err
+		}
+
 	}
 
 	return nil
+
 }
 
 func (u *User) ApplyPatch(patch UserPatch) error {
@@ -122,5 +148,36 @@ func (u *User) ApplyPatch(patch UserPatch) error {
 	}
 
 	*u = tmp
+	return nil
+}
+
+func ValidateUsername(username string) error {
+	if l := utf8.RuneCountInString(username); l < 5 || l > 32 {
+		return ErrInvalidUsername
+	}
+	return nil
+}
+func ValidatePassword(password string) error {
+	if l := utf8.RuneCountInString(password); l < 8 || l > 32 {
+		return ErrInvalidPassword
+	}
+	return nil
+}
+func ValidateFirstName(firstName string) error {
+	if l := utf8.RuneCountInString(firstName); l < 1 || l > 64 {
+		return ErrInvalidFirstName
+	}
+	return nil
+}
+func ValidateLastName(lastName string) error {
+	if l := utf8.RuneCountInString(lastName); l > 64 {
+		return ErrInvalidLastName
+	}
+	return nil
+}
+func ValidateBio(bio string) error {
+	if l := utf8.RuneCountInString(bio); l > 70 {
+		return ErrInvalidBio
+	}
 	return nil
 }

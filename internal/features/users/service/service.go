@@ -13,14 +13,14 @@ type UsersService struct {
 }
 
 type Hasher interface {
+	Hash(password string) (string, error)
 	Compare(hash, password string) error
 }
 
 type UsersRepository interface {
 	GetUsers(
 		ctx context.Context,
-		limit *int,
-		offset *int,
+		pagination domain.Pagination,
 	) ([]domain.User, error)
 
 	GetUser(
@@ -38,6 +38,12 @@ type UsersRepository interface {
 		id uuid.UUID,
 		user domain.User,
 	) (domain.User, error)
+
+	ChangePassword(
+		ctx context.Context,
+		id uuid.UUID,
+		newPasswordHash string,
+	) error
 }
 
 func NewUsersService(
@@ -46,5 +52,6 @@ func NewUsersService(
 ) *UsersService {
 	return &UsersService{
 		userRepository: usersRepository,
+		hasher:         hasher,
 	}
 }

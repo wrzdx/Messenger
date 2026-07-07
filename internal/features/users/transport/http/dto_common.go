@@ -9,11 +9,11 @@ import (
 
 type UserDTOResponse struct {
 	ID        uuid.UUID `json:"id"`
-	Username  string    `json:"username" validate:"required,min=5,max=32" example:"qwerty"`
-	FirstName string    `json:"first_name" validate:"required,min=1,max=64" example:"Ivan"`
-	LastName  *string   `json:"last_name" validate:"max=64" example:"Ivanov"`
+	Username  string    `json:"username" validate:"required" example:"qwerty"`
+	FirstName string    `json:"first_name" validate:"required" example:"Ivan"`
+	LastName  *string   `json:"last_name" example:"Ivanov"`
 	CreatedAt time.Time `json:"created_at" example:"2026-02-26T10:30:00Z"`
-	Bio       *string   `json:"bio" validate:"max=70" example:"We didn't choose this path. Circumstance chose it for us. We're simply trying to keep climbing."`
+	Bio       *string   `json:"bio" example:"We didn't choose this path. Circumstance chose it for us. We're simply trying to keep climbing."`
 }
 
 func userDTOFromDomain(user domain.User) UserDTOResponse {

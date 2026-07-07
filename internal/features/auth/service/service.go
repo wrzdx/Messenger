@@ -26,7 +26,7 @@ type AuthRepository interface {
 }
 
 type Hasher interface {
-	Hash(password string) ([]byte, error)
+	Hash(password string) (string, error)
 	Compare(hash, password string) error
 }
 

@@ -33,6 +33,9 @@ var errorMap = []struct {
 	{domain.ErrInvalidBio, http.StatusBadRequest},
 	{domain.ErrNegativeOffset, http.StatusBadRequest},
 	{domain.ErrNegativeLimit, http.StatusBadRequest},
+	{domain.ErrNullUsername, http.StatusBadRequest},
+	{domain.ErrNullFirstname, http.StatusBadRequest},
+	{domain.ErrInvalidPassword, http.StatusBadRequest},
 
 	{domain.ErrUserAlreadyExists, http.StatusConflict},
 	{domain.ErrInvalidCredentials, http.StatusUnauthorized},

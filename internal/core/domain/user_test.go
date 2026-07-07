@@ -109,7 +109,7 @@ func TestUserPatchValidate(t *testing.T) {
 					Set: true,
 				},
 			},
-			err: ErrInvalidUsername,
+			err: ErrNullUsername,
 		},
 		{
 			name: "first name to null",
@@ -118,7 +118,7 @@ func TestUserPatchValidate(t *testing.T) {
 					Set: true,
 				},
 			},
-			err: ErrInvalidFirstName,
+			err: ErrNullFirstname,
 		},
 	}
 

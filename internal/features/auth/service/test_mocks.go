@@ -32,11 +32,11 @@ func (s *StubAuthRepository) GetUser(
 }
 
 type StubHasher struct {
-	HashFn    func(password string) ([]byte, error)
+	HashFn    func(password string) (string, error)
 	CompareFn func(hash, password string) error
 }
 
-func (h *StubHasher) Hash(password string) ([]byte, error) {
+func (h *StubHasher) Hash(password string) (string, error) {
 	return h.HashFn(password)
 }
 func (h *StubHasher) Compare(hash, password string) error {

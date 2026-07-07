@@ -2,7 +2,6 @@ package domain
 
 import (
 	"time"
-	"unicode/utf8"
 
 	"github.com/google/uuid"
 )
@@ -63,27 +62,28 @@ func NewRegisterUserPayload(
 }
 
 func (p *RegisterUserPayload) Validate() error {
-	if l := utf8.RuneCountInString(p.Username); l < 5 || l > 32 {
-		return ErrInvalidUsername
+	if err := ValidateUsername(p.Username); err != nil {
+		return err
 	}
-	if l := utf8.RuneCountInString(p.FirstName); l < 1 || l > 64 {
-		return ErrInvalidFirstName
+
+	if err := ValidateFirstName(p.FirstName); err != nil {
+		return err
 	}
 
 	if p.LastName != nil {
-		if l := utf8.RuneCountInString(*p.LastName); l > 64 {
-			return ErrInvalidLastName
+		if err := ValidateLastName(*p.LastName); err != nil {
+			return err
 		}
 	}
 
 	if p.Bio != nil {
-		if l := utf8.RuneCountInString(*p.Bio); l > 70 {
-			return ErrInvalidBio
+		if err := ValidateBio(*p.Bio); err != nil {
+			return err
 		}
 	}
 
-	if l := utf8.RuneCountInString(p.Password); l < 8 || l > 32 {
-		return ErrInvalidPassword
+	if err := ValidatePassword(p.Password); err != nil {
+		return err
 	}
 
 	return nil

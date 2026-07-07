@@ -29,6 +29,12 @@ type StubUsersService struct {
 		id uuid.UUID,
 		patch domain.UserPatch,
 	) (domain.User, error)
+
+	ChangePasswordFn func(
+		id uuid.UUID,
+		old_password string,
+		new_password string,
+	) error
 }
 
 func (s *StubUsersService) CreateUser(
@@ -40,10 +46,9 @@ func (s *StubUsersService) CreateUser(
 
 func (s *StubUsersService) GetUsers(
 	ctx context.Context,
-	limit *int,
-	offset *int,
+	pagination domain.Pagination,
 ) ([]domain.User, error) {
-	return s.GetUsersFn(limit, offset)
+	return s.GetUsersFn(pagination.Limit, pagination.Offset)
 }
 
 func (s *StubUsersService) GetUser(
@@ -66,4 +71,13 @@ func (s *StubUsersService) PatchUser(
 	patch domain.UserPatch,
 ) (domain.User, error) {
 	return s.PatchUserFn(id, patch)
+}
+
+func (s *StubUsersService) ChangePassword(
+	ctx context.Context,
+	id uuid.UUID,
+	old_password string,
+	new_password string,
+) error {
+	return s.ChangePasswordFn(id, old_password, new_password)
 }

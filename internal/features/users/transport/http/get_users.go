@@ -2,6 +2,7 @@ package users_transport_http
 
 import (
 	"fmt"
+	"messenger/internal/core/domain"
 	core_logger "messenger/internal/core/logger"
 	core_http_request "messenger/internal/core/transport/http/request"
 	core_http_response "messenger/internal/core/transport/http/response"
@@ -28,8 +29,8 @@ func (h *UsersHTTPHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 		)
 		return
 	}
-
-	userDomains, err := h.usersService.GetUsers(ctx, limit, offset)
+	pagination := domain.NewPagination(limit, offset)
+	userDomains, err := h.usersService.GetUsers(ctx, pagination)
 	if err != nil {
 		responseHandler.ErrorResponse(core_http_response.MapError(err))
 		return

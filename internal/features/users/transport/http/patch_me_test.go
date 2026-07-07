@@ -90,33 +90,65 @@ func TestPatchMe(t *testing.T) {
 			},
 		},
 		{
-			name:       "username too short",
-			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.MapError(core_http_response.ErrInvalidArgument).Message,
+			name:              "username too short",
+			wantStatus:        http.StatusBadRequest,
+			wantServiceCalled: true,
+			wantServicePatch: domain.UserPatch{
+				Username: domain.Nullable[string]{
+					Value: new("abc"),
+					Set:   true,
+				},
+			},
+			serviceErr: domain.ErrInvalidUsername,
+			wantError:  core_http_response.MapError(domain.ErrInvalidUsername).Message,
 			body: map[string]any{
 				"username": "abc",
 			},
 		},
 		{
-			name:       "username too long",
-			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.MapError(core_http_response.ErrInvalidArgument).Message,
+			name:              "username too long",
+			wantStatus:        http.StatusBadRequest,
+			wantServiceCalled: true,
+			wantServicePatch: domain.UserPatch{
+				Username: domain.Nullable[string]{
+					Value: new(strings.Repeat("a", 33)),
+					Set:   true,
+				},
+			},
+			serviceErr: domain.ErrInvalidUsername,
+			wantError:  core_http_response.MapError(domain.ErrInvalidUsername).Message,
 			body: map[string]any{
 				"username": strings.Repeat("a", 33),
 			},
 		},
 		{
-			name:       "username is null",
-			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.MapError(core_http_response.ErrInvalidArgument).Message,
+			name:              "username is null",
+			wantStatus:        http.StatusBadRequest,
+			wantServiceCalled: true,
+			wantServicePatch: domain.UserPatch{
+				Username: domain.Nullable[string]{
+					Value: nil,
+					Set:   true,
+				},
+			},
+			serviceErr: domain.ErrNullUsername,
+			wantError:  core_http_response.MapError(domain.ErrNullUsername).Message,
 			body: map[string]any{
 				"username": nil,
 			},
 		},
 		{
-			name:       "first name is null",
+			name:              "first name is null",
+			wantServiceCalled: true,
+			wantServicePatch: domain.UserPatch{
+				FirstName: domain.Nullable[string]{
+					Value: nil,
+					Set:   true,
+				},
+			},
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.MapError(core_http_response.ErrInvalidArgument).Message,
+			serviceErr: domain.ErrNullFirstname,
+			wantError:  core_http_response.MapError(domain.ErrNullFirstname).Message,
 
 			body: map[string]any{
 				"first_name": nil,
@@ -225,7 +257,7 @@ func TestPatchMe(t *testing.T) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 
-				if gotError.Error!= tt.wantError {
+				if gotError.Error != tt.wantError {
 					t.Fatalf(
 						"ErrorResponse mismatch:\nwant: %s\ngot: %s",
 						tt.wantError,

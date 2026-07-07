@@ -15,16 +15,16 @@ func NewBcryptHasher() BcryptHasher {
 	return BcryptHasher{}
 }
 
-func (h BcryptHasher) Hash(password string) ([]byte, error) {
+func (h BcryptHasher) Hash(password string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword(
 		[]byte(password),
 		bcrypt.DefaultCost,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("bcrypt hash: %w", err)
+		return "", fmt.Errorf("bcrypt hash: %w", err)
 	}
 
-	return hash, nil
+	return string(hash), nil
 }
 
 func (h BcryptHasher) Compare(hash, password string) error {

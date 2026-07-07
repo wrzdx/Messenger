@@ -80,7 +80,8 @@ func TestGetUsers(t *testing.T) {
 			service := NewUsersService(&repo, &hasher)
 
 			// action
-			gotUsers, gotErr := service.GetUsers(t.Context(), tt.limit, tt.offset)
+			pagination := domain.NewPagination(tt.limit, tt.offset)
+			gotUsers, gotErr := service.GetUsers(t.Context(), pagination)
 
 			// check
 			if repoCalled != tt.wantRepoCalled {

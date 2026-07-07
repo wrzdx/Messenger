@@ -28,7 +28,7 @@ func (s *AuthService) CreateUser(
 		payload.LastName,
 		time.Now(),
 		payload.Bio,
-		string(passwordHash),
+		passwordHash,
 	)
 
 	user, err = s.authRepository.CreateUser(ctx, user)

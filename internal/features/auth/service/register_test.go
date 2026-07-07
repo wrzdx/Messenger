@@ -150,16 +150,14 @@ func TestCreateUser(t *testing.T) {
 			var hasherCalled bool
 			var hasherGotPsw string
 			stubHasher := StubHasher{
-				HashFn: func(password string) ([]byte, error) {
+				HashFn: func(password string) (string, error) {
 					hasherCalled = true
 					hasherGotPsw = password
-					return []byte(pswHash), tt.hasherError
+					return pswHash, tt.hasherError
 				},
 			}
 
 			stubJWTProvider := StubJWTProvider{}
-
-			
 
 			wantRepoGotUser := domain.NewUser(
 				tt.wantUser.ID,

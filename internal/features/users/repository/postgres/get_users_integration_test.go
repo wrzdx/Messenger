@@ -72,8 +72,9 @@ func TestGetUsers(t *testing.T) {
 	// subtests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			pagination := domain.NewPagination(tt.limit, tt.offset)
 			// action
-			gotUsers, gotErr := repository.GetUsers(t.Context(), tt.limit, tt.offset)
+			gotUsers, gotErr := repository.GetUsers(t.Context(), pagination)
 
 			// assertion
 			if !errors.Is(gotErr, tt.wantError) {

@@ -45,7 +45,7 @@ func (r *UsersRepository) CreateUser(
 			return domain.User{}, fmt.Errorf(
 				"user with username=%s already exists: %w",
 				user.Username,
-				err,
+				domain.ErrUserAlreadyExists,
 			)
 		}
 		return domain.User{}, fmt.Errorf("scan error: %w", err)
