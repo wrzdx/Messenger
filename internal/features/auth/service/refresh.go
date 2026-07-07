@@ -7,24 +7,17 @@ import (
 	"messenger/internal/core/domain"
 )
 
-func (s *AuthService) Login(
+func (s *AuthService) Refresh(
 	ctx context.Context,
-	username string,
-	password string,
+	token string,
 ) (core_auth.AuthTokens, error) {
-	user, err := s.usersRepository.GetUserByUsername(
-		ctx,
-		username,
-	)
+	claims, err := s.jwtProvider.ParseToken(token)
 	if err != nil {
-		return core_auth.AuthTokens{}, domain.ErrInvalidCredentials
+		return core_auth.AuthTokens{}, domain.ErrInvalidRefreshToken
 	}
-
-	if err := s.hasher.Compare(user.PasswordHash, password); err != nil {
-		return core_auth.AuthTokens{}, fmt.Errorf(
-			"compare passwords: %w",
-			err,
-		)
+	user, err := s.usersRepository.GetUser(ctx, claims.UserID)
+	if err != nil {
+		return core_auth.AuthTokens{}, domain.ErrUserNotFound
 	}
 
 	tokens, err := s.jwtProvider.GenerateTokens(user.ID)

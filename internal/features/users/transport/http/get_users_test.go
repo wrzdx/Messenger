@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -90,13 +91,13 @@ func TestGetUsers(t *testing.T) {
 		{
 			name:       "invalid limit",
 			limit:      "asadf",
-			wantError:  core_http_response.MapError(core_http_response.ErrInvalidArgument).Message,
+			wantError:  core_http_response.ErrInvalidArgument.Error(),
 			wantStatus: http.StatusBadRequest,
 		},
 		{
 			name:      "invalid offset",
 			offset:    "asadf",
-			wantError: core_http_response.MapError(core_http_response.ErrInvalidArgument).Message,
+			wantError: core_http_response.ErrInvalidArgument.Error(),
 
 			wantStatus: http.StatusBadRequest,
 		},
@@ -172,7 +173,7 @@ func TestGetUsers(t *testing.T) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 
-				if gotError.Error != tt.wantError {
+				if !strings.HasSuffix(gotError.Error, tt.wantError) {
 					t.Fatalf(
 						"ErrorResponse mismatch:\nwant: %s\ngot: %s",
 						tt.wantError,

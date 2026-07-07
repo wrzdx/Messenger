@@ -3,11 +3,13 @@ package users_transport_http
 import (
 	"bytes"
 	"encoding/json"
+	core_auth "messenger/internal/core/auth"
 	"messenger/internal/core/domain"
 	core_http_response "messenger/internal/core/transport/http/response"
 	core_test_utils "messenger/internal/core/utils/test"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -23,7 +25,6 @@ func TestChangePassword(t *testing.T) {
 		wantServiceCalled bool
 		wantStatus        int
 		wantError         string
-		withoutClaims     bool
 	}{
 		{
 			name:              "valid password",
@@ -62,7 +63,7 @@ func TestChangePassword(t *testing.T) {
 		{
 			name:       "missing old password",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.MapError(core_http_response.ErrInvalidArgument).Message,
+			wantError:  core_http_response.ErrInvalidArgument.Error(),
 			body: ChangePasswordRequest{
 				NewPassword: "new_password",
 			},
@@ -70,19 +71,9 @@ func TestChangePassword(t *testing.T) {
 		{
 			name:       "missing new password",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.MapError(core_http_response.ErrInvalidArgument).Message,
+			wantError:  core_http_response.ErrInvalidArgument.Error(),
 			body: ChangePasswordRequest{
 				OldPassword: "old_password",
-			},
-		},
-		{
-			name:          "without claims",
-			withoutClaims: true,
-			wantStatus:    http.StatusUnauthorized,
-			wantError:     core_http_response.MapError(core_http_response.ErrMissingClaims).Message,
-			body: ChangePasswordRequest{
-				OldPassword: "old_password",
-				NewPassword: "new_password",
 			},
 		},
 	}
@@ -126,15 +117,7 @@ func TestChangePassword(t *testing.T) {
 			)
 
 			ctx := core_test_utils.GetLoggerContext(req.Context())
-
-			if !tt.withoutClaims {
-				ctx = core_test_utils.GetClaimsContext(
-					ctx,
-					domain.Claims{
-						UserID: tt.userID,
-					},
-				)
-			}
+			ctx = core_auth.WithUserID(ctx, tt.userID)
 
 			handler.ChangePassword(rec, req.WithContext(ctx))
 
@@ -171,7 +154,7 @@ func TestChangePassword(t *testing.T) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 
-				if gotError.Error != tt.wantError {
+				if !strings.HasSuffix(gotError.Error, tt.wantError) {
 					t.Fatalf(
 						"ErrorResponse mismatch:\nwant: %s\ngot: %s",
 						tt.wantError,

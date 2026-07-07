@@ -2,6 +2,7 @@ package users_service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"messenger/internal/core/domain"
 
@@ -19,6 +20,9 @@ func (s *UsersService) ChangePassword(
 		return fmt.Errorf("get user: %w", err)
 	}
 	if err := s.hasher.Compare(user.PasswordHash, old_password); err != nil {
+		if errors.Is(err, domain.ErrInvalidCredentials) {
+			return domain.ErrWrongPassword
+		}
 		return fmt.Errorf("compare passwords: %w", err)
 	}
 

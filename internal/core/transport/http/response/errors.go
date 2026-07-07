@@ -7,7 +7,8 @@ import (
 )
 
 type ErrorResponse struct {
-	Error string `json:"error"   example:"Error description"`
+	Error   string `json:"error"`
+	Details string `json:"details,omitempty"`
 }
 
 type Error struct {
@@ -17,7 +18,6 @@ type Error struct {
 }
 
 var (
-	ErrMissingClaims   = errors.New("missing claims")
 	ErrInvalidArgument = errors.New("invalid argument")
 )
 
@@ -25,8 +25,6 @@ var errorMap = []struct {
 	err    error
 	status int
 }{
-	{ErrMissingClaims, http.StatusUnauthorized},
-	{ErrInvalidArgument, http.StatusBadRequest},
 	{domain.ErrInvalidUsername, http.StatusBadRequest},
 	{domain.ErrInvalidFirstName, http.StatusBadRequest},
 	{domain.ErrInvalidLastName, http.StatusBadRequest},
@@ -39,14 +37,17 @@ var errorMap = []struct {
 
 	{domain.ErrUserAlreadyExists, http.StatusConflict},
 	{domain.ErrInvalidCredentials, http.StatusUnauthorized},
+	{domain.ErrInvalidAccessToken, http.StatusUnauthorized},
+	{domain.ErrInvalidRefreshToken, http.StatusUnauthorized},
 	{domain.ErrUserNotFound, http.StatusNotFound},
+	{domain.ErrWrongPassword, http.StatusForbidden},
 }
 
 func MapError(err error) Error {
 	for _, e := range errorMap {
 		if errors.Is(err, e.err) {
 			return Error{
-				Error:   e.err,
+				Error:   err,
 				Status:  e.status,
 				Message: e.err.Error(),
 			}

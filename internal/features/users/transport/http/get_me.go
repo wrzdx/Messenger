@@ -10,17 +10,10 @@ import (
 func (h *UsersHTTPHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
-	claims, ok := core_auth.ClaimsFromContext(ctx)
+	userID := core_auth.MustUserIDFromContext(ctx)
 	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
 
-	if !ok {
-		responseHandler.ErrorResponse(
-			core_http_response.MapError(core_http_response.ErrMissingClaims),
-		)
-		return
-	}
-
-	user, err := h.usersService.GetUser(ctx, claims.UserID)
+	user, err := h.usersService.GetUser(ctx, userID)
 	if err != nil {
 		responseHandler.ErrorResponse(
 			core_http_response.MapError(err),

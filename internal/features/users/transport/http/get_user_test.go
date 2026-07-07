@@ -7,6 +7,7 @@ import (
 	core_test_utils "messenger/internal/core/utils/test"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -55,7 +56,7 @@ func TestGetUser(t *testing.T) {
 			name:       "invalid user id",
 			userID:     "asdf",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.MapError(core_http_response.ErrInvalidArgument).Message,
+			wantError:  core_http_response.ErrInvalidArgument.Error(),
 		},
 	}
 
@@ -109,7 +110,7 @@ func TestGetUser(t *testing.T) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 
-				if gotError.Error != tt.wantError {
+				if !strings.HasSuffix(gotError.Error, tt.wantError) {
 					t.Fatalf(
 						"ErrorResponse mismatch:\nwant: %s\ngot: %s",
 						tt.wantError,

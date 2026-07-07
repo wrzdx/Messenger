@@ -9,8 +9,8 @@ import (
 )
 
 type LoginRequest struct {
-	Username string `json:"username" example:"qwerty"`
-	Password string `json:"password" example:"password"`
+	Username string `json:"username" validate:"required" example:"qwerty"`
+	Password string `json:"password" validate:"required" example:"password"`
 }
 
 type LoginResponse struct {
@@ -24,18 +24,20 @@ func (h *AuthHTTPHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var request LoginRequest
 	if err := core_http_request.DecodeAndValidateRequest(r, &request); err != nil {
 		responseHandler.ErrorResponse(
-			core_http_response.MapError(
-				fmt.Errorf(
+			core_http_response.Error{
+				Error: fmt.Errorf(
 					"%v: %w",
 					err,
 					core_http_response.ErrInvalidArgument,
 				),
-			),
+				Status:  http.StatusBadRequest,
+				Message: err.Error(),
+			},
 		)
 		return
 	}
 
-	refresh, access, err := h.authService.Login(
+	tokens, err := h.authService.Login(
 		ctx,
 		request.Username,
 		request.Password,
@@ -45,16 +47,9 @@ func (h *AuthHTTPHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response := LoginResponse{
-		Access: access.Token,
+		Access: tokens.Access,
 	}
-	cookie := &http.Cookie{
-		Name:     "refresh_token",
-		Value:    refresh.Token,
-		Secure:   h.secure,
-		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
-		Expires:  refresh.Expires,
-	}
-	http.SetCookie(w, cookie)
+
+	h.cookieManger.SetRefreshToken(w, tokens.Refresh)
 	responseHandler.JSONResponse(response, http.StatusCreated)
 }

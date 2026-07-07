@@ -2,8 +2,6 @@ package core_test_utils
 
 import (
 	"context"
-	core_auth "messenger/internal/core/auth"
-	"messenger/internal/core/domain"
 	core_logger "messenger/internal/core/logger"
 	core_postgres "messenger/internal/core/repository/postgres"
 	"testing"
@@ -50,8 +48,4 @@ func LoadData(t *testing.T, db core_postgres.DB) {
 
 func GetLoggerContext(ctx context.Context) context.Context {
 	return core_logger.WithLogger(ctx, Log)
-}
-
-func GetClaimsContext(ctx context.Context, claims domain.Claims) context.Context {
-	return core_auth.WithClaims(ctx, claims)
 }

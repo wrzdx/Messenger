@@ -2,6 +2,7 @@ package users_transport_http
 
 import (
 	"encoding/json"
+	core_auth "messenger/internal/core/auth"
 	"messenger/internal/core/domain"
 	core_http_response "messenger/internal/core/transport/http/response"
 	core_test_utils "messenger/internal/core/utils/test"
@@ -21,7 +22,6 @@ func TestDeleteMe(t *testing.T) {
 		wantServiceCalled bool
 		wantStatus        int
 		wantError         string
-		withoutClaims     bool
 	}{
 		{
 			name:              "existing user",
@@ -34,12 +34,6 @@ func TestDeleteMe(t *testing.T) {
 			wantServiceCalled: true,
 			wantStatus:        http.StatusNotFound,
 			wantError:         core_http_response.MapError(domain.ErrUserNotFound).Message,
-		},
-		{
-			name:          "without claims",
-			withoutClaims: true,
-			wantStatus:    http.StatusUnauthorized,
-			wantError:     core_http_response.MapError(core_http_response.ErrMissingClaims).Message,
 		},
 	}
 
@@ -66,14 +60,8 @@ func TestDeleteMe(t *testing.T) {
 				nil,
 			)
 
-			claims := domain.Claims{
-				UserID: tt.userID,
-			}
-
 			ctx := core_test_utils.GetLoggerContext(req.Context())
-			if !tt.withoutClaims {
-				ctx = core_test_utils.GetClaimsContext(ctx, claims)
-			}
+			ctx = core_auth.WithUserID(ctx, tt.userID)
 
 			handler := NewUsersHTTPHandler(&service)
 

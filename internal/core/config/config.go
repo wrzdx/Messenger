@@ -2,29 +2,37 @@ package core_config
 
 import (
 	"fmt"
-	"os"
 	"time"
+
+	"github.com/kelseyhightower/envconfig"
 )
 
 type Config struct {
-	TimeZone *time.Location
+	TimeZoneName string      `envconfig:"TIME_ZONE" default:"UTC"`
+	Environment  Environment `envconfig:"ENVIRONMENT" default:"development"`
+
+	TimeZone *time.Location `ignored:"true"`
 }
 
 func NewConfig() (*Config, error) {
-	tz := os.Getenv("TIME_ZONE")
+	var cfg Config
 
-	if tz == "" {
-		tz = "UTC"
+	if err := envconfig.Process("", &cfg); err != nil {
+		return nil, fmt.Errorf("process envconfig: %w", err)
 	}
 
-	zone, err := time.LoadLocation(tz)
+	location, err := time.LoadLocation(cfg.TimeZoneName)
 	if err != nil {
-		return nil, fmt.Errorf("load time zone: %s: %w", tz, err)
+		return nil, fmt.Errorf(
+			"load time zone %q: %w",
+			cfg.TimeZoneName,
+			err,
+		)
 	}
 
-	return &Config{
-		TimeZone: zone,
-	}, nil
+	cfg.TimeZone = location
+
+	return &cfg, nil
 }
 
 func NewConfigMust() *Config {
@@ -34,4 +42,24 @@ func NewConfigMust() *Config {
 		panic(err)
 	}
 	return config
+}
+
+type Environment string
+
+const (
+	Development Environment = "development"
+	Testing     Environment = "testing"
+	Production  Environment = "production"
+)
+
+func (e Environment) IsProduction() bool {
+	return e == Production
+}
+
+func (e Environment) IsDevelopment() bool {
+	return e == Development
+}
+
+func (e Environment) IsTesting() bool {
+	return e == Testing
 }

@@ -18,14 +18,17 @@ func (h *UsersHTTPHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 
 	limit, offset, err := getLimitOffsetQueryParams(r)
 	if err != nil {
+		err = fmt.Errorf(
+			"%v: %w",
+			err,
+			core_http_response.ErrInvalidArgument,
+		)
 		responseHandler.ErrorResponse(
-			core_http_response.MapError(
-				fmt.Errorf(
-					"%v: %w",
-					err,
-					core_http_response.ErrInvalidArgument,
-				),
-			),
+			core_http_response.Error{
+				Error:   err,
+				Status:  http.StatusBadRequest,
+				Message: err.Error(),
+			},
 		)
 		return
 	}

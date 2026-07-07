@@ -2,33 +2,45 @@ package auth_service
 
 import (
 	"context"
+	core_auth "messenger/internal/core/auth"
 	"messenger/internal/core/domain"
 
 	"github.com/google/uuid"
 )
 
-type StubAuthRepository struct {
+type StubsUserRepository struct {
 	CreateUserFn func(
 		user domain.User,
 	) (domain.User, error)
 
-	GetUserFn func(
+	GetUserByUsernameFn func(
 		username string,
+	) (domain.User, error)
+
+	GetUserFn func(
+		id uuid.UUID,
 	) (domain.User, error)
 }
 
-func (s *StubAuthRepository) CreateUser(
+func (s *StubsUserRepository) CreateUser(
 	ctx context.Context,
 	user domain.User,
 ) (domain.User, error) {
 	return s.CreateUserFn(user)
 }
 
-func (s *StubAuthRepository) GetUserByUsername(
+func (s *StubsUserRepository) GetUserByUsername(
 	ctx context.Context,
 	username string,
 ) (domain.User, error) {
-	return s.GetUserFn(username)
+	return s.GetUserByUsernameFn(username)
+}
+
+func (s *StubsUserRepository) GetUser(
+	ctx context.Context,
+	id uuid.UUID,
+) (domain.User, error) {
+	return s.GetUserFn(id)
 }
 
 type StubHasher struct {
@@ -44,14 +56,20 @@ func (h *StubHasher) Compare(hash, password string) error {
 }
 
 type StubJWTProvider struct {
+	GenerateTokensFn func(id uuid.UUID) (core_auth.AuthTokens, error)
+	ParseTokenFn     func(token string) (core_auth.Claims, error)
 }
 
-func (p *StubJWTProvider) GenerateAccessToken(id uuid.UUID) (domain.Token, error) {
-	return domain.Token{}, nil
+func (p *StubJWTProvider) GenerateTokens(id uuid.UUID) (core_auth.AuthTokens, error) {
+	if p.GenerateTokensFn != nil {
+		return p.GenerateTokensFn(id)
+	}
+	return core_auth.AuthTokens{}, nil
 }
-func (p *StubJWTProvider) GenerateRefreshToken(id uuid.UUID) (domain.Token, error) {
-	return domain.Token{}, nil
-}
-func (p *StubJWTProvider) ParseToken(token string) (domain.Claims, error) {
-	return domain.Claims{}, nil
+
+func (p *StubJWTProvider) ParseToken(token string) (core_auth.Claims, error) {
+	if p.ParseTokenFn != nil {
+		return p.ParseTokenFn(token)
+	}
+	return core_auth.Claims{}, nil
 }

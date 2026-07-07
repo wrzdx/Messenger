@@ -20,7 +20,7 @@ type RegisterRequest struct {
 	Password  string  `json:"password" validate:"required" example:"password"`
 }
 
-type RegisterResponse struct {
+type UserResponse struct {
 	ID        uuid.UUID `json:"id"`
 	Username  string    `json:"username"  example:"qwerty"`
 	FirstName string    `json:"first_name"  example:"Ivan"`
@@ -29,21 +29,27 @@ type RegisterResponse struct {
 	Bio       *string   `json:"bio"  example:"We didn't choose this path. Circumstance chose it for us. We're simply trying to keep climbing."`
 }
 
+type RegisterResponse struct {
+	User   UserResponse `json:"user"`
+	Access string       `json:"access_token"`
+}
+
 func (h *AuthHTTPHandler) Register(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
 	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
-
 	var request RegisterRequest
 	if err := core_http_request.DecodeAndValidateRequest(r, &request); err != nil {
 		responseHandler.ErrorResponse(
-			core_http_response.MapError(
-				fmt.Errorf(
+			core_http_response.Error{
+				Error: fmt.Errorf(
 					"%v: %w",
 					err,
 					core_http_response.ErrInvalidArgument,
 				),
-			),
+				Status:  http.StatusBadRequest,
+				Message: err.Error(),
+			},
 		)
 		return
 	}
@@ -54,13 +60,13 @@ func (h *AuthHTTPHandler) Register(w http.ResponseWriter, r *http.Request) {
 		request.Bio,
 		request.Password,
 	)
-	userDomain, err := h.authService.Register(ctx, payload)
+	userDomain, tokens, err := h.authService.Register(ctx, payload)
 	if err != nil {
 		responseHandler.ErrorResponse(core_http_response.MapError(err))
 		return
 	}
 
-	response := RegisterResponse{
+	userResponse := UserResponse{
 		userDomain.ID,
 		userDomain.Username,
 		userDomain.FirstName,
@@ -68,5 +74,11 @@ func (h *AuthHTTPHandler) Register(w http.ResponseWriter, r *http.Request) {
 		userDomain.CreatedAt,
 		userDomain.Bio,
 	}
+	response := RegisterResponse{
+		User:   userResponse,
+		Access: tokens.Access,
+	}
+
+	h.cookieManger.SetRefreshToken(w, tokens.Refresh)
 	responseHandler.JSONResponse(response, http.StatusCreated)
 }
