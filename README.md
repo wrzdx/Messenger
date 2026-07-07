@@ -24,6 +24,24 @@ A modern messenger backend written in Go.
 make up
 ```
 
-## License
+## API
 
-MIT
+/auth
+    POST /register
+    POST /login
+    POST /refresh
+    POST /logout
+
+/users
+    GET    /
+    GET    /me
+    GET    /{id}
+    PATCH  /me
+    DELETE /me
+
+/avatars
+    POST   /
+    DELETE /
+
+/chats
+/messages

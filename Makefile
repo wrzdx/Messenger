@@ -88,3 +88,30 @@ swagger-gen:
 		-o docs \
 		--parseInternal \
 		--parseDependency
+
+test-unit:
+	@go test ${or ${action},./...}
+
+test-env-up:
+	@- docker compose exec postgres \
+		psql -U ${POSTGRES_USER} -d postgres \
+		-c "CREATE DATABASE ${POSTGRES_TEST_DB};"
+
+
+test-migrate-up:
+	@docker compose run --rm postgres-migrate \
+		-path //migrations \
+		-database postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_TEST_DB}?sslmode=disable \
+		up
+
+test-env-down:
+	@- docker compose exec postgres \
+		psql -U $(POSTGRES_USER) -d postgres \
+		-c "DROP DATABASE $(POSTGRES_TEST_DB) WITH (FORCE);"
+
+test-integration:
+	@ export POSTGRES_HOST=localhost && \
+	export POSTGRES_DB=${POSTGRES_TEST_DB} && \
+	go test -tags=integration -count=1 ${or ${action},./...}
+
+
