@@ -48,7 +48,7 @@ func TestLogin(t *testing.T) {
 		{
 			name:       "missing username",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.MapError(core_http_response.ErrInvalidArgument).Message,
+			wantError:  "username is required: invalid argument",
 			body: LoginRequest{
 				Password: "password",
 			},
@@ -56,7 +56,7 @@ func TestLogin(t *testing.T) {
 		{
 			name:       "missing password",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.MapError(core_http_response.ErrInvalidArgument).Message,
+			wantError:  "password is required: invalid argument",
 			body: LoginRequest{
 				Username: "i.ivanov",
 			},

@@ -1,4 +1,4 @@
-package auth_postgres_repository
+package users_postgres_repository
 
 import (
 	"errors"
@@ -21,14 +21,14 @@ func TestGetUserByUsername(t *testing.T) {
 	tests := []struct {
 		name      string
 		username  string
-		before    func(t *testing.T, repo *AuthRepository)
+		before    func(t *testing.T, repo *UsersRepository)
 		wantUser  domain.User
 		wantError error
 	}{
 		{
 			name:     "existing user",
 			username: "ivanov",
-			before: func(t *testing.T, repo *AuthRepository) {
+			before: func(t *testing.T, repo *UsersRepository) {
 				_, err := repo.CreateUser(
 					t.Context(),
 					domain.NewUser(
@@ -70,7 +70,7 @@ func TestGetUserByUsername(t *testing.T) {
 			}
 			defer tx.Rollback(t.Context())
 
-			repo := NewAuthRepository(tx)
+			repo := NewUsersRepository(tx)
 			core_test_utils.LoadData(t, tx)
 
 			if tt.before != nil {

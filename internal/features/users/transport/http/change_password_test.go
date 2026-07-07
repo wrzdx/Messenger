@@ -63,7 +63,7 @@ func TestChangePassword(t *testing.T) {
 		{
 			name:       "missing old password",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.MapError(core_http_response.ErrInvalidArgument).Message,
+			wantError:  "old_password is required: invalid argument",
 			body: ChangePasswordRequest{
 				NewPassword: "new_password",
 			},
@@ -71,7 +71,7 @@ func TestChangePassword(t *testing.T) {
 		{
 			name:       "missing new password",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.MapError(core_http_response.ErrInvalidArgument).Message,
+			wantError:  "new_password is required: invalid argument",
 			body: ChangePasswordRequest{
 				OldPassword: "old_password",
 			},

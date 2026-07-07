@@ -1,11 +1,13 @@
 package core_http_request
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"strings"
+	"unicode"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -16,10 +18,26 @@ type validatable interface {
 	Validate() error
 }
 
+func toSnakeCase(str string) string {
+	var matchFirstCap = true
+	var buf bytes.Buffer
+
+	for i, r := range str {
+		if i > 0 && unicode.IsUpper(r) {
+			if matchFirstCap {
+				buf.WriteRune('_')
+			}
+		}
+		buf.WriteRune(unicode.ToLower(r))
+		matchFirstCap = unicode.IsLower(r) || unicode.IsDigit(r)
+	}
+	return buf.String()
+}
 func formatValidationErrors(errs validator.ValidationErrors) error {
 	var messages []string
 
 	for _, err := range errs {
+		field := toSnakeCase(err.Field())
 		var msg string
 		switch err.Tag() {
 		case "required":
@@ -32,7 +50,7 @@ func formatValidationErrors(errs validator.ValidationErrors) error {
 			msg = err.Tag()
 		}
 
-		messages = append(messages, fmt.Sprintf("%s %s", err.Field(), msg))
+		messages = append(messages, fmt.Sprintf("%s %s", field, msg))
 	}
 
 	return errors.New(strings.Join(messages, "; "))

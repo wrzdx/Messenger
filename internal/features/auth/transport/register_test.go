@@ -53,7 +53,7 @@ func TestRegister(t *testing.T) {
 		{
 			name:       "missing username",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.MapError(core_http_response.ErrInvalidArgument).Message,
+			wantError:  "username is required: invalid argument",
 			body: RegisterRequest{
 				FirstName: "Ivan",
 				Password:  "password",
@@ -86,7 +86,7 @@ func TestRegister(t *testing.T) {
 		{
 			name:       "missing first name",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.MapError(core_http_response.ErrInvalidArgument).Message,
+			wantError:  "first_name is required: invalid argument",
 			body: RegisterRequest{
 				Username: "i.ivanov",
 				Password: "password",

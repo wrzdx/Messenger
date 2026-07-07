@@ -11,7 +11,7 @@ import (
 	core_pgx_pool "messenger/internal/core/repository/postgres/pgx"
 	core_http_middleware "messenger/internal/core/transport/http/middleware"
 	core_http_server "messenger/internal/core/transport/http/server"
-	auth_postgres_repository "messenger/internal/features/auth/repository/postgres"
+
 	auth_service "messenger/internal/features/auth/service"
 	auth_transport_http "messenger/internal/features/auth/transport"
 	users_postgres_repository "messenger/internal/features/users/repository/postgres"
@@ -68,12 +68,11 @@ func main() {
 	)
 
 	logger.Debug("initializing feature", zap.String("feature", "auth"))
-	authRepository := auth_postgres_repository.NewAuthRepository(pool)
-	authService := auth_service.NewAuthService(authRepository, hasher, jwtProvider)
+	usersRepository := users_postgres_repository.NewUsersRepository(pool)
+	authService := auth_service.NewAuthService(usersRepository, hasher, jwtProvider)
 	authTransportHTTP := auth_transport_http.NewAuthHTTPHandler(authService, cookieManager)
 
 	logger.Debug("initializing feature", zap.String("feature", "users"))
-	usersRepository := users_postgres_repository.NewUsersRepository(pool)
 	usersService := users_service.NewUsersService(usersRepository, hasher)
 	usersTranposrtHTTP := users_transport_http.NewUsersHTTPHandler(usersService)
 

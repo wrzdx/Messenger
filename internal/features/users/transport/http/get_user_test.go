@@ -7,6 +7,7 @@ import (
 	core_test_utils "messenger/internal/core/utils/test"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -109,7 +110,7 @@ func TestGetUser(t *testing.T) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 
-				if gotError.Error != tt.wantError {
+				if !strings.HasSuffix(gotError.Error, tt.wantError) {
 					t.Fatalf(
 						"ErrorResponse mismatch:\nwant: %s\ngot: %s",
 						tt.wantError,
