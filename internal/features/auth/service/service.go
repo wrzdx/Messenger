@@ -9,7 +9,7 @@ import (
 
 type AuthService struct {
 	authRepository AuthRepository
-	hasher         PasswordHasher
+	hasher         Hasher
 	jwtProvider    JWTProvider
 }
 
@@ -25,7 +25,7 @@ type AuthRepository interface {
 	) (domain.User, error)
 }
 
-type PasswordHasher interface {
+type Hasher interface {
 	Hash(password string) ([]byte, error)
 	Compare(hash, password string) error
 }
@@ -38,7 +38,7 @@ type JWTProvider interface {
 
 func NewAuthService(
 	authRepository AuthRepository,
-	hasher PasswordHasher,
+	hasher Hasher,
 	jwtProvider JWTProvider,
 ) *AuthService {
 	return &AuthService{

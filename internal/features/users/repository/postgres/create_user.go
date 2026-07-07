@@ -43,12 +43,12 @@ func (r *UsersRepository) CreateUser(
 	if err != nil {
 		if errors.Is(err, core_postgres_pool.ErrViolatesUnique) {
 			return domain.User{}, fmt.Errorf(
-				"%w: user with username=%s already exists",
-				err,
+				"user with username=%s already exists: %w",
 				user.Username,
+				err,
 			)
 		}
-		return domain.User{}, fmt.Errorf("%w: scan error", err)
+		return domain.User{}, fmt.Errorf("scan error: %w", err)
 	}
 
 	userDomain := UserDomainFromModel(userModel)

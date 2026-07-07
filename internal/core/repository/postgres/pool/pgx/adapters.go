@@ -60,5 +60,5 @@ func mapErrors(err error) error {
 		}
 	}
 
-	return fmt.Errorf("%w: %v", mappedErr, err)
+	return fmt.Errorf("%v: %w", err, mappedErr)
 }

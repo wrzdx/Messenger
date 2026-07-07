@@ -10,31 +10,48 @@ type ErrorResponse struct {
 	Error string `json:"error"   example:"Error description"`
 }
 
+type Error struct {
+	Error   error
+	Status  int
+	Message string
+}
+
 var (
 	ErrMissingClaims   = errors.New("missing claims")
 	ErrInvalidArgument = errors.New("invalid argument")
 )
 
-func MapDomainErrorToStatusCode(err error) int {
-	switch {
-	case errors.Is(err, domain.ErrInvalidUsername),
-		errors.Is(err, domain.ErrInvalidFirstName),
-		errors.Is(err, domain.ErrInvalidLastName),
-		errors.Is(err, domain.ErrInvalidBio),
-		errors.Is(err, domain.ErrNegativeOffset),
-		errors.Is(err, domain.ErrNegativeLimit):
-		return http.StatusBadRequest
+var errorMap = []struct {
+	err    error
+	status int
+}{
+	{ErrMissingClaims, http.StatusUnauthorized},
+	{ErrInvalidArgument, http.StatusBadRequest},
+	{domain.ErrInvalidUsername, http.StatusBadRequest},
+	{domain.ErrInvalidFirstName, http.StatusBadRequest},
+	{domain.ErrInvalidLastName, http.StatusBadRequest},
+	{domain.ErrInvalidBio, http.StatusBadRequest},
+	{domain.ErrNegativeOffset, http.StatusBadRequest},
+	{domain.ErrNegativeLimit, http.StatusBadRequest},
 
-	case errors.Is(err, domain.ErrUserAlreadyExists):
-		return http.StatusConflict
+	{domain.ErrUserAlreadyExists, http.StatusConflict},
+	{domain.ErrInvalidCredentials, http.StatusUnauthorized},
+	{domain.ErrUserNotFound, http.StatusNotFound},
+}
 
-	case errors.Is(err, domain.ErrInvalidCredentials):
-		return http.StatusUnauthorized
-
-	case errors.Is(err, domain.ErrUserNotFound):
-		return http.StatusNotFound
-
-	default:
-		return http.StatusInternalServerError
+func MapError(err error) Error {
+	for _, e := range errorMap {
+		if errors.Is(err, e.err) {
+			return Error{
+				Error:   e.err,
+				Status:  e.status,
+				Message: e.err.Error(),
+			}
+		}
+	}
+	return Error{
+		Error:   err,
+		Status:  http.StatusInternalServerError,
+		Message: "internal server error",
 	}
 }

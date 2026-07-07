@@ -21,11 +21,14 @@ func (r *UsersRepository) DeleteUser(
 
 	cmdTag, err := r.pool.Exec(ctx, query, id)
 	if err != nil {
-		return fmt.Errorf("%w: exec query", err)
+		return fmt.Errorf("exec query: %w", err)
 	}
 
 	if cmdTag.RowsAffected() == 0 {
-		return fmt.Errorf("%w: user with id='%d'", core_postgres_pool.ErrNoRows, id)
+		return fmt.Errorf("user with id='%d': %w", 
+		id,
+		core_postgres_pool.ErrNoRows, 
+	)
 	}
 
 	return nil

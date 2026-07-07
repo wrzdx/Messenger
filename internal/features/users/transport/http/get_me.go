@@ -15,18 +15,15 @@ func (h *UsersHTTPHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 
 	if !ok {
 		responseHandler.ErrorResponse(
-			http.StatusUnauthorized,
-			core_http_response.ErrMissingClaims,
+			core_http_response.MapError(core_http_response.ErrMissingClaims),
 		)
 		return
 	}
 
 	user, err := h.usersService.GetUser(ctx, claims.UserID)
 	if err != nil {
-		statusCode := core_http_response.MapDomainErrorToStatusCode(err)
 		responseHandler.ErrorResponse(
-			statusCode,
-			err,
+			core_http_response.MapError(err),
 		)
 	}
 

@@ -31,7 +31,7 @@ func (r *UsersRepository) GetUsers(
 
 	rows, err := r.pool.Query(ctx, query, limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("%w: select users", err)
+		return nil, fmt.Errorf("select users: %w", err)
 	}
 	defer rows.Close()
 	var userModels []UserModel
@@ -48,14 +48,14 @@ func (r *UsersRepository) GetUsers(
 			&userModel.PasswordHash,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("%w: scan users", err)
+			return nil, fmt.Errorf("scan users: %w", err)
 		}
 
 		userModels = append(userModels, userModel)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("%w: next rows", err)
+		return nil, fmt.Errorf("next rows: %w", err)
 	}
 	userDomains := userDomainsFromModels(userModels)
 

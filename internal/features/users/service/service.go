@@ -9,6 +9,11 @@ import (
 
 type UsersService struct {
 	userRepository UsersRepository
+	hasher         Hasher
+}
+
+type Hasher interface {
+	Compare(hash, password string) error
 }
 
 type UsersRepository interface {
@@ -37,6 +42,7 @@ type UsersRepository interface {
 
 func NewUsersService(
 	usersRepository UsersRepository,
+	hasher Hasher,
 ) *UsersService {
 	return &UsersService{
 		userRepository: usersRepository,

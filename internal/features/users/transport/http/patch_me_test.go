@@ -27,7 +27,7 @@ func TestPatchMe(t *testing.T) {
 		wantServiceCalled bool
 		wantServicePatch  domain.UserPatch
 		wantStatus        int
-		wantError         error
+		wantError         string
 		wantResponse      PatchUserResponse
 	}{
 		{
@@ -92,7 +92,7 @@ func TestPatchMe(t *testing.T) {
 		{
 			name:       "username too short",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.ErrInvalidArgument,
+			wantError:  core_http_response.MapError(core_http_response.ErrInvalidArgument).Message,
 			body: map[string]any{
 				"username": "abc",
 			},
@@ -100,7 +100,7 @@ func TestPatchMe(t *testing.T) {
 		{
 			name:       "username too long",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.ErrInvalidArgument,
+			wantError:  core_http_response.MapError(core_http_response.ErrInvalidArgument).Message,
 			body: map[string]any{
 				"username": strings.Repeat("a", 33),
 			},
@@ -108,7 +108,7 @@ func TestPatchMe(t *testing.T) {
 		{
 			name:       "username is null",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.ErrInvalidArgument,
+			wantError:  core_http_response.MapError(core_http_response.ErrInvalidArgument).Message,
 			body: map[string]any{
 				"username": nil,
 			},
@@ -116,7 +116,8 @@ func TestPatchMe(t *testing.T) {
 		{
 			name:       "first name is null",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.ErrInvalidArgument,
+			wantError:  core_http_response.MapError(core_http_response.ErrInvalidArgument).Message,
+
 			body: map[string]any{
 				"first_name": nil,
 			},
@@ -125,7 +126,7 @@ func TestPatchMe(t *testing.T) {
 			name:              "service error",
 			wantServiceCalled: true,
 			wantStatus:        http.StatusInternalServerError,
-			wantError:         errors.New("service error"),
+			wantError:         core_http_response.MapError(errors.New("service error")).Message,
 			serviceErr:        errors.New("service error"),
 			body: map[string]any{
 				"username": "new_username",
@@ -217,17 +218,17 @@ func TestPatchMe(t *testing.T) {
 				t.Fatalf("got status %d, want %d", rec.Code, tt.wantStatus)
 			}
 
-			if tt.wantError != nil {
+			if tt.wantError != "" {
 				var gotError core_http_response.ErrorResponse
 
 				if err := json.NewDecoder(rec.Body).Decode(&gotError); err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
 
-				if !strings.HasPrefix(gotError.Error, tt.wantError.Error()) {
+				if gotError.Error!= tt.wantError {
 					t.Fatalf(
 						"ErrorResponse mismatch:\nwant: %s\ngot: %s",
-						tt.wantError.Error(),
+						tt.wantError,
 						gotError.Error,
 					)
 				}

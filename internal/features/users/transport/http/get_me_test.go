@@ -8,7 +8,6 @@ import (
 	core_test_utils "messenger/internal/core/utils/test"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -25,7 +24,7 @@ func TestGetMe(t *testing.T) {
 		userID            uuid.UUID
 		wantServiceCalled bool
 		wantStatus        int
-		wantError         error
+		wantError         string
 		withoutClaims     bool
 	}{
 		{
@@ -48,13 +47,14 @@ func TestGetMe(t *testing.T) {
 			wantServiceCalled: true,
 			serviceErr:        domain.ErrUserNotFound,
 			wantStatus:        http.StatusNotFound,
-			wantError:         domain.ErrUserNotFound,
+
+			wantError: core_http_response.MapError(domain.ErrUserNotFound).Message,
 		},
 		{
 			name:          "without claims",
 			withoutClaims: true,
 			wantStatus:    http.StatusUnauthorized,
-			wantError:     core_http_response.ErrMissingClaims,
+			wantError:     core_http_response.MapError(core_http_response.ErrMissingClaims).Message,
 		},
 	}
 
@@ -107,16 +107,16 @@ func TestGetMe(t *testing.T) {
 				t.Fatalf("got status %d, want %d", rec.Code, tt.wantStatus)
 			}
 
-			if tt.wantError != nil {
+			if tt.wantError != "" {
 				var gotError core_http_response.ErrorResponse
 				if err := json.NewDecoder(rec.Body).Decode(&gotError); err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
 
-				if !strings.HasPrefix(gotError.Error, tt.wantError.Error()) {
+				if gotError.Error != tt.wantError {
 					t.Fatalf(
 						"ErrorResponse mismatch:\nwant: %s\ngot: %s",
-						tt.wantError.Error(),
+						tt.wantError,
 						gotError.Error,
 					)
 				}

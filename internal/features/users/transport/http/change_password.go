@@ -6,19 +6,21 @@ import (
 	core_http_request "messenger/internal/core/transport/http/request"
 	core_http_response "messenger/internal/core/transport/http/response"
 	"net/http"
-
-	"github.com/google/uuid"
 )
 
-type GetUserResponse UserDTOResponse
+type ChangePasswordRequest struct {
+	OldPassword string `json:"old_password" validate:"required,min=8,max=32" example:"password"`
+	NewPassword string `json:"new_password" validate:"required,min=8,max=32" example:"password"`
+}
 
-func (h *UsersHTTPHandler) GetUser(w http.ResponseWriter, r *http.Request) {
+func (h *UsersHTTPHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
 	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
 
-	userID, err := core_http_request.GetPathValue[uuid.UUID](r, "id")
-	if err != nil {
+	var request ChangePasswordRequest
+
+	if err := core_http_request.DecodeAndValidateRequest(r, &request); err != nil {
 		responseHandler.ErrorResponse(
 			core_http_response.MapError(
 				fmt.Errorf(
@@ -30,12 +32,4 @@ func (h *UsersHTTPHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 		)
 		return
 	}
-	user, err := h.usersService.GetUser(ctx, userID)
-	if err != nil {
-		responseHandler.ErrorResponse(core_http_response.MapError(err))
-		return
-	}
-
-	response := GetUserResponse(userDTOFromDomain(user))
-	responseHandler.JSONResponse(response, http.StatusOK)
 }

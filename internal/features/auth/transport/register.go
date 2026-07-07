@@ -37,8 +37,13 @@ func (h *AuthHTTPHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var request RegisterRequest
 	if err := core_http_request.DecodeAndValidateRequest(r, &request); err != nil {
 		responseHandler.ErrorResponse(
-			http.StatusBadRequest,
-			fmt.Errorf("%w: %v", core_http_response.ErrInvalidArgument, err),
+			core_http_response.MapError(
+				fmt.Errorf(
+					"%v: %w",
+					err,
+					core_http_response.ErrInvalidArgument,
+				),
+			),
 		)
 		return
 	}
@@ -51,8 +56,7 @@ func (h *AuthHTTPHandler) Register(w http.ResponseWriter, r *http.Request) {
 	)
 	userDomain, err := h.authService.Register(ctx, payload)
 	if err != nil {
-		statusCode := core_http_response.MapDomainErrorToStatusCode(err)
-		responseHandler.ErrorResponse(statusCode, err)
+		responseHandler.ErrorResponse(core_http_response.MapError(err))
 		return
 	}
 

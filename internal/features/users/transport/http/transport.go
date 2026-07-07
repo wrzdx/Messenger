@@ -12,6 +12,7 @@ type UsersHTTPHandler struct {
 	usersService UsersService
 }
 
+
 type UsersService interface {
 	GetUsers(
 		ctx context.Context,

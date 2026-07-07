@@ -18,33 +18,12 @@ func (h *UsersHTTPHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	limit, offset, err := getLimitOffsetQueryParams(r)
 	if err != nil {
 		responseHandler.ErrorResponse(
-			http.StatusBadRequest,
-			fmt.Errorf(
-				"%w: %v",
-				core_http_response.ErrInvalidArgument,
-				err,
-			),
-		)
-		return
-	}
-
-	if limit != nil && *limit < 0 {
-		responseHandler.ErrorResponse(
-			http.StatusBadRequest,
-			fmt.Errorf(
-				"%w: limit must be non-negative",
-				core_http_response.ErrInvalidArgument,
-			),
-		)
-		return
-	}
-
-	if offset != nil && *offset < 0 {
-		responseHandler.ErrorResponse(
-			http.StatusBadRequest,
-			fmt.Errorf(
-				"%w: offset must be non-negative",
-				core_http_response.ErrInvalidArgument,
+			core_http_response.MapError(
+				fmt.Errorf(
+					"%v: %w",
+					err,
+					core_http_response.ErrInvalidArgument,
+				),
 			),
 		)
 		return
@@ -52,8 +31,7 @@ func (h *UsersHTTPHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 
 	userDomains, err := h.usersService.GetUsers(ctx, limit, offset)
 	if err != nil {
-		statusCode := core_http_response.MapDomainErrorToStatusCode(err)
-		responseHandler.ErrorResponse(statusCode, err)
+		responseHandler.ErrorResponse(core_http_response.MapError(err))
 		return
 	}
 

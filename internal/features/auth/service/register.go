@@ -14,11 +14,11 @@ func (s *AuthService) CreateUser(
 	payload domain.RegisterUserPayload,
 ) (domain.User, error) {
 	if err := payload.Validate(); err != nil {
-		return domain.User{}, fmt.Errorf("%w: validate payload", err)
+		return domain.User{}, fmt.Errorf("validate payload: %w", err)
 	}
 	passwordHash, err := s.hasher.Hash(payload.Password)
 	if err != nil {
-		return domain.User{}, fmt.Errorf("%w: hash password", err)
+		return domain.User{}, fmt.Errorf("hash password: %w", err)
 	}
 
 	user := domain.NewUser(

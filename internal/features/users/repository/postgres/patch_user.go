@@ -54,7 +54,7 @@ func (r *UsersRepository) PatchUser(
 		&userModel.PasswordHash,
 	)
 	if err != nil {
-		return domain.User{}, fmt.Errorf("%w: scan error", err)
+		return domain.User{}, fmt.Errorf("scan error: %w", err)
 	}
 
 	userDomain := domain.NewUser(

@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -25,7 +24,7 @@ func TestGetUsers(t *testing.T) {
 		wantServiceOffset *int
 		wantServiceCalled bool
 		wantStatus        int
-		wantError         error
+		wantError         string
 	}{
 		{
 			name:              "return all users",
@@ -42,10 +41,13 @@ func TestGetUsers(t *testing.T) {
 			wantStatus:        http.StatusOK,
 		},
 		{
-			name:       "negative limit",
-			limit:      "-1",
-			wantError:  core_http_response.ErrInvalidArgument,
-			wantStatus: http.StatusBadRequest,
+			name:              "negative limit",
+			limit:             "-1",
+			wantServiceCalled: true,
+			wantServiceLimit:  new(-1),
+			serviceErr:        domain.ErrNegativeLimit,
+			wantError:         core_http_response.MapError(domain.ErrNegativeLimit).Message,
+			wantStatus:        http.StatusBadRequest,
 		},
 		{
 			name:              "offset users",
@@ -56,10 +58,13 @@ func TestGetUsers(t *testing.T) {
 			wantStatus:        http.StatusOK,
 		},
 		{
-			name:       "negative offset",
-			offset:     "-1",
-			wantError:  core_http_response.ErrInvalidArgument,
-			wantStatus: http.StatusBadRequest,
+			name:              "negative offset",
+			offset:            "-1",
+			wantServiceCalled: true,
+			wantServiceOffset: new(-1),
+			serviceErr:        domain.ErrNegativeOffset,
+			wantError:         core_http_response.MapError(domain.ErrNegativeOffset).Message,
+			wantStatus:        http.StatusBadRequest,
 		},
 		{
 			name:              "limit offset users",
@@ -85,13 +90,14 @@ func TestGetUsers(t *testing.T) {
 		{
 			name:       "invalid limit",
 			limit:      "asadf",
-			wantError:  core_http_response.ErrInvalidArgument,
+			wantError:  core_http_response.MapError(core_http_response.ErrInvalidArgument).Message,
 			wantStatus: http.StatusBadRequest,
 		},
 		{
-			name:       "invalid offset",
-			offset:     "asadf",
-			wantError:  core_http_response.ErrInvalidArgument,
+			name:      "invalid offset",
+			offset:    "asadf",
+			wantError: core_http_response.MapError(core_http_response.ErrInvalidArgument).Message,
+
 			wantStatus: http.StatusBadRequest,
 		},
 	}
@@ -99,9 +105,9 @@ func TestGetUsers(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup
 			wantUsers := make([]UserDTOResponse, len(tt.serviceUsers))
-			for i, user:= range tt.serviceUsers {
+			for i, user := range tt.serviceUsers {
 				wantUsers[i] = userDTOFromDomain(user)
-			} 
+			}
 			var (
 				serviceCalled    bool
 				serviceGotLimit  *int
@@ -160,16 +166,16 @@ func TestGetUsers(t *testing.T) {
 				t.Fatalf("got status %d, want %d", rec.Code, tt.wantStatus)
 			}
 
-			if tt.wantError != nil {
+			if tt.wantError != "" {
 				var gotError core_http_response.ErrorResponse
 				if err := json.NewDecoder(rec.Body).Decode(&gotError); err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
 
-				if !strings.HasPrefix(gotError.Error, tt.wantError.Error()) {
+				if gotError.Error != tt.wantError {
 					t.Fatalf(
 						"ErrorResponse mismatch:\nwant: %s\ngot: %s",
-						tt.wantError.Error(),
+						tt.wantError,
 						gotError.Error,
 					)
 				}

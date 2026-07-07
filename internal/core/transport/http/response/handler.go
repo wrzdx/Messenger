@@ -33,15 +33,15 @@ func (h *HTTPResponseHandler) HTMLResponse(html []byte) {
 func (h *HTTPResponseHandler) PanicResponse(p any, msg string) {
 	err := fmt.Errorf("unexpected panic: %v", p)
 	h.log.Error(msg, zap.Error(err))
-	h.ErrorResponse(http.StatusInternalServerError, err)
+	h.ErrorResponse(MapError(err))
 }
 
-func (h *HTTPResponseHandler) ErrorResponse(statusCode int, err error) {
+func (h *HTTPResponseHandler) ErrorResponse(err Error) {
 	var (
 		logFunc func(string, ...zap.Field)
 	)
 
-	switch statusCode {
+	switch err.Status {
 	case http.StatusBadRequest,
 		http.StatusConflict,
 		http.StatusForbidden,
@@ -53,8 +53,8 @@ func (h *HTTPResponseHandler) ErrorResponse(statusCode int, err error) {
 		logFunc = h.log.Error
 	}
 
-	logFunc(err.Error())
-	h.JSONResponse(ErrorResponse{Error: err.Error()}, statusCode)
+	logFunc(err.Error.Error())
+	h.JSONResponse(ErrorResponse{Error: err.Message}, err.Status)
 }
 
 func (h *HTTPResponseHandler) JSONResponse(
