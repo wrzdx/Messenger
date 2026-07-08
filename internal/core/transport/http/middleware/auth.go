@@ -2,9 +2,9 @@ package http_middleware
 
 import (
 	"fmt"
-	auth "messenger/internal/core/auth"
+	"messenger/internal/core/auth"
 	context "messenger/internal/core/context"
-	core_errors "messenger/internal/core/errors"
+	core_context "messenger/internal/core/context"
 	logger "messenger/internal/core/logger"
 	http_response "messenger/internal/core/transport/http/response"
 	"net/http"
@@ -36,21 +36,16 @@ func Auth(jwt auth.TokenService) Middleware {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			token := extractToken(r)
 			log := logger.FromContext(r.Context())
-			responseHandler := http_response.NewHTTPSender(log, w)
+			sender := http_response.NewHTTPSender(log, w)
 			payload, err := jwt.ParseAccessToken(token)
 			if err != nil {
-				respError := core_errors.Error{
-					Err:     fmt.Errorf("auth middleware: %w", err),
-					Code:    core_errors.INVALID_TOKEN,
-					Message: "failed parse token",
-				}
-				responseHandler.Error(respError)
+				sender.Error(fmt.Errorf("failed to authenticate: %w", err))
 				return
 			}
 			appClaims := context.ContextClaims{
 				UserID: payload.UserID,
 			}
-			ctx := context.WithClaims(r.Context(), appClaims)
+			ctx := core_context.WithClaims(r.Context(), appClaims)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

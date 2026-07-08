@@ -15,7 +15,7 @@ func (s *UsersService) GetUsers(
 	}
 	users, err := s.userRepository.GetUsers(ctx, pagination)
 	if err != nil {
-		return nil, fmt.Errorf("get users from repository: %w", err)
+		return nil, fmt.Errorf("get users: %w", err)
 	}
 
 	return users, nil

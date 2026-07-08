@@ -7,7 +7,7 @@ import (
 
 func authError(e error) (Error, bool) {
 	err := Error{
-		Err:     e,
+		err:     e,
 		Message: e.Error(),
 	}
 

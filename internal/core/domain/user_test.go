@@ -65,7 +65,7 @@ func TestUserValidate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := errors.Join(tt.user.Validate()...)
+			err := tt.user.Validate()
 
 			if tt.name == "valid" {
 				if err != nil {
@@ -124,7 +124,7 @@ func TestUserPatchValidate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := errors.Join(tt.patch.Validate()...)
+			err := tt.patch.Validate()
 
 			if !errors.Is(err, tt.err) {
 				t.Fatalf("want: %v, got %v", tt.err, err)

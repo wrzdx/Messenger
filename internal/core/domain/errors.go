@@ -15,4 +15,7 @@ var (
 	ErrUserNotFound       = errors.New("not found")
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrWrongPassword      = errors.New("wrong password")
+
+	ErrNegativeLimit  = errors.New("limit must be non-negative")
+	ErrNegativeOffset = errors.New("offset must be non-negative")
 )

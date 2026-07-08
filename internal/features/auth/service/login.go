@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	auth "messenger/internal/core/auth"
+	"messenger/internal/core/auth"
 	"messenger/internal/core/domain"
 
 	"github.com/google/uuid"
@@ -39,7 +39,7 @@ func (s *AuthService) Login(
 	tokens, err := s.tokenService.GenerateTokenPair(claims, tokenID)
 	if err != nil {
 		return auth.TokenPair{}, fmt.Errorf(
-			"generate refresh token: %w",
+			"generate tokens: %w",
 			err,
 		)
 	}

@@ -1,7 +1,7 @@
 package users_transport_http
 
 import (
-	auth "messenger/internal/core/auth"
+	core_context "messenger/internal/core/context"
 	logger "messenger/internal/core/logger"
 	http_response "messenger/internal/core/transport/http/response"
 	"net/http"
@@ -10,16 +10,14 @@ import (
 func (h *UsersHTTPHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := logger.FromContext(ctx)
-	userID := auth.MustUserIDFromContext(ctx)
-	responseHandler := http_response.NewHTTPResponseHandler(log, w)
+	claims := core_context.ClaimsRequired(ctx)
+	sender := http_response.NewHTTPSender(log, w)
 
-	user, err := h.usersService.GetUser(ctx, userID)
+	user, err := h.usersService.GetUser(ctx, claims.UserID)
 	if err != nil {
-		responseHandler.ErrorResponse(
-			http_response.MapError(err),
-		)
+		sender.Error(err)
 	}
 
 	response := GetUserResponse(userDTOFromDomain(user))
-	responseHandler.JSONResponse(response, http.StatusOK)
+	sender.OK(http.StatusOK, response)
 }

@@ -1,4 +1,4 @@
-package context
+package core_context
 
 import (
 	"context"

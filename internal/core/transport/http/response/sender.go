@@ -50,9 +50,10 @@ func MapErrorCodeToStatus(errorCode core_errors.ErrorCode) int {
 	return http.StatusInternalServerError
 }
 
-func (s *HTTPSender) Error(err core_errors.Error) {
-	statusCode := MapErrorCodeToStatus(err.Code)
-	s.json(false, statusCode, nil, err)
+func (s *HTTPSender) Error(err error) {
+	errResp := core_errors.MapError(err)
+	statusCode := MapErrorCodeToStatus(errResp.Code)
+	s.json(false, statusCode, nil, errResp)
 }
 
 func (s *HTTPSender) OK(statusCode int, data any) {
@@ -68,6 +69,15 @@ func (s *HTTPSender) json(success bool, statusCode int, data any, err core_error
 	if success {
 		resp.Data = data
 	} else {
+		if statusCode >= 500 {
+			s.log.Error(
+				"CRITICAL_SERVER_ERROR",
+				zap.String("code", string(err.Code)),
+				zap.Error(err),
+			)
+		} else {
+			s.log.Warn(string(err.Code), zap.Error(err))
+		}
 		resp.Error = &APIErrorDetail{
 			Code:    string(err.Code),
 			Message: err.Message,

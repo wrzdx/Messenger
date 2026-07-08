@@ -2,8 +2,10 @@ package users_postgres_repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"messenger/internal/core/domain"
+	"messenger/internal/core/repository/postgres"
 
 	"github.com/google/uuid"
 )
@@ -54,6 +56,13 @@ func (r *UsersRepository) PatchUser(
 		&userModel.PasswordHash,
 	)
 	if err != nil {
+		if errors.Is(err, postgres.ErrViolatesUnique) {
+			return domain.User{}, fmt.Errorf(
+				"user with username='%s' already exists: %w",
+				user.Username,
+				domain.ErrUserAlreadyExists,
+			)
+		}
 		return domain.User{}, fmt.Errorf("scan error: %w", err)
 	}
 

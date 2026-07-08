@@ -1,8 +1,6 @@
 package domain
 
 import (
-	"errors"
-	"fmt"
 	"unicode/utf8"
 
 	"time"
@@ -40,29 +38,28 @@ func NewUser(
 	}
 }
 
-func (u *User) Validate() []error {
-	var errs []error
+func (u *User) Validate() error {
 	if err := ValidateUsername(u.Username); err != nil {
-		errs = append(errs, err)
+		return err
 	}
 
 	if err := ValidateFirstName(u.FirstName); err != nil {
-		errs = append(errs, err)
+		return err
 	}
 
 	if u.LastName != nil {
 		if err := ValidateLastName(*u.LastName); err != nil {
-			errs = append(errs, err)
+			return err
 		}
 	}
 
 	if u.Bio != nil {
 		if err := ValidateBio(*u.Bio); err != nil {
-			errs = append(errs, err)
+			return err
 		}
 	}
 
-	return errs
+	return nil
 }
 
 type UserPatch struct {
@@ -86,40 +83,42 @@ func NewUserPatch(
 	}
 }
 
-func (p *UserPatch) Validate() []error {
-	var errs []error
-	user := User{}
+func (p *UserPatch) Validate() error {
 	if p.Username.Set {
 		if p.Username.Value == nil {
-			errs = append(errs, ErrNullUsername)
+			return ErrNullUsername
 		}
-		user.Username = *p.Username.Value
+		if err := ValidateUsername(*p.Username.Value); err != nil {
+			return err
+		}
 	}
 
 	if p.FirstName.Set {
 		if p.FirstName.Value == nil {
-			errs = append(errs, ErrNullFirstname)
+			return ErrNullFirstname
 		}
-		user.FirstName = *p.FirstName.Value
+		if err := ValidateFirstName(*p.FirstName.Value); err != nil {
+			return err
+		}
 	}
-	if p.LastName.Set {
-		user.LastName = p.LastName.Value
+	if p.LastName.Set && p.LastName.Value != nil {
+		if err := ValidateLastName(*p.LastName.Value); err != nil {
+			return err
+		}
 	}
 
-	if p.Bio.Set {
-		user.Bio = p.Bio.Value
-	}
-
-	if errs = append(errs, user.Validate()...); errs != nil {
-		return errs
+	if p.Bio.Set && p.Bio.Value != nil {
+		if err := ValidateBio(*p.Bio.Value); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
 func (u *User) ApplyPatch(patch UserPatch) error {
-	if errs := patch.Validate(); errs != nil {
-		return fmt.Errorf("validate user patch: %w", errors.Join(errs...))
+	if err := patch.Validate(); err != nil {
+		return err
 	}
 
 	tmp := *u
@@ -140,8 +139,8 @@ func (u *User) ApplyPatch(patch UserPatch) error {
 		tmp.Bio = patch.Bio.Value
 	}
 
-	if errs := tmp.Validate(); errs != nil {
-		return fmt.Errorf("validate patched user: %w", errors.Join(errs...))
+	if err := tmp.Validate(); err != nil {
+		return err
 	}
 
 	*u = tmp

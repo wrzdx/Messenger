@@ -1,11 +1,11 @@
 package auth_transport_http
 
 import (
-	"fmt"
 	"messenger/internal/core/domain"
 	logger "messenger/internal/core/logger"
 	http_request "messenger/internal/core/transport/http/request"
 	http_response "messenger/internal/core/transport/http/response"
+	auth_service "messenger/internal/features/auth/service"
 	"net/http"
 	"time"
 
@@ -18,6 +18,35 @@ type RegisterRequest struct {
 	LastName  *string `json:"last_name"  example:"Ivanov"`
 	Bio       *string `json:"bio"  example:"We didn't choose this path. Circumstance chose it for us. We're simply trying to keep climbing."`
 	Password  string  `json:"password" validate:"required" example:"password"`
+}
+
+func (r *RegisterRequest) Validate() map[string]string {
+	fields := make(map[string]string)
+	if err := domain.ValidateUsername(r.Username); err != nil {
+		fields["username"] = err.Error()
+	}
+
+	if err := domain.ValidateFirstName(r.FirstName); err != nil {
+		fields["first name"] = err.Error()
+	}
+
+	if r.LastName != nil {
+		if err := domain.ValidateLastName(*r.LastName); err != nil {
+			fields["last name"] = err.Error()
+		}
+	}
+
+	if r.Bio != nil {
+		if err := domain.ValidateBio(*r.Bio); err != nil {
+			fields["bio"] = err.Error()
+		}
+	}
+
+	if err := domain.ValidatePassword(r.Password); err != nil {
+		fields["password"] = err.Error()
+	}
+
+	return fields
 }
 
 type UserResponse struct {
@@ -37,23 +66,13 @@ type RegisterResponse struct {
 func (h *AuthHTTPHandler) Register(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := logger.FromContext(ctx)
-	responseHandler := http_response.NewHTTPResponseHandler(log, w)
+	sender := http_response.NewHTTPSender(log, w)
 	var request RegisterRequest
 	if err := http_request.DecodeAndValidateRequest(r, &request); err != nil {
-		responseHandler.ErrorResponse(
-			http_response.Error{
-				Error: fmt.Errorf(
-					"%v: %w",
-					err,
-					http_response.ErrInvalidArgument,
-				),
-				Status:  http.StatusBadRequest,
-				Message: err.Error(),
-			},
-		)
+		sender.Error(err)
 		return
 	}
-	payload := domain.NewRegisterUserPayload(
+	payload := auth_service.NewRegisterPayload(
 		request.Username,
 		request.FirstName,
 		request.LastName,
@@ -62,7 +81,7 @@ func (h *AuthHTTPHandler) Register(w http.ResponseWriter, r *http.Request) {
 	)
 	userDomain, tokens, err := h.authService.Register(ctx, payload)
 	if err != nil {
-		responseHandler.ErrorResponse(http_response.MapError(err))
+		sender.Error(err)
 		return
 	}
 
@@ -80,5 +99,5 @@ func (h *AuthHTTPHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.cookieManger.SetRefreshToken(w, tokens.Refresh)
-	responseHandler.JSONResponse(response, http.StatusCreated)
+	sender.OK(http.StatusCreated, response)
 }

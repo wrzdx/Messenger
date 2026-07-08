@@ -1,75 +1,75 @@
 package auth_service
 
-import (
-	"context"
-	auth "messenger/internal/core/auth"
-	"messenger/internal/core/domain"
+// import (
+// 	"context"
+// 	auth "messenger/internal/core/auth"
+// 	"messenger/internal/core/domain"
 
-	"github.com/google/uuid"
-)
+// 	"github.com/google/uuid"
+// )
 
-type StubsUserRepository struct {
-	CreateUserFn func(
-		user domain.User,
-	) (domain.User, error)
+// type StubsUserRepository struct {
+// 	CreateUserFn func(
+// 		user domain.User,
+// 	) (domain.User, error)
 
-	GetUserByUsernameFn func(
-		username string,
-	) (domain.User, error)
+// 	GetUserByUsernameFn func(
+// 		username string,
+// 	) (domain.User, error)
 
-	GetUserFn func(
-		id uuid.UUID,
-	) (domain.User, error)
-}
+// 	GetUserFn func(
+// 		id uuid.UUID,
+// 	) (domain.User, error)
+// }
 
-func (s *StubsUserRepository) CreateUser(
-	ctx context.Context,
-	user domain.User,
-) (domain.User, error) {
-	return s.CreateUserFn(user)
-}
+// func (s *StubsUserRepository) CreateUser(
+// 	ctx context.Context,
+// 	user domain.User,
+// ) (domain.User, error) {
+// 	return s.CreateUserFn(user)
+// }
 
-func (s *StubsUserRepository) GetUserByUsername(
-	ctx context.Context,
-	username string,
-) (domain.User, error) {
-	return s.GetUserByUsernameFn(username)
-}
+// func (s *StubsUserRepository) GetUserByUsername(
+// 	ctx context.Context,
+// 	username string,
+// ) (domain.User, error) {
+// 	return s.GetUserByUsernameFn(username)
+// }
 
-func (s *StubsUserRepository) GetUser(
-	ctx context.Context,
-	id uuid.UUID,
-) (domain.User, error) {
-	return s.GetUserFn(id)
-}
+// func (s *StubsUserRepository) GetUser(
+// 	ctx context.Context,
+// 	id uuid.UUID,
+// ) (domain.User, error) {
+// 	return s.GetUserFn(id)
+// }
 
-type StubHasher struct {
-	HashFn    func(password string) (string, error)
-	CompareFn func(hash, password string) error
-}
+// type StubHasher struct {
+// 	HashFn    func(password string) (string, error)
+// 	CompareFn func(hash, password string) error
+// }
 
-func (h *StubHasher) Hash(password string) (string, error) {
-	return h.HashFn(password)
-}
-func (h *StubHasher) Compare(hash, password string) error {
-	return h.CompareFn(hash, password)
-}
+// func (h *StubHasher) Hash(password string) (string, error) {
+// 	return h.HashFn(password)
+// }
+// func (h *StubHasher) Compare(hash, password string) error {
+// 	return h.CompareFn(hash, password)
+// }
 
-type StubJWTProvider struct {
-	GenerateTokensFn func(id uuid.UUID) (domain.TokenPair, error)
-	ParseTokenFn     func(token string) (auth.Claims, error)
-}
+// type StubJWTProvider struct {
+// 	GenerateTokensFn func(id uuid.UUID) (domain.TokenPair, error)
+// 	ParseTokenFn     func(token string) (coreClaims, error)
+// }
 
-func (p *StubJWTProvider) GenerateTokens(id uuid.UUID) (domain.TokenPair, error) {
-	if p.GenerateTokensFn != nil {
-		return p.GenerateTokensFn(id)
-	}
-	return domain.TokenPair{}, nil
-}
+// func (p *StubJWTProvider) GenerateTokens(id uuid.UUID) (domain.TokenPair, error) {
+// 	if p.GenerateTokensFn != nil {
+// 		return p.GenerateTokensFn(id)
+// 	}
+// 	return domain.TokenPair{}, nil
+// }
 
-func (p *StubJWTProvider) ParseToken(token string) (auth.Claims, error) {
-	if p.ParseTokenFn != nil {
-		return p.ParseTokenFn(token)
-	}
-	return auth.Claims{}, nil
-}
+// func (p *StubJWTProvider) ParseToken(token string) (coreClaims, error) {
+// 	if p.ParseTokenFn != nil {
+// 		return p.ParseTokenFn(token)
+// 	}
+// 	return coreClaims{}, nil
+// }

@@ -2,37 +2,39 @@ package auth_transport_http
 
 import (
 	"context"
+	"messenger/internal/core/auth"
 	"messenger/internal/core/domain"
+	auth_service "messenger/internal/features/auth/service"
 
 	"github.com/go-chi/chi/v5"
 )
 
 type AuthHTTPHandler struct {
 	authService  AuthService
-	cookieManger CookieManager
+	cookieManger auth.CookieManager
 }
 
 type AuthService interface {
 	Register(
 		ctx context.Context,
-		payload domain.RegisterUserPayload,
-	) (domain.User, domain.TokenPair, error)
+		payload auth_service.RegisterPayload,
+	) (domain.User, auth.TokenPair, error)
 
 	Login(
 		ctx context.Context,
 		username string,
 		password string,
-	) (domain.TokenPair, error)
+	) (auth.TokenPair, error)
 
 	Refresh(
 		ctx context.Context,
 		token string,
-	) (domain.TokenPair, error)
+	) (auth.TokenPair, error)
 }
 
 func NewAuthHTTPHandler(
 	authService AuthService,
-	cookieManager CookieManager,
+	cookieManager auth.CookieManager,
 ) *AuthHTTPHandler {
 	return &AuthHTTPHandler{
 		cookieManger: cookieManager,

@@ -2,7 +2,7 @@ package auth_service
 
 import (
 	"context"
-	auth "messenger/internal/core/auth"
+	"messenger/internal/core/auth"
 	"messenger/internal/core/domain"
 
 	"github.com/google/uuid"

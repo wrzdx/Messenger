@@ -1,6 +1,7 @@
 package auth_jwt
 
 import (
+	"fmt"
 	"messenger/internal/core/auth"
 	"time"
 
@@ -39,7 +40,7 @@ func (s *TokenService) GenerateTokenPair(user auth.AccessClaims, tokenID uuid.UU
 	}
 	accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, aClaims).SignedString(s.config.Secret)
 	if err != nil {
-		return auth.TokenPair{}, err
+		return auth.TokenPair{}, fmt.Errorf("access: %w", err)
 	}
 
 	rClaims := refreshClaims{
@@ -52,7 +53,7 @@ func (s *TokenService) GenerateTokenPair(user auth.AccessClaims, tokenID uuid.UU
 	}
 	refreshToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, rClaims).SignedString(s.config.Secret)
 	if err != nil {
-		return auth.TokenPair{}, err
+		return auth.TokenPair{}, fmt.Errorf("refresh: %w", err)
 	}
 
 	return auth.TokenPair{

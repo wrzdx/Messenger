@@ -3,7 +3,7 @@ package auth_service
 import (
 	"context"
 	"fmt"
-	auth "messenger/internal/core/auth"
+	"messenger/internal/core/auth"
 
 	"github.com/google/uuid"
 )

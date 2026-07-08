@@ -1,8 +1,8 @@
 package users_transport_http
 
 import (
-	"fmt"
-	auth "messenger/internal/core/auth"
+	core_context "messenger/internal/core/context"
+	"messenger/internal/core/domain"
 	logger "messenger/internal/core/logger"
 	http_request "messenger/internal/core/transport/http/request"
 	http_response "messenger/internal/core/transport/http/response"
@@ -14,39 +14,38 @@ type ChangePasswordRequest struct {
 	NewPassword string `json:"new_password" validate:"required" example:"password"`
 }
 
+func (r *ChangePasswordRequest) Validate() map[string]string {
+	fields := make(map[string]string)
+
+	if err := domain.ValidatePassword(r.NewPassword); err != nil {
+		fields["new_password"] = err.Error()
+	}
+
+	return fields
+}
+
 func (h *UsersHTTPHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := logger.FromContext(ctx)
-	responseHandler := http_response.NewHTTPResponseHandler(log, w)
-	userID := auth.MustUserIDFromContext(ctx)
+	sender := http_response.NewHTTPSender(log, w)
+	claims := core_context.ClaimsRequired(ctx)
 
 	var request ChangePasswordRequest
 
 	if err := http_request.DecodeAndValidateRequest(r, &request); err != nil {
-		err = fmt.Errorf(
-			"%v: %w",
-			err,
-			http_response.ErrInvalidArgument,
-		)
-		responseHandler.ErrorResponse(
-			http_response.Error{
-				Error:   err,
-				Status:  http.StatusBadRequest,
-				Message: err.Error(),
-			},
-		)
+		sender.Error(err)
 		return
 	}
 
 	if err := h.usersService.ChangePassword(
 		ctx,
-		userID,
+		claims.UserID,
 		request.OldPassword,
 		request.NewPassword,
 	); err != nil {
-		responseHandler.ErrorResponse(http_response.MapError(err))
+		sender.Error(err)
 		return
 	}
 
-	responseHandler.NoContentResponse()
+	sender.OK(http.StatusNoContent, nil)
 }

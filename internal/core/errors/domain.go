@@ -7,7 +7,7 @@ import (
 
 func domainError(e error) (Error, bool) {
 	err := Error{
-		Err:     e,
+		err:     e,
 		Message: e.Error(),
 	}
 
@@ -18,7 +18,9 @@ func domainError(e error) (Error, bool) {
 		errors.Is(e, domain.ErrInvalidBio),
 		errors.Is(e, domain.ErrInvalidPassword),
 		errors.Is(e, domain.ErrNullUsername),
-		errors.Is(e, domain.ErrNullFirstname):
+		errors.Is(e, domain.ErrNullFirstname),
+		errors.Is(e, domain.ErrNegativeLimit),
+		errors.Is(e, domain.ErrNegativeOffset):
 		err.Code = VALIDATION_ERROR
 
 	case errors.Is(e, domain.ErrUserAlreadyExists):
