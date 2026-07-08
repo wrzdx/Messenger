@@ -3,10 +3,9 @@ package auth_transport_http
 import (
 	"bytes"
 	"encoding/json"
-	core_auth "messenger/internal/core/auth"
 	"messenger/internal/core/domain"
-	core_http_response "messenger/internal/core/transport/http/response"
-	core_test_utils "messenger/internal/core/utils/test"
+	http_response "messenger/internal/core/transport/http/response"
+	test_utils "messenger/internal/core/utils/test"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -41,7 +40,7 @@ func TestRegister(t *testing.T) {
 			wantServiceCalled: true,
 			serviceErr:        domain.ErrUserAlreadyExists,
 			wantStatus:        http.StatusConflict,
-			wantError:         core_http_response.MapError(domain.ErrUserAlreadyExists).Message,
+			wantError:         http_response.MapError(domain.ErrUserAlreadyExists).Message,
 			body: RegisterRequest{
 				Username:  "i.ivanov",
 				FirstName: "Ivan",
@@ -64,7 +63,7 @@ func TestRegister(t *testing.T) {
 			wantStatus:        http.StatusBadRequest,
 			wantServiceCalled: true,
 			serviceErr:        domain.ErrInvalidUsername,
-			wantError:         core_http_response.MapError(domain.ErrInvalidUsername).Message,
+			wantError:         http_response.MapError(domain.ErrInvalidUsername).Message,
 			body: RegisterRequest{
 				Username:  "ivan",
 				FirstName: "Ivan",
@@ -76,7 +75,7 @@ func TestRegister(t *testing.T) {
 			wantStatus:        http.StatusBadRequest,
 			wantServiceCalled: true,
 			serviceErr:        domain.ErrInvalidUsername,
-			wantError:         core_http_response.MapError(domain.ErrInvalidUsername).Message,
+			wantError:         http_response.MapError(domain.ErrInvalidUsername).Message,
 			body: RegisterRequest{
 				Username:  strings.Repeat("a", 33),
 				FirstName: "Ivan",
@@ -97,7 +96,7 @@ func TestRegister(t *testing.T) {
 			wantStatus:        http.StatusBadRequest,
 			wantServiceCalled: true,
 			serviceErr:        domain.ErrInvalidFirstName,
-			wantError:         core_http_response.MapError(domain.ErrInvalidFirstName).Message,
+			wantError:         http_response.MapError(domain.ErrInvalidFirstName).Message,
 			body: RegisterRequest{
 				Username:  "i.ivanov",
 				FirstName: strings.Repeat("a", 65),
@@ -109,7 +108,7 @@ func TestRegister(t *testing.T) {
 			wantStatus:        http.StatusBadRequest,
 			wantServiceCalled: true,
 			serviceErr:        domain.ErrInvalidLastName,
-			wantError:         core_http_response.MapError(domain.ErrInvalidLastName).Message,
+			wantError:         http_response.MapError(domain.ErrInvalidLastName).Message,
 			body: RegisterRequest{
 				Username:  "i.ivanov",
 				FirstName: "Ivan",
@@ -122,7 +121,7 @@ func TestRegister(t *testing.T) {
 			wantStatus:        http.StatusBadRequest,
 			wantServiceCalled: true,
 			serviceErr:        domain.ErrInvalidBio,
-			wantError:         core_http_response.MapError(domain.ErrInvalidBio).Message,
+			wantError:         http_response.MapError(domain.ErrInvalidBio).Message,
 			body: RegisterRequest{
 				Username:  "i.ivanov",
 				FirstName: "Ivan",
@@ -135,7 +134,7 @@ func TestRegister(t *testing.T) {
 			wantStatus:        http.StatusBadRequest,
 			wantServiceCalled: true,
 			serviceErr:        domain.ErrInvalidPassword,
-			wantError:         core_http_response.MapError(domain.ErrInvalidPassword).Message,
+			wantError:         http_response.MapError(domain.ErrInvalidPassword).Message,
 			body: RegisterRequest{
 				Username:  "i.ivanov",
 				FirstName: "Ivan",
@@ -147,7 +146,7 @@ func TestRegister(t *testing.T) {
 			wantStatus:        http.StatusBadRequest,
 			wantServiceCalled: true,
 			serviceErr:        domain.ErrInvalidPassword,
-			wantError:         core_http_response.MapError(domain.ErrInvalidPassword).Message,
+			wantError:         http_response.MapError(domain.ErrInvalidPassword).Message,
 			body: RegisterRequest{
 				Username:  "i.ivanov",
 				FirstName: "Ivan",
@@ -159,11 +158,11 @@ func TestRegister(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup
 			userResponse := UserResponse{
-				ID:        core_test_utils.ID,
+				ID:        test_utils.ID,
 				Username:  tt.body.Username,
 				FirstName: tt.body.FirstName,
 				LastName:  tt.body.LastName,
-				CreatedAt: core_test_utils.CreatedAt,
+				CreatedAt: test_utils.CreatedAt,
 				Bio:       tt.body.Bio,
 			}
 
@@ -183,7 +182,7 @@ func TestRegister(t *testing.T) {
 			service := StubAuthService{
 				CreateUserFn: func(
 					payload domain.RegisterUserPayload,
-				) (domain.User, core_auth.AuthTokens, error) {
+				) (domain.User, domain.TokenPair, error) {
 					serviceCalled = true
 					servicePayload = domain.NewRegisterUserPayload(
 						payload.Username,
@@ -193,14 +192,14 @@ func TestRegister(t *testing.T) {
 						payload.Password,
 					)
 					return domain.NewUser(
-						core_test_utils.ID,
+						test_utils.ID,
 						tt.body.Username,
 						tt.body.FirstName,
 						tt.body.LastName,
-						core_test_utils.CreatedAt,
+						test_utils.CreatedAt,
 						tt.body.Bio,
-						core_test_utils.PasswordHash,
-					), core_auth.AuthTokens{}, tt.serviceErr
+						test_utils.PasswordHash,
+					), domain.TokenPair{}, tt.serviceErr
 				},
 			}
 
@@ -211,7 +210,7 @@ func TestRegister(t *testing.T) {
 			}
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest("", "/users", bytes.NewReader(body))
-			ctx := core_test_utils.GetLoggerContext(req.Context())
+			ctx := test_utils.GetLoggerContext(req.Context())
 
 			// Action
 			handler.Register(rec, req.WithContext(ctx))
@@ -235,7 +234,7 @@ func TestRegister(t *testing.T) {
 			}
 
 			if tt.wantError != "" {
-				var gotError core_http_response.ErrorResponse
+				var gotError http_response.ErrorResponse
 				if err := json.NewDecoder(rec.Body).Decode(&gotError); err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
@@ -252,7 +251,7 @@ func TestRegister(t *testing.T) {
 				if err := json.NewDecoder(rec.Body).Decode(&gotResponse); err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
-				gotResponse.User.CreatedAt = core_test_utils.CreatedAt
+				gotResponse.User.CreatedAt = test_utils.CreatedAt
 
 				if diff := cmp.Diff(want, gotResponse); diff != "" {
 					t.Fatalf("CreateUserResponse mismatch (-want +got):\n%s", diff)

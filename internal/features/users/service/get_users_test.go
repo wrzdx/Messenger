@@ -3,7 +3,7 @@ package users_service
 import (
 	"errors"
 	"messenger/internal/core/domain"
-	core_test_utils "messenger/internal/core/utils/test"
+	test_utils "messenger/internal/core/utils/test"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -23,37 +23,37 @@ func TestGetUsers(t *testing.T) {
 		{
 			name:           "return all users",
 			wantRepoCalled: true,
-			repoUsers:      core_test_utils.Users,
-			wantUsers:      core_test_utils.Users,
+			repoUsers:      test_utils.Users,
+			wantUsers:      test_utils.Users,
 		},
 		{
 			name:           "limit users",
 			limit:          new(1),
-			repoUsers:      core_test_utils.Users[:1],
+			repoUsers:      test_utils.Users[:1],
 			wantRepoCalled: true,
-			wantUsers:      core_test_utils.Users[:1],
+			wantUsers:      test_utils.Users[:1],
 		},
 		{
 			name:           "offset users",
 			offset:         new(1),
-			repoUsers:      core_test_utils.Users[1:],
+			repoUsers:      test_utils.Users[1:],
 			wantRepoCalled: true,
-			wantUsers:      core_test_utils.Users[1:],
+			wantUsers:      test_utils.Users[1:],
 		},
 		{
 			name:           "limit offset users",
 			limit:          new(1),
 			offset:         new(1),
-			repoUsers:      core_test_utils.Users[1:2],
+			repoUsers:      test_utils.Users[1:2],
 			wantRepoCalled: true,
 
-			wantUsers: core_test_utils.Users[1:2],
+			wantUsers: test_utils.Users[1:2],
 		},
 		{
 			name:           "empty users",
 			limit:          new(1),
 			offset:         new(2),
-			repoUsers:      core_test_utils.Users[2:2],
+			repoUsers:      test_utils.Users[2:2],
 			wantRepoCalled: true,
 			wantUsers:      []domain.User{},
 		},

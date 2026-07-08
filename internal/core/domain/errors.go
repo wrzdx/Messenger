@@ -11,14 +11,8 @@ var (
 	ErrInvalidBio       = errors.New("bio cannot exceed 70 characters")
 	ErrInvalidPassword  = errors.New("password must be between 8 and 32 characters")
 
-	ErrNegativeLimit  = errors.New("limit must be non-negative")
-	ErrNegativeOffset = errors.New("offset must be non-negative")
-
-	ErrUserAlreadyExists  = errors.New("user already exists")
-	ErrUserNotFound       = errors.New("user not found")
+	ErrUserAlreadyExists  = errors.New("already exists")
+	ErrUserNotFound       = errors.New("not found")
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrWrongPassword      = errors.New("wrong password")
-
-	ErrInvalidRefreshToken = errors.New("invalid refresh token")
-	ErrInvalidAccessToken  = errors.New("invalid access token")
 )

@@ -2,7 +2,7 @@ package auth_service
 
 import (
 	"context"
-	core_auth "messenger/internal/core/auth"
+	auth "messenger/internal/core/auth"
 	"messenger/internal/core/domain"
 
 	"github.com/google/uuid"
@@ -56,20 +56,20 @@ func (h *StubHasher) Compare(hash, password string) error {
 }
 
 type StubJWTProvider struct {
-	GenerateTokensFn func(id uuid.UUID) (core_auth.AuthTokens, error)
-	ParseTokenFn     func(token string) (core_auth.Claims, error)
+	GenerateTokensFn func(id uuid.UUID) (domain.TokenPair, error)
+	ParseTokenFn     func(token string) (auth.Claims, error)
 }
 
-func (p *StubJWTProvider) GenerateTokens(id uuid.UUID) (core_auth.AuthTokens, error) {
+func (p *StubJWTProvider) GenerateTokens(id uuid.UUID) (domain.TokenPair, error) {
 	if p.GenerateTokensFn != nil {
 		return p.GenerateTokensFn(id)
 	}
-	return core_auth.AuthTokens{}, nil
+	return domain.TokenPair{}, nil
 }
 
-func (p *StubJWTProvider) ParseToken(token string) (core_auth.Claims, error) {
+func (p *StubJWTProvider) ParseToken(token string) (auth.Claims, error) {
 	if p.ParseTokenFn != nil {
 		return p.ParseTokenFn(token)
 	}
-	return core_auth.Claims{}, nil
+	return auth.Claims{}, nil
 }

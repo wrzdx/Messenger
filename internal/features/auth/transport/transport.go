@@ -2,9 +2,7 @@ package auth_transport_http
 
 import (
 	"context"
-	core_auth "messenger/internal/core/auth"
 	"messenger/internal/core/domain"
-	"net/http"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -18,33 +16,18 @@ type AuthService interface {
 	Register(
 		ctx context.Context,
 		payload domain.RegisterUserPayload,
-	) (domain.User, core_auth.AuthTokens, error)
+	) (domain.User, domain.TokenPair, error)
 
 	Login(
 		ctx context.Context,
 		username string,
 		password string,
-	) (core_auth.AuthTokens, error)
+	) (domain.TokenPair, error)
 
 	Refresh(
 		ctx context.Context,
 		token string,
-	) (core_auth.AuthTokens, error)
-}
-
-type CookieManager interface {
-	SetRefreshToken(
-		w http.ResponseWriter,
-		token string,
-	)
-
-	ClearRefreshToken(
-		w http.ResponseWriter,
-	)
-
-	GetRefreshToken(
-		r *http.Request,
-	) (string, error)
+	) (domain.TokenPair, error)
 }
 
 func NewAuthHTTPHandler(

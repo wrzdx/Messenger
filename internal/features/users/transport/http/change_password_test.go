@@ -3,10 +3,10 @@ package users_transport_http
 import (
 	"bytes"
 	"encoding/json"
-	core_auth "messenger/internal/core/auth"
+	auth "messenger/internal/core/auth"
 	"messenger/internal/core/domain"
-	core_http_response "messenger/internal/core/transport/http/response"
-	core_test_utils "messenger/internal/core/utils/test"
+	http_response "messenger/internal/core/transport/http/response"
+	test_utils "messenger/internal/core/utils/test"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -28,7 +28,7 @@ func TestChangePassword(t *testing.T) {
 	}{
 		{
 			name:              "valid password",
-			userID:            core_test_utils.ID,
+			userID:            test_utils.ID,
 			wantServiceCalled: true,
 			wantStatus:        http.StatusNoContent,
 			body: ChangePasswordRequest{
@@ -38,11 +38,11 @@ func TestChangePassword(t *testing.T) {
 		},
 		{
 			name:              "invalid credentials",
-			userID:            core_test_utils.ID,
+			userID:            test_utils.ID,
 			wantServiceCalled: true,
 			serviceErr:        domain.ErrInvalidCredentials,
 			wantStatus:        http.StatusUnauthorized,
-			wantError:         core_http_response.MapError(domain.ErrInvalidCredentials).Message,
+			wantError:         http_response.MapError(domain.ErrInvalidCredentials).Message,
 			body: ChangePasswordRequest{
 				OldPassword: "wrong_password",
 				NewPassword: "new_password",
@@ -50,11 +50,11 @@ func TestChangePassword(t *testing.T) {
 		},
 		{
 			name:              "invalid password",
-			userID:            core_test_utils.ID,
+			userID:            test_utils.ID,
 			wantServiceCalled: true,
 			serviceErr:        domain.ErrInvalidPassword,
 			wantStatus:        http.StatusBadRequest,
-			wantError:         core_http_response.MapError(domain.ErrInvalidPassword).Message,
+			wantError:         http_response.MapError(domain.ErrInvalidPassword).Message,
 			body: ChangePasswordRequest{
 				OldPassword: "old_password",
 				NewPassword: "123",
@@ -63,7 +63,7 @@ func TestChangePassword(t *testing.T) {
 		{
 			name:       "missing old password",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.ErrInvalidArgument.Error(),
+			wantError:  http_response.ErrInvalidArgument.Error(),
 			body: ChangePasswordRequest{
 				NewPassword: "new_password",
 			},
@@ -71,7 +71,7 @@ func TestChangePassword(t *testing.T) {
 		{
 			name:       "missing new password",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.ErrInvalidArgument.Error(),
+			wantError:  http_response.ErrInvalidArgument.Error(),
 			body: ChangePasswordRequest{
 				OldPassword: "old_password",
 			},
@@ -116,8 +116,8 @@ func TestChangePassword(t *testing.T) {
 				bytes.NewReader(body),
 			)
 
-			ctx := core_test_utils.GetLoggerContext(req.Context())
-			ctx = core_auth.WithUserID(ctx, tt.userID)
+			ctx := test_utils.GetLoggerContext(req.Context())
+			ctx = auth.WithUserID(ctx, tt.userID)
 
 			handler.ChangePassword(rec, req.WithContext(ctx))
 
@@ -148,7 +148,7 @@ func TestChangePassword(t *testing.T) {
 			}
 
 			if tt.wantError != "" {
-				var gotError core_http_response.ErrorResponse
+				var gotError http_response.ErrorResponse
 
 				if err := json.NewDecoder(rec.Body).Decode(&gotError); err != nil {
 					t.Fatalf("unexpected error: %v", err)

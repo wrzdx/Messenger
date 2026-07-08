@@ -5,8 +5,8 @@ package users_postgres_repository
 import (
 	"errors"
 	"messenger/internal/core/domain"
-	core_pgx_pool "messenger/internal/core/repository/postgres/pgx"
-	core_test_utils "messenger/internal/core/utils/test"
+	pgx_pool "messenger/internal/core/repository/postgres/pgx"
+	test_utils "messenger/internal/core/utils/test"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -24,11 +24,11 @@ func TestGetUsers(t *testing.T) {
 	}{
 		{
 			name:  "all users",
-			users: core_test_utils.Users,
+			users: test_utils.Users,
 		},
 		{
 			name:  "limit users",
-			users: core_test_utils.Users[:1],
+			users: test_utils.Users[:1],
 			limit: new(1),
 		},
 		{
@@ -39,7 +39,7 @@ func TestGetUsers(t *testing.T) {
 		},
 		{
 			name:   "offset users",
-			users:  core_test_utils.Users[1:],
+			users:  test_utils.Users[1:],
 			offset: new(1),
 		},
 		{
@@ -50,7 +50,7 @@ func TestGetUsers(t *testing.T) {
 		},
 		{
 			name:   "limit offset users",
-			users:  core_test_utils.Users[1:2],
+			users:  test_utils.Users[1:2],
 			limit:  new(1),
 			offset: new(1),
 		},
@@ -60,7 +60,7 @@ func TestGetUsers(t *testing.T) {
 			limit: new(0),
 		},
 	}
-	pool, err := core_pgx_pool.NewPool(t.Context(), core_pgx_pool.NewConfigMust())
+	pool, err := pgx_pool.NewPool(t.Context(), pgx_pool.NewConfigMust())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -74,7 +74,7 @@ func TestGetUsers(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer tx.Rollback(t.Context())
-			core_test_utils.LoadData(t, tx)
+			test_utils.LoadData(t, tx)
 			repository := NewUsersRepository(tx)
 			pagination := domain.NewPagination(tt.limit, tt.offset)
 			// action

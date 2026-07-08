@@ -3,8 +3,8 @@ package users_transport_http
 import (
 	"encoding/json"
 	"messenger/internal/core/domain"
-	core_http_response "messenger/internal/core/transport/http/response"
-	core_test_utils "messenger/internal/core/utils/test"
+	http_response "messenger/internal/core/transport/http/response"
+	test_utils "messenger/internal/core/utils/test"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -15,7 +15,7 @@ import (
 )
 
 func TestGetUser(t *testing.T) {
-	user := core_test_utils.Users[0]
+	user := test_utils.Users[0]
 	tests := []struct {
 		name              string
 		userID            string
@@ -45,18 +45,18 @@ func TestGetUser(t *testing.T) {
 		},
 		{
 			name:              "non-existing user",
-			userID:            core_test_utils.ID.String(),
-			wantServiceUserId: core_test_utils.ID,
+			userID:            test_utils.ID.String(),
+			wantServiceUserId: test_utils.ID,
 			wantServiceCalled: true,
 			serviceErr:        domain.ErrUserNotFound,
 			wantStatus:        http.StatusNotFound,
-			wantError:         core_http_response.MapError(domain.ErrUserNotFound).Message,
+			wantError:         http_response.MapError(domain.ErrUserNotFound).Message,
 		},
 		{
 			name:       "invalid user id",
 			userID:     "asdf",
 			wantStatus: http.StatusBadRequest,
-			wantError:  core_http_response.ErrInvalidArgument.Error(),
+			wantError:  http_response.ErrInvalidArgument.Error(),
 		},
 	}
 
@@ -79,7 +79,7 @@ func TestGetUser(t *testing.T) {
 				nil,
 			)
 			req.SetPathValue("id", tt.userID)
-			ctx := core_test_utils.GetLoggerContext(req.Context())
+			ctx := test_utils.GetLoggerContext(req.Context())
 			handler := NewUsersHTTPHandler(&service)
 
 			// action
@@ -105,7 +105,7 @@ func TestGetUser(t *testing.T) {
 			}
 
 			if tt.wantError != "" {
-				var gotError core_http_response.ErrorResponse
+				var gotError http_response.ErrorResponse
 				if err := json.NewDecoder(rec.Body).Decode(&gotError); err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}

@@ -2,9 +2,8 @@ package auth_service
 
 import (
 	"errors"
-	core_auth "messenger/internal/core/auth"
 	"messenger/internal/core/domain"
-	core_test_utils "messenger/internal/core/utils/test"
+	test_utils "messenger/internal/core/utils/test"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -24,7 +23,7 @@ func TestLogin(t *testing.T) {
 		hasherError error
 		jwtError    error
 
-		wantTokens core_auth.AuthTokens
+		wantTokens domain.TokenPair
 		wantError  error
 
 		wantRepoCalled   bool
@@ -37,16 +36,16 @@ func TestLogin(t *testing.T) {
 			password: "password",
 
 			user: domain.NewUser(
-				core_test_utils.ID,
+				test_utils.ID,
 				"ivanov",
 				"Ivan",
 				new("Ivanov"),
-				core_test_utils.CreatedAt,
+				test_utils.CreatedAt,
 				new("bio"),
-				core_test_utils.PasswordHash,
+				test_utils.PasswordHash,
 			),
 
-			wantTokens: core_auth.AuthTokens{
+			wantTokens: domain.TokenPair{
 				Access:  "access-token",
 				Refresh: "refresh-token",
 			},
@@ -73,17 +72,17 @@ func TestLogin(t *testing.T) {
 			password: "password",
 
 			user: domain.NewUser(
-				core_test_utils.ID,
+				test_utils.ID,
 				"ivanov",
 				"Ivan",
 				nil,
-				core_test_utils.CreatedAt,
+				test_utils.CreatedAt,
 				nil,
-				core_test_utils.PasswordHash,
+				test_utils.PasswordHash,
 			),
 
-			hasherError: core_test_utils.HasherError,
-			wantError:   core_test_utils.HasherError,
+			hasherError: test_utils.HasherError,
+			wantError:   test_utils.HasherError,
 
 			wantRepoCalled:   true,
 			wantHasherCalled: true,
@@ -95,17 +94,17 @@ func TestLogin(t *testing.T) {
 			password: "password",
 
 			user: domain.NewUser(
-				core_test_utils.ID,
+				test_utils.ID,
 				"ivanov",
 				"Ivan",
 				nil,
-				core_test_utils.CreatedAt,
+				test_utils.CreatedAt,
 				nil,
-				core_test_utils.PasswordHash,
+				test_utils.PasswordHash,
 			),
 
-			jwtError:  core_test_utils.JWTError,
-			wantError: core_test_utils.JWTError,
+			jwtError:  test_utils.JWTError,
+			wantError: test_utils.JWTError,
 
 			wantRepoCalled:   true,
 			wantHasherCalled: true,
@@ -123,7 +122,7 @@ func TestLogin(t *testing.T) {
 				repoUsername   string
 				hasherHash     string
 				hasherPassword string
-				jwtUserID      = core_test_utils.ID
+				jwtUserID      = test_utils.ID
 			)
 
 			stubRepo := StubsUserRepository{
@@ -146,7 +145,7 @@ func TestLogin(t *testing.T) {
 			}
 
 			stubJWT := StubJWTProvider{
-				GenerateTokensFn: func(id uuid.UUID) (core_auth.AuthTokens, error) {
+				GenerateTokensFn: func(id uuid.UUID) (domain.TokenPair, error) {
 					jwtCalled = true
 					jwtUserID = id
 					return tt.wantTokens, tt.jwtError

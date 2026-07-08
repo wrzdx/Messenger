@@ -3,9 +3,9 @@ package auth_transport_http
 import (
 	"fmt"
 	"messenger/internal/core/domain"
-	core_logger "messenger/internal/core/logger"
-	core_http_request "messenger/internal/core/transport/http/request"
-	core_http_response "messenger/internal/core/transport/http/response"
+	logger "messenger/internal/core/logger"
+	http_request "messenger/internal/core/transport/http/request"
+	http_response "messenger/internal/core/transport/http/response"
 	"net/http"
 	"time"
 
@@ -36,16 +36,16 @@ type RegisterResponse struct {
 
 func (h *AuthHTTPHandler) Register(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	log := core_logger.FromContext(ctx)
-	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
+	log := logger.FromContext(ctx)
+	responseHandler := http_response.NewHTTPResponseHandler(log, w)
 	var request RegisterRequest
-	if err := core_http_request.DecodeAndValidateRequest(r, &request); err != nil {
+	if err := http_request.DecodeAndValidateRequest(r, &request); err != nil {
 		responseHandler.ErrorResponse(
-			core_http_response.Error{
+			http_response.Error{
 				Error: fmt.Errorf(
 					"%v: %w",
 					err,
-					core_http_response.ErrInvalidArgument,
+					http_response.ErrInvalidArgument,
 				),
 				Status:  http.StatusBadRequest,
 				Message: err.Error(),
@@ -62,7 +62,7 @@ func (h *AuthHTTPHandler) Register(w http.ResponseWriter, r *http.Request) {
 	)
 	userDomain, tokens, err := h.authService.Register(ctx, payload)
 	if err != nil {
-		responseHandler.ErrorResponse(core_http_response.MapError(err))
+		responseHandler.ErrorResponse(http_response.MapError(err))
 		return
 	}
 

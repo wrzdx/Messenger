@@ -3,7 +3,7 @@ package users_service
 import (
 	"errors"
 	"messenger/internal/core/domain"
-	core_test_utils "messenger/internal/core/utils/test"
+	test_utils "messenger/internal/core/utils/test"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -11,7 +11,7 @@ import (
 )
 
 func TestDeleteUser(t *testing.T) {
-	user := core_test_utils.Users[0]
+	user := test_utils.Users[0]
 
 	tests := []struct {
 		name           string

@@ -5,9 +5,9 @@ package users_postgres_repository
 import (
 	"errors"
 	"messenger/internal/core/domain"
-	core_postgres "messenger/internal/core/repository/postgres"
-	core_pgx_pool "messenger/internal/core/repository/postgres/pgx"
-	core_test_utils "messenger/internal/core/utils/test"
+	postgres "messenger/internal/core/repository/postgres"
+	pgx_pool "messenger/internal/core/repository/postgres/pgx"
+	test_utils "messenger/internal/core/utils/test"
 	"strings"
 	"testing"
 
@@ -27,126 +27,126 @@ func TestCreateUser(t *testing.T) {
 		{
 			name: "valid user",
 			user: domain.User{
-				ID:           core_test_utils.ID,
+				ID:           test_utils.ID,
 				Username:     "ivanov",
 				FirstName:    "Ivan",
 				LastName:     new("Ivanov"),
-				CreatedAt:    core_test_utils.CreatedAt,
+				CreatedAt:    test_utils.CreatedAt,
 				Bio:          new("I like pizza"),
-				PasswordHash: core_test_utils.PasswordHash,
+				PasswordHash: test_utils.PasswordHash,
 			},
 		},
 		{
 			name: "without username",
 			user: domain.User{
-				ID:           core_test_utils.ID,
+				ID:           test_utils.ID,
 				FirstName:    "Sidor",
 				LastName:     new("Sidorov"),
-				CreatedAt:    core_test_utils.CreatedAt,
-				PasswordHash: core_test_utils.PasswordHash,
+				CreatedAt:    test_utils.CreatedAt,
+				PasswordHash: test_utils.PasswordHash,
 			},
-			wantError: core_postgres.ErrViolatesCheck,
+			wantError: postgres.ErrViolatesCheck,
 		},
 		{
 			name: "short username",
 			user: domain.User{
-				ID:           core_test_utils.ID,
+				ID:           test_utils.ID,
 				Username:     "ivan",
 				FirstName:    "Sidor",
 				LastName:     new("Sidorov"),
-				CreatedAt:    core_test_utils.CreatedAt,
-				PasswordHash: core_test_utils.PasswordHash,
+				CreatedAt:    test_utils.CreatedAt,
+				PasswordHash: test_utils.PasswordHash,
 			},
-			wantError: core_postgres.ErrViolatesCheck,
+			wantError: postgres.ErrViolatesCheck,
 		},
 		{
 			name: "long username",
 			user: domain.User{
-				ID:           core_test_utils.ID,
+				ID:           test_utils.ID,
 				Username:     "ivanov" + strings.Repeat("R", 32),
 				FirstName:    "Sidor",
 				LastName:     new("Sidorov"),
-				CreatedAt:    core_test_utils.CreatedAt,
-				PasswordHash: core_test_utils.PasswordHash,
+				CreatedAt:    test_utils.CreatedAt,
+				PasswordHash: test_utils.PasswordHash,
 			},
-			wantError: core_postgres.ErrTooLongVarchar,
+			wantError: postgres.ErrTooLongVarchar,
 		},
 		{
 			name: "without firstname",
 			user: domain.User{
-				ID:           core_test_utils.ID,
+				ID:           test_utils.ID,
 				Username:     "ivanov",
 				LastName:     new("Sidorov"),
-				CreatedAt:    core_test_utils.CreatedAt,
-				PasswordHash: core_test_utils.PasswordHash,
+				CreatedAt:    test_utils.CreatedAt,
+				PasswordHash: test_utils.PasswordHash,
 			},
-			wantError: core_postgres.ErrViolatesCheck,
+			wantError: postgres.ErrViolatesCheck,
 		},
 		{
 			name: "long firstname",
 			user: domain.User{
-				ID:           core_test_utils.ID,
+				ID:           test_utils.ID,
 				Username:     "ivanov",
 				FirstName:    "Sido" + strings.Repeat("R", 64),
 				LastName:     new("Sidorov"),
-				CreatedAt:    core_test_utils.CreatedAt,
-				PasswordHash: core_test_utils.PasswordHash,
+				CreatedAt:    test_utils.CreatedAt,
+				PasswordHash: test_utils.PasswordHash,
 			},
-			wantError: core_postgres.ErrTooLongVarchar,
+			wantError: postgres.ErrTooLongVarchar,
 		},
 		{
 			name: "without last name",
 			user: domain.User{
-				ID:           core_test_utils.ID,
+				ID:           test_utils.ID,
 				Username:     "petrov",
 				FirstName:    "Petr",
-				CreatedAt:    core_test_utils.CreatedAt,
-				PasswordHash: core_test_utils.PasswordHash,
+				CreatedAt:    test_utils.CreatedAt,
+				PasswordHash: test_utils.PasswordHash,
 			},
 		},
 		{
 			name: "long last name",
 			user: domain.User{
-				ID:           core_test_utils.ID,
+				ID:           test_utils.ID,
 				Username:     "petrov",
 				FirstName:    "Petr",
 				LastName:     new("Sidorov" + strings.Repeat("R", 64)),
-				CreatedAt:    core_test_utils.CreatedAt,
-				PasswordHash: core_test_utils.PasswordHash,
+				CreatedAt:    test_utils.CreatedAt,
+				PasswordHash: test_utils.PasswordHash,
 			},
-			wantError: core_postgres.ErrTooLongVarchar,
+			wantError: postgres.ErrTooLongVarchar,
 		},
 		{
 			name: "without bio",
 			user: domain.User{
-				ID:           core_test_utils.ID,
+				ID:           test_utils.ID,
 				Username:     "sidorov",
 				FirstName:    "Sidor",
 				LastName:     new("Sidorov"),
-				CreatedAt:    core_test_utils.CreatedAt,
-				PasswordHash: core_test_utils.PasswordHash,
+				CreatedAt:    test_utils.CreatedAt,
+				PasswordHash: test_utils.PasswordHash,
 			},
 		},
 		{
 			name: "long bio",
 			user: domain.User{
-				ID:           core_test_utils.ID,
+				ID:           test_utils.ID,
 				Username:     "sidorov",
 				FirstName:    "Sidor",
 				Bio:          new("Sidorov" + strings.Repeat("R", 70)),
-				CreatedAt:    core_test_utils.CreatedAt,
-				PasswordHash: core_test_utils.PasswordHash,
+				CreatedAt:    test_utils.CreatedAt,
+				PasswordHash: test_utils.PasswordHash,
 			},
-			wantError: core_postgres.ErrTooLongVarchar,
+			wantError: postgres.ErrTooLongVarchar,
 		},
 		{
 			name: "duplicate username",
 			user: domain.User{
-				ID:           core_test_utils.ID,
+				ID:           test_utils.ID,
 				Username:     "duplicate",
 				FirstName:    "Ivan",
-				CreatedAt:    core_test_utils.CreatedAt,
-				PasswordHash: core_test_utils.PasswordHash,
+				CreatedAt:    test_utils.CreatedAt,
+				PasswordHash: test_utils.PasswordHash,
 			},
 			wantError: domain.ErrUserAlreadyExists,
 			before: func(t *testing.T, repo *UsersRepository) {
@@ -156,8 +156,8 @@ func TestCreateUser(t *testing.T) {
 						ID:           uuid.New(),
 						Username:     "duplicate",
 						FirstName:    "Ivan",
-						CreatedAt:    core_test_utils.CreatedAt,
-						PasswordHash: core_test_utils.PasswordHash,
+						CreatedAt:    test_utils.CreatedAt,
+						PasswordHash: test_utils.PasswordHash,
 					},
 				)
 
@@ -167,7 +167,7 @@ func TestCreateUser(t *testing.T) {
 			},
 		},
 	}
-	pool, err := core_pgx_pool.NewPool(t.Context(), core_pgx_pool.NewConfigMust())
+	pool, err := pgx_pool.NewPool(t.Context(), pgx_pool.NewConfigMust())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -183,7 +183,7 @@ func TestCreateUser(t *testing.T) {
 			}
 			defer tx.Rollback(t.Context())
 			repository := NewUsersRepository(tx)
-			core_test_utils.ResetDB(t, tx)
+			test_utils.ResetDB(t, tx)
 			if tt.before != nil {
 				tt.before(t, repository)
 			}

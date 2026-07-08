@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"messenger/internal/core/domain"
-	core_postgres "messenger/internal/core/repository/postgres"
+	postgres "messenger/internal/core/repository/postgres"
 )
 
 func (r *UsersRepository) CreateUser(
@@ -41,7 +41,7 @@ func (r *UsersRepository) CreateUser(
 		&userModel.PasswordHash,
 	)
 	if err != nil {
-		if errors.Is(err, core_postgres.ErrViolatesUnique) {
+		if errors.Is(err, postgres.ErrViolatesUnique) {
 			return domain.User{}, fmt.Errorf(
 				"user with username=%s already exists: %w",
 				user.Username,

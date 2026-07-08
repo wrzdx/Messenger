@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	core_auth "messenger/internal/core/auth"
+	auth "messenger/internal/core/auth"
 	"messenger/internal/core/domain"
-	core_http_response "messenger/internal/core/transport/http/response"
-	core_test_utils "messenger/internal/core/utils/test"
+	http_response "messenger/internal/core/transport/http/response"
+	test_utils "messenger/internal/core/utils/test"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -18,7 +18,7 @@ import (
 )
 
 func TestPatchMe(t *testing.T) {
-	user := core_test_utils.Users[0]
+	user := test_utils.Users[0]
 
 	tests := []struct {
 		name string
@@ -101,7 +101,7 @@ func TestPatchMe(t *testing.T) {
 				},
 			},
 			serviceErr: domain.ErrInvalidUsername,
-			wantError:  core_http_response.MapError(domain.ErrInvalidUsername).Message,
+			wantError:  http_response.MapError(domain.ErrInvalidUsername).Message,
 			body: map[string]any{
 				"username": "abc",
 			},
@@ -117,7 +117,7 @@ func TestPatchMe(t *testing.T) {
 				},
 			},
 			serviceErr: domain.ErrInvalidUsername,
-			wantError:  core_http_response.MapError(domain.ErrInvalidUsername).Message,
+			wantError:  http_response.MapError(domain.ErrInvalidUsername).Message,
 			body: map[string]any{
 				"username": strings.Repeat("a", 33),
 			},
@@ -133,7 +133,7 @@ func TestPatchMe(t *testing.T) {
 				},
 			},
 			serviceErr: domain.ErrNullUsername,
-			wantError:  core_http_response.MapError(domain.ErrNullUsername).Message,
+			wantError:  http_response.MapError(domain.ErrNullUsername).Message,
 			body: map[string]any{
 				"username": nil,
 			},
@@ -149,7 +149,7 @@ func TestPatchMe(t *testing.T) {
 			},
 			wantStatus: http.StatusBadRequest,
 			serviceErr: domain.ErrNullFirstname,
-			wantError:  core_http_response.MapError(domain.ErrNullFirstname).Message,
+			wantError:  http_response.MapError(domain.ErrNullFirstname).Message,
 
 			body: map[string]any{
 				"first_name": nil,
@@ -159,7 +159,7 @@ func TestPatchMe(t *testing.T) {
 			name:              "service error",
 			wantServiceCalled: true,
 			wantStatus:        http.StatusInternalServerError,
-			wantError:         core_http_response.MapError(errors.New("service error")).Message,
+			wantError:         http_response.MapError(errors.New("service error")).Message,
 			serviceErr:        errors.New("service error"),
 			body: map[string]any{
 				"username": "new_username",
@@ -199,7 +199,7 @@ func TestPatchMe(t *testing.T) {
 						tt.wantResponse.LastName,
 						user.CreatedAt,
 						tt.wantResponse.Bio,
-						core_test_utils.PasswordHash,
+						test_utils.PasswordHash,
 					), tt.serviceErr
 				},
 			}
@@ -215,8 +215,8 @@ func TestPatchMe(t *testing.T) {
 				bytes.NewReader(data),
 			)
 
-			ctx := core_test_utils.GetLoggerContext(req.Context())
-			ctx = core_auth.WithUserID(ctx, user.ID)
+			ctx := test_utils.GetLoggerContext(req.Context())
+			ctx = auth.WithUserID(ctx, user.ID)
 
 			rec := httptest.NewRecorder()
 
@@ -248,7 +248,7 @@ func TestPatchMe(t *testing.T) {
 			}
 
 			if tt.wantError != "" {
-				var gotError core_http_response.ErrorResponse
+				var gotError http_response.ErrorResponse
 
 				if err := json.NewDecoder(rec.Body).Decode(&gotError); err != nil {
 					t.Fatalf("unexpected error: %v", err)
@@ -268,7 +268,7 @@ func TestPatchMe(t *testing.T) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 
-				gotResponse.CreatedAt = core_test_utils.CreatedAt
+				gotResponse.CreatedAt = test_utils.CreatedAt
 
 				if diff := cmp.Diff(tt.wantResponse, gotResponse); diff != "" {
 					t.Fatalf("PatchMeResponse mismatch (-want +got):\n%s", diff)

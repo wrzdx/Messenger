@@ -3,7 +3,7 @@ package auth_service
 import (
 	"context"
 	"fmt"
-	core_auth "messenger/internal/core/auth"
+	auth "messenger/internal/core/auth"
 	"messenger/internal/core/domain"
 	"time"
 
@@ -12,21 +12,25 @@ import (
 
 func (s *AuthService) Register(
 	ctx context.Context,
-	payload domain.RegisterUserPayload,
+	user domain.User,
+	password string,
 ) (
 	domain.User,
-	core_auth.AuthTokens,
+	auth.TokenPair,
 	error,
 ) {
-	if err := payload.Validate(); err != nil {
-		return domain.User{}, core_auth.AuthTokens{}, fmt.Errorf("validate payload: %w", err)
+	if err := user.Validate(); err != nil {
+		return domain.User{}, auth.TokenPair{}, fmt.Errorf("validate user: %w", err)
 	}
-	passwordHash, err := s.hasher.Hash(payload.Password)
+	if err := domain.ValidatePassword(password); err != nil {
+		return domain.User{}, auth.TokenPair{}, fmt.Errorf("validate password: %w", err)
+	}
+	passwordHash, err := s.hasher.Hash(password)
 	if err != nil {
-		return domain.User{}, core_auth.AuthTokens{}, fmt.Errorf("hash password: %w", err)
+		return domain.User{}, auth.TokenPair{}, fmt.Errorf("hash password: %w", err)
 	}
 
-	user := domain.NewUser(
+	user = domain.NewUser(
 		uuid.New(),
 		payload.Username,
 		payload.FirstName,
@@ -35,9 +39,9 @@ func (s *AuthService) Register(
 		payload.Bio,
 		passwordHash,
 	)
-	tokens, err := s.jwtProvider.GenerateTokens(user.ID)
+	tokens, err := s.tokenService.GenerateTokenPair(user.ID)
 	if err != nil {
-		return domain.User{}, core_auth.AuthTokens{}, fmt.Errorf(
+		return domain.User{}, domain.TokenPair{}, fmt.Errorf(
 			"generate refresh token: %w",
 			err,
 		)
@@ -45,7 +49,7 @@ func (s *AuthService) Register(
 
 	user, err = s.usersRepository.CreateUser(ctx, user)
 	if err != nil {
-		return domain.User{}, core_auth.AuthTokens{}, err
+		return domain.User{}, domain.TokenPair{}, err
 	}
 
 	return user, tokens, nil

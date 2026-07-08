@@ -3,7 +3,7 @@ package users_service
 import (
 	"errors"
 	"messenger/internal/core/domain"
-	core_test_utils "messenger/internal/core/utils/test"
+	test_utils "messenger/internal/core/utils/test"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -11,7 +11,7 @@ import (
 )
 
 func TestChangePassword(t *testing.T) {
-	user := core_test_utils.Users[0]
+	user := test_utils.Users[0]
 
 	tests := []struct {
 		name string
@@ -85,13 +85,13 @@ func TestChangePassword(t *testing.T) {
 			oldPassword: "old_password",
 			newPassword: "new_password",
 
-			hashErr: core_test_utils.HasherError,
+			hashErr: test_utils.HasherError,
 
 			wantGetUserCalled: true,
 			wantCompareCalled: true,
 			wantHashCalled:    true,
 
-			wantError: core_test_utils.HasherError,
+			wantError: test_utils.HasherError,
 		},
 		{
 			name:        "repository error",
@@ -99,14 +99,14 @@ func TestChangePassword(t *testing.T) {
 			oldPassword: "old_password",
 			newPassword: "new_password",
 
-			changePasswordErr: core_test_utils.RepoError,
+			changePasswordErr: test_utils.RepoError,
 
 			wantGetUserCalled:        true,
 			wantCompareCalled:        true,
 			wantHashCalled:           true,
 			wantChangePasswordCalled: true,
 
-			wantError: core_test_utils.RepoError,
+			wantError: test_utils.RepoError,
 		},
 	}
 
@@ -151,7 +151,7 @@ func TestChangePassword(t *testing.T) {
 				HashFn: func(password string) (string, error) {
 					hashCalled = true
 					hashPass = password
-					return core_test_utils.PasswordHash, tt.hashErr
+					return test_utils.PasswordHash, tt.hashErr
 				},
 			}
 
@@ -217,7 +217,7 @@ func TestChangePassword(t *testing.T) {
 					t.Fatalf("userID mismatch (-want +got):\n%s", diff)
 				}
 
-				if diff := cmp.Diff(core_test_utils.PasswordHash, changeHash); diff != "" {
+				if diff := cmp.Diff(test_utils.PasswordHash, changeHash); diff != "" {
 					t.Fatalf("password hash mismatch (-want +got):\n%s", diff)
 				}
 			}

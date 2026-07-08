@@ -1,4 +1,4 @@
-package core_logger
+package logger
 
 import (
 	"context"

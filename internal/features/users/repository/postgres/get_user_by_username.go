@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"messenger/internal/core/domain"
-	core_postgres "messenger/internal/core/repository/postgres"
+	postgres "messenger/internal/core/repository/postgres"
 )
 
 func (r *UsersRepository) GetUserByUsername(
@@ -33,7 +33,7 @@ func (r *UsersRepository) GetUserByUsername(
 		&userModel.PasswordHash,
 	)
 	if err != nil {
-		if errors.Is(err, core_postgres.ErrNoRows) {
+		if errors.Is(err, postgres.ErrNoRows) {
 			return domain.User{}, fmt.Errorf(
 				"user with username='%s': %w",
 				username,

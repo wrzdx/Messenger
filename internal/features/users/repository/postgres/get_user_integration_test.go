@@ -5,8 +5,8 @@ package users_postgres_repository
 import (
 	"errors"
 	"messenger/internal/core/domain"
-	core_pgx_pool "messenger/internal/core/repository/postgres/pgx"
-	core_test_utils "messenger/internal/core/utils/test"
+	pgx_pool "messenger/internal/core/repository/postgres/pgx"
+	test_utils "messenger/internal/core/utils/test"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -22,17 +22,17 @@ func TestGetUser(t *testing.T) {
 	}{
 		{
 			name:     "existing user",
-			userID:   core_test_utils.Users[0].ID,
-			wantUser: core_test_utils.Users[0],
+			userID:   test_utils.Users[0].ID,
+			wantUser: test_utils.Users[0],
 		},
 		{
 			name:      "non-existing user",
-			userID:    core_test_utils.ID,
+			userID:    test_utils.ID,
 			wantError: domain.ErrUserNotFound,
 		},
 	}
 
-	pool, err := core_pgx_pool.NewPool(t.Context(), core_pgx_pool.NewConfigMust())
+	pool, err := pgx_pool.NewPool(t.Context(), pgx_pool.NewConfigMust())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -45,7 +45,7 @@ func TestGetUser(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer tx.Rollback(t.Context())
-			core_test_utils.LoadData(t, tx)
+			test_utils.LoadData(t, tx)
 
 			repository := NewUsersRepository(tx)
 			gotUser, gotErr := repository.GetUser(t.Context(), tt.userID)

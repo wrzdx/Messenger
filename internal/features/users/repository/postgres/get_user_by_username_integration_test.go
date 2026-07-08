@@ -3,8 +3,8 @@ package users_postgres_repository
 import (
 	"errors"
 	"messenger/internal/core/domain"
-	core_pgx_pool "messenger/internal/core/repository/postgres/pgx"
-	core_test_utils "messenger/internal/core/utils/test"
+	pgx_pool "messenger/internal/core/repository/postgres/pgx"
+	test_utils "messenger/internal/core/utils/test"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -12,7 +12,7 @@ import (
 )
 
 func TestGetUserByUsername(t *testing.T) {
-	pool, err := core_pgx_pool.NewPool(t.Context(), core_pgx_pool.NewConfigMust())
+	pool, err := pgx_pool.NewPool(t.Context(), pgx_pool.NewConfigMust())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -36,9 +36,9 @@ func TestGetUserByUsername(t *testing.T) {
 						"ivanov",
 						"Ivan",
 						new("Ivanov"),
-						core_test_utils.CreatedAt,
+						test_utils.CreatedAt,
 						new("I like pizza"),
-						core_test_utils.PasswordHash,
+						test_utils.PasswordHash,
 					),
 				)
 				if err != nil {
@@ -50,9 +50,9 @@ func TestGetUserByUsername(t *testing.T) {
 				"ivanov",
 				"Ivan",
 				new("Ivanov"),
-				core_test_utils.CreatedAt,
+				test_utils.CreatedAt,
 				new("I like pizza"),
-				core_test_utils.PasswordHash,
+				test_utils.PasswordHash,
 			),
 		},
 		{
@@ -71,7 +71,7 @@ func TestGetUserByUsername(t *testing.T) {
 			defer tx.Rollback(t.Context())
 
 			repo := NewUsersRepository(tx)
-			core_test_utils.LoadData(t, tx)
+			test_utils.LoadData(t, tx)
 
 			if tt.before != nil {
 				tt.before(t, repo)

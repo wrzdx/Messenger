@@ -3,8 +3,8 @@ package users_transport_http
 import (
 	"encoding/json"
 	"messenger/internal/core/domain"
-	core_http_response "messenger/internal/core/transport/http/response"
-	core_test_utils "messenger/internal/core/utils/test"
+	http_response "messenger/internal/core/transport/http/response"
+	test_utils "messenger/internal/core/utils/test"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -31,13 +31,13 @@ func TestGetUsers(t *testing.T) {
 			name:              "return all users",
 			wantServiceCalled: true,
 			wantStatus:        http.StatusOK,
-			serviceUsers:      core_test_utils.Users,
+			serviceUsers:      test_utils.Users,
 		},
 		{
 			name:              "limit users",
 			limit:             "1",
 			wantServiceLimit:  new(1),
-			serviceUsers:      core_test_utils.Users[:1],
+			serviceUsers:      test_utils.Users[:1],
 			wantServiceCalled: true,
 			wantStatus:        http.StatusOK,
 		},
@@ -47,14 +47,14 @@ func TestGetUsers(t *testing.T) {
 			wantServiceCalled: true,
 			wantServiceLimit:  new(-1),
 			serviceErr:        domain.ErrNegativeLimit,
-			wantError:         core_http_response.MapError(domain.ErrNegativeLimit).Message,
+			wantError:         http_response.MapError(domain.ErrNegativeLimit).Message,
 			wantStatus:        http.StatusBadRequest,
 		},
 		{
 			name:              "offset users",
 			offset:            "1",
 			wantServiceOffset: new(1),
-			serviceUsers:      core_test_utils.Users[1:],
+			serviceUsers:      test_utils.Users[1:],
 			wantServiceCalled: true,
 			wantStatus:        http.StatusOK,
 		},
@@ -64,7 +64,7 @@ func TestGetUsers(t *testing.T) {
 			wantServiceCalled: true,
 			wantServiceOffset: new(-1),
 			serviceErr:        domain.ErrNegativeOffset,
-			wantError:         core_http_response.MapError(domain.ErrNegativeOffset).Message,
+			wantError:         http_response.MapError(domain.ErrNegativeOffset).Message,
 			wantStatus:        http.StatusBadRequest,
 		},
 		{
@@ -73,7 +73,7 @@ func TestGetUsers(t *testing.T) {
 			offset:            "1",
 			wantServiceLimit:  new(1),
 			wantServiceOffset: new(1),
-			serviceUsers:      core_test_utils.Users[1:2],
+			serviceUsers:      test_utils.Users[1:2],
 			wantServiceCalled: true,
 
 			wantStatus: http.StatusOK,
@@ -84,20 +84,20 @@ func TestGetUsers(t *testing.T) {
 			offset:            "2",
 			wantServiceLimit:  new(1),
 			wantServiceOffset: new(2),
-			serviceUsers:      core_test_utils.Users[2:2],
+			serviceUsers:      test_utils.Users[2:2],
 			wantServiceCalled: true,
 			wantStatus:        http.StatusOK,
 		},
 		{
 			name:       "invalid limit",
 			limit:      "asadf",
-			wantError:  core_http_response.ErrInvalidArgument.Error(),
+			wantError:  http_response.ErrInvalidArgument.Error(),
 			wantStatus: http.StatusBadRequest,
 		},
 		{
 			name:      "invalid offset",
 			offset:    "asadf",
-			wantError: core_http_response.ErrInvalidArgument.Error(),
+			wantError: http_response.ErrInvalidArgument.Error(),
 
 			wantStatus: http.StatusBadRequest,
 		},
@@ -141,7 +141,7 @@ func TestGetUsers(t *testing.T) {
 				nil,
 			)
 
-			ctx := core_test_utils.GetLoggerContext(req.Context())
+			ctx := test_utils.GetLoggerContext(req.Context())
 			// action
 			handler.GetUsers(rec, req.WithContext(ctx))
 
@@ -168,7 +168,7 @@ func TestGetUsers(t *testing.T) {
 			}
 
 			if tt.wantError != "" {
-				var gotError core_http_response.ErrorResponse
+				var gotError http_response.ErrorResponse
 				if err := json.NewDecoder(rec.Body).Decode(&gotError); err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}

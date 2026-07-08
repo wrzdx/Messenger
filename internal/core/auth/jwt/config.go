@@ -1,4 +1,4 @@
-package core_auth_jwt
+package auth_jwt
 
 import (
 	"fmt"

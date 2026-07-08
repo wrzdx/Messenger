@@ -1,4 +1,4 @@
-package core_postgres
+package postgres
 
 import "context"
 

@@ -1,9 +1,9 @@
-package core_pgx_pool
+package pgx_pool
 
 import (
 	"errors"
 	"fmt"
-	core_postgres "messenger/internal/core/repository/postgres"
+	postgres "messenger/internal/core/repository/postgres"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -40,18 +40,18 @@ type pgxCommandTag struct {
 }
 
 var violationErrs = map[string]error{
-	"23503": core_postgres.ErrViolatesForeignKey,
-	"23505": core_postgres.ErrViolatesUnique,
-	"23514": core_postgres.ErrViolatesCheck,
-	"22001": core_postgres.ErrTooLongVarchar,
+	"23503": postgres.ErrViolatesForeignKey,
+	"23505": postgres.ErrViolatesUnique,
+	"23514": postgres.ErrViolatesCheck,
+	"22001": postgres.ErrTooLongVarchar,
 }
 
 func mapErrors(err error) error {
 	if errors.Is(err, pgx.ErrNoRows) {
-		return core_postgres.ErrNoRows
+		return postgres.ErrNoRows
 	}
 
-	mappedErr := core_postgres.ErrUnknown
+	mappedErr := postgres.ErrUnknown
 
 	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok {
 		violationErr, ok := violationErrs[pgErr.Code]

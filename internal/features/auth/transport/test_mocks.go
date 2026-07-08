@@ -2,7 +2,6 @@ package auth_transport_http
 
 import (
 	"context"
-	core_auth "messenger/internal/core/auth"
 	"messenger/internal/core/domain"
 	"net/http"
 )
@@ -12,18 +11,18 @@ type StubAuthService struct {
 		payload domain.RegisterUserPayload,
 	) (
 		domain.User,
-		core_auth.AuthTokens,
+		domain.TokenPair,
 		error,
 	)
 
 	LoginFn func(
 		username string,
 		password string,
-	) (core_auth.AuthTokens, error)
+	) (domain.TokenPair, error)
 
 	RefreshFn func(
 		token string,
-	) (core_auth.AuthTokens, error)
+	) (domain.TokenPair, error)
 }
 
 func (s *StubAuthService) Register(
@@ -31,11 +30,11 @@ func (s *StubAuthService) Register(
 	payload domain.RegisterUserPayload,
 ) (
 	domain.User,
-	core_auth.AuthTokens,
+	domain.TokenPair,
 	error,
 ) {
 	if s.CreateUserFn == nil {
-		return domain.User{}, core_auth.AuthTokens{}, nil
+		return domain.User{}, domain.TokenPair{}, nil
 	}
 	return s.CreateUserFn(payload)
 }
@@ -44,9 +43,9 @@ func (s *StubAuthService) Login(
 	ctx context.Context,
 	username string,
 	password string,
-) (core_auth.AuthTokens, error) {
+) (domain.TokenPair, error) {
 	if s.LoginFn == nil {
-		return core_auth.AuthTokens{}, nil
+		return domain.TokenPair{}, nil
 	}
 	return s.LoginFn(username, password)
 }
@@ -54,9 +53,9 @@ func (s *StubAuthService) Login(
 func (s *StubAuthService) Refresh(
 	ctx context.Context,
 	token string,
-) (core_auth.AuthTokens, error) {
+) (domain.TokenPair, error) {
 	if s.LoginFn == nil {
-		return core_auth.AuthTokens{}, nil
+		return domain.TokenPair{}, nil
 	}
 	return s.RefreshFn(token)
 }

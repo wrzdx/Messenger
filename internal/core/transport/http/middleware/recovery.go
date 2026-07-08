@@ -1,8 +1,10 @@
-package core_http_middleware
+package http_middleware
 
 import (
-	core_logger "messenger/internal/core/logger"
-	core_http_response "messenger/internal/core/transport/http/response"
+	"fmt"
+	core_errors "messenger/internal/core/errors"
+	logger "messenger/internal/core/logger"
+	http_response "messenger/internal/core/transport/http/response"
 	"net/http"
 )
 
@@ -10,14 +12,16 @@ func Recovery() Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
-			log := core_logger.FromContext(ctx)
-			responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
+			log := logger.FromContext(ctx)
+			responseHandler := http_response.NewHTTPSender(log, w)
 			defer func() {
 				if p := recover(); p != nil {
-					responseHandler.PanicResponse(
-						p,
-						"during handle HTTP request got unexpected panic",
-					)
+					err := core_errors.Error{
+						Err:     fmt.Errorf("during handle HTTP request got unexpected panic: %v", p),
+						Code:    core_errors.INTERNAL_ERROR,
+						Message: "Internal Server Error",
+					}
+					responseHandler.Error(err)
 				}
 			}()
 			next.ServeHTTP(w, r)

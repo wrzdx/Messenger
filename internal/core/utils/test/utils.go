@@ -1,13 +1,13 @@
-package core_test_utils
+package test_utils
 
 import (
 	"context"
-	core_logger "messenger/internal/core/logger"
-	core_postgres "messenger/internal/core/repository/postgres"
+	logger "messenger/internal/core/logger"
+	postgres "messenger/internal/core/repository/postgres"
 	"testing"
 )
 
-func ResetDB(t *testing.T, db core_postgres.DB) {
+func ResetDB(t *testing.T, db postgres.DB) {
 	t.Helper()
 
 	_, err := db.Exec(t.Context(), `
@@ -21,7 +21,7 @@ func ResetDB(t *testing.T, db core_postgres.DB) {
 	}
 }
 
-func LoadData(t *testing.T, db core_postgres.DB) {
+func LoadData(t *testing.T, db postgres.DB) {
 	t.Helper()
 	ResetDB(t, db)
 	query := `
@@ -47,5 +47,5 @@ func LoadData(t *testing.T, db core_postgres.DB) {
 }
 
 func GetLoggerContext(ctx context.Context) context.Context {
-	return core_logger.WithLogger(ctx, Log)
+	return logger.WithLogger(ctx, Log)
 }

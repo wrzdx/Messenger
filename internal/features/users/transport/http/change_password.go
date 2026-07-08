@@ -2,10 +2,10 @@ package users_transport_http
 
 import (
 	"fmt"
-	core_auth "messenger/internal/core/auth"
-	core_logger "messenger/internal/core/logger"
-	core_http_request "messenger/internal/core/transport/http/request"
-	core_http_response "messenger/internal/core/transport/http/response"
+	auth "messenger/internal/core/auth"
+	logger "messenger/internal/core/logger"
+	http_request "messenger/internal/core/transport/http/request"
+	http_response "messenger/internal/core/transport/http/response"
 	"net/http"
 )
 
@@ -16,20 +16,20 @@ type ChangePasswordRequest struct {
 
 func (h *UsersHTTPHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	log := core_logger.FromContext(ctx)
-	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
-	userID := core_auth.MustUserIDFromContext(ctx)
+	log := logger.FromContext(ctx)
+	responseHandler := http_response.NewHTTPResponseHandler(log, w)
+	userID := auth.MustUserIDFromContext(ctx)
 
 	var request ChangePasswordRequest
 
-	if err := core_http_request.DecodeAndValidateRequest(r, &request); err != nil {
+	if err := http_request.DecodeAndValidateRequest(r, &request); err != nil {
 		err = fmt.Errorf(
 			"%v: %w",
 			err,
-			core_http_response.ErrInvalidArgument,
+			http_response.ErrInvalidArgument,
 		)
 		responseHandler.ErrorResponse(
-			core_http_response.Error{
+			http_response.Error{
 				Error:   err,
 				Status:  http.StatusBadRequest,
 				Message: err.Error(),
@@ -44,7 +44,7 @@ func (h *UsersHTTPHandler) ChangePassword(w http.ResponseWriter, r *http.Request
 		request.OldPassword,
 		request.NewPassword,
 	); err != nil {
-		responseHandler.ErrorResponse(core_http_response.MapError(err))
+		responseHandler.ErrorResponse(http_response.MapError(err))
 		return
 	}
 

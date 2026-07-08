@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"messenger/internal/core/auth"
 	"messenger/internal/core/domain"
 
 	"github.com/google/uuid"
@@ -20,7 +21,7 @@ func (s *UsersService) ChangePassword(
 		return fmt.Errorf("get user: %w", err)
 	}
 	if err := s.hasher.Compare(user.PasswordHash, old_password); err != nil {
-		if errors.Is(err, domain.ErrInvalidCredentials) {
+		if errors.Is(err, auth.ErrPasswordMismatch) {
 			return domain.ErrWrongPassword
 		}
 		return fmt.Errorf("compare passwords: %w", err)

@@ -1,9 +1,9 @@
-package core_pgx_pool
+package pgx_pool
 
 import (
 	"context"
 	"fmt"
-	core_postgres "messenger/internal/core/repository/postgres"
+	postgres "messenger/internal/core/repository/postgres"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -53,7 +53,7 @@ func (p *Pool) Query(
 	ctx context.Context,
 	sql string,
 	args ...any,
-) (core_postgres.Rows, error) {
+) (postgres.Rows, error) {
 	rows, err := p.Pool.Query(ctx, sql, args...)
 	if err != nil {
 		return nil, err
@@ -66,7 +66,7 @@ func (p *Pool) QueryRow(
 	ctx context.Context,
 	sql string,
 	args ...any,
-) core_postgres.Row {
+) postgres.Row {
 	row := p.Pool.QueryRow(ctx, sql, args...)
 	return pgxRow{row}
 }
@@ -75,7 +75,7 @@ func (p *Pool) Exec(
 	ctx context.Context,
 	sql string,
 	arguments ...any,
-) (core_postgres.CommandTag, error) {
+) (postgres.CommandTag, error) {
 	tag, err := p.Pool.Exec(ctx, sql, arguments...)
 	if err != nil {
 		return nil, err
@@ -84,7 +84,7 @@ func (p *Pool) Exec(
 	return pgxCommandTag{tag}, nil
 }
 
-func (p *Pool) Begin(ctx context.Context) (core_postgres.Tx, error) {
+func (p *Pool) Begin(ctx context.Context) (postgres.Tx, error) {
 	tx, err := p.Pool.Begin(ctx)
 	if err != nil {
 		return nil, err
@@ -109,7 +109,7 @@ func (t *Tx) Query(
 	ctx context.Context,
 	sql string,
 	args ...any,
-) (core_postgres.Rows, error) {
+) (postgres.Rows, error) {
 	rows, err := t.tx.Query(ctx, sql, args...)
 	if err != nil {
 		return nil, err
@@ -122,7 +122,7 @@ func (t *Tx) QueryRow(
 	ctx context.Context,
 	sql string,
 	args ...any,
-) core_postgres.Row {
+) postgres.Row {
 	row := t.tx.QueryRow(ctx, sql, args...)
 	return pgxRow{row}
 }
@@ -131,7 +131,7 @@ func (t *Tx) Exec(
 	ctx context.Context,
 	sql string,
 	arguments ...any,
-) (core_postgres.CommandTag, error) {
+) (postgres.CommandTag, error) {
 	tag, err := t.tx.Exec(ctx, sql, arguments...)
 	if err != nil {
 		return nil, err

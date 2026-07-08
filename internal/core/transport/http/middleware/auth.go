@@ -1,68 +1,56 @@
-package core_http_middleware
+package http_middleware
 
 import (
-	"errors"
 	"fmt"
-	core_auth "messenger/internal/core/auth"
-	core_logger "messenger/internal/core/logger"
-	core_http_response "messenger/internal/core/transport/http/response"
+	auth "messenger/internal/core/auth"
+	context "messenger/internal/core/context"
+	core_errors "messenger/internal/core/errors"
+	logger "messenger/internal/core/logger"
+	http_response "messenger/internal/core/transport/http/response"
 	"net/http"
 	"strings"
 )
 
-var (
-	ErrMissingAuthorizationHeader = errors.New("missing authorization header")
-	ErrInvalidAuthorizationHeader = errors.New("invalid authorization header")
-)
-
-type jwtProvider interface {
-	ParseToken(token string) (core_auth.Claims, error)
-}
-
-func extractBearerToken(r *http.Request) (string, error) {
+func extractToken(r *http.Request) string {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
-		return "", ErrMissingAuthorizationHeader
+		return ""
 	}
 
 	const prefix = "Bearer "
 
 	if !strings.HasPrefix(authHeader, prefix) {
-		return "", ErrInvalidAuthorizationHeader
+		return ""
 	}
 
 	token := strings.TrimPrefix(authHeader, prefix)
 	if token == "" {
-		return "", ErrInvalidAuthorizationHeader
+		return ""
 	}
 
-	return token, nil
+	return token
 }
 
-func Auth(jwt jwtProvider) Middleware {
+func Auth(jwt auth.TokenService) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			token, err := extractBearerToken(r)
-			log := core_logger.FromContext(r.Context())
-			responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
+			token := extractToken(r)
+			log := logger.FromContext(r.Context())
+			responseHandler := http_response.NewHTTPSender(log, w)
+			payload, err := jwt.ParseAccessToken(token)
 			if err != nil {
-				responseHandler.ErrorResponse(core_http_response.Error{
-					Error:   fmt.Errorf("auth middleware: %w", err),
-					Status:  http.StatusUnauthorized,
-					Message: err.Error(),
-				})
+				respError := core_errors.Error{
+					Err:     fmt.Errorf("auth middleware: %w", err),
+					Code:    core_errors.INVALID_TOKEN,
+					Message: "failed parse token",
+				}
+				responseHandler.Error(respError)
 				return
 			}
-			claims, err := jwt.ParseToken(token)
-			if err != nil {
-				responseHandler.ErrorResponse(core_http_response.Error{
-					Error:   fmt.Errorf("auth middleware: %w", err),
-					Status:  http.StatusUnauthorized,
-					Message: err.Error(),
-				})
-				return
+			appClaims := context.ContextClaims{
+				UserID: payload.UserID,
 			}
-			ctx := core_auth.WithUserID(r.Context(), claims.UserID)
+			ctx := context.WithClaims(r.Context(), appClaims)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

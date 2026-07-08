@@ -5,8 +5,8 @@ package users_postgres_repository
 import (
 	"errors"
 	"messenger/internal/core/domain"
-	core_pgx_pool "messenger/internal/core/repository/postgres/pgx"
-	core_test_utils "messenger/internal/core/utils/test"
+	pgx_pool "messenger/internal/core/repository/postgres/pgx"
+	test_utils "messenger/internal/core/utils/test"
 	"testing"
 
 	"github.com/google/uuid"
@@ -20,16 +20,16 @@ func TestDeleteUser(t *testing.T) {
 	}{
 		{
 			name:   "existing user",
-			userID: core_test_utils.Users[0].ID,
+			userID: test_utils.Users[0].ID,
 		},
 		{
 			name:      "non-existing user",
-			userID:    core_test_utils.ID,
+			userID:    test_utils.ID,
 			wantError: domain.ErrUserNotFound,
 		},
 	}
 
-	pool, err := core_pgx_pool.NewPool(t.Context(), core_pgx_pool.NewConfigMust())
+	pool, err := pgx_pool.NewPool(t.Context(), pgx_pool.NewConfigMust())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -43,7 +43,7 @@ func TestDeleteUser(t *testing.T) {
 			}
 			defer tx.Rollback(t.Context())
 			repository := NewUsersRepository(tx)
-			core_test_utils.LoadData(t, tx)
+			test_utils.LoadData(t, tx)
 
 			gotErr := repository.DeleteUser(t.Context(), tt.userID)
 

@@ -1,4 +1,4 @@
-package core_auth_cookie
+package auth_cookie
 
 import (
 	"net/http"

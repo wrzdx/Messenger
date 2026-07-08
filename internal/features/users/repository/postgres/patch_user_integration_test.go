@@ -3,9 +3,9 @@ package users_postgres_repository
 import (
 	"errors"
 	"messenger/internal/core/domain"
-	core_postgres "messenger/internal/core/repository/postgres"
-	core_pgx_pool "messenger/internal/core/repository/postgres/pgx"
-	core_test_utils "messenger/internal/core/utils/test"
+	postgres "messenger/internal/core/repository/postgres"
+	pgx_pool "messenger/internal/core/repository/postgres/pgx"
+	test_utils "messenger/internal/core/utils/test"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -22,49 +22,49 @@ func TestPatchUser(t *testing.T) {
 	}{
 		{
 			name: "patch all fields",
-			id:   core_test_utils.Users[0].ID,
+			id:   test_utils.Users[0].ID,
 			user: domain.NewUser(
-				core_test_utils.Users[0].ID,
+				test_utils.Users[0].ID,
 				"new_username",
 				"NewName",
 				new("NewLastName"),
-				core_test_utils.Users[0].CreatedAt,
+				test_utils.Users[0].CreatedAt,
 				new("New bio"),
-				core_test_utils.PasswordHash,
+				test_utils.PasswordHash,
 			),
 		},
 		{
 			name: "patch nullable fields to null",
-			id:   core_test_utils.Users[0].ID,
+			id:   test_utils.Users[0].ID,
 			user: domain.NewUser(
-				core_test_utils.Users[0].ID,
-				core_test_utils.Users[0].Username,
-				core_test_utils.Users[0].FirstName,
+				test_utils.Users[0].ID,
+				test_utils.Users[0].Username,
+				test_utils.Users[0].FirstName,
 				nil,
-				core_test_utils.Users[0].CreatedAt,
+				test_utils.Users[0].CreatedAt,
 				nil,
-				core_test_utils.PasswordHash,
+				test_utils.PasswordHash,
 			),
 		},
 		{
 			name:      "user not found",
 			id:        uuid.New(),
-			user:      core_test_utils.Users[0],
-			wantError: core_postgres.ErrNoRows,
+			user:      test_utils.Users[0],
+			wantError: postgres.ErrNoRows,
 		},
 		{
 			name: "duplicate username",
-			id:   core_test_utils.Users[0].ID,
+			id:   test_utils.Users[0].ID,
 			user: domain.NewUser(
-				core_test_utils.Users[0].ID,
+				test_utils.Users[0].ID,
 				"duplicate",
 				"Ivan",
 				nil,
-				core_test_utils.Users[0].CreatedAt,
+				test_utils.Users[0].CreatedAt,
 				nil,
-				core_test_utils.PasswordHash,
+				test_utils.PasswordHash,
 			),
-			wantError: core_postgres.ErrViolatesUnique,
+			wantError: postgres.ErrViolatesUnique,
 			before: func(t *testing.T, repo *UsersRepository) {
 				_, err := repo.CreateUser(
 					t.Context(),
@@ -73,9 +73,9 @@ func TestPatchUser(t *testing.T) {
 						"duplicate",
 						"Ivan",
 						nil,
-						core_test_utils.CreatedAt,
+						test_utils.CreatedAt,
 						nil,
-						core_test_utils.PasswordHash,
+						test_utils.PasswordHash,
 					),
 				)
 				if err != nil {
@@ -84,7 +84,7 @@ func TestPatchUser(t *testing.T) {
 			},
 		},
 	}
-	pool, err := core_pgx_pool.NewPool(t.Context(), core_pgx_pool.NewConfigMust())
+	pool, err := pgx_pool.NewPool(t.Context(), pgx_pool.NewConfigMust())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -97,9 +97,9 @@ func TestPatchUser(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer tx.Rollback(t.Context())
-			core_test_utils.LoadData(t, tx)
+			test_utils.LoadData(t, tx)
 			repository := NewUsersRepository(tx)
-			core_test_utils.LoadData(t, tx)
+			test_utils.LoadData(t, tx)
 
 			if tt.before != nil {
 				tt.before(t, repository)

@@ -1,8 +1,8 @@
-package core_http_middleware
+package http_middleware
 
 import (
-	core_logger "messenger/internal/core/logger"
-	core_http_response "messenger/internal/core/transport/http/response"
+	logger "messenger/internal/core/logger"
+	http_response "messenger/internal/core/transport/http/response"
 	"net/http"
 	"time"
 
@@ -13,8 +13,8 @@ func Trace() Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
-			log := core_logger.FromContext(ctx)
-			rw := core_http_response.NewResponseWriter(w)
+			log := logger.FromContext(ctx)
+			rw := http_response.NewResponseWriter(w)
 
 			before := time.Now()
 			log.Debug(

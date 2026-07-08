@@ -3,7 +3,7 @@ package auth_service
 import (
 	"errors"
 	"messenger/internal/core/domain"
-	core_test_utils "messenger/internal/core/utils/test"
+	test_utils "messenger/internal/core/utils/test"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -35,13 +35,13 @@ var tests = []struct {
 		),
 
 		wantUser: domain.NewUser(
-			core_test_utils.ID,
+			test_utils.ID,
 			"ivanov",
 			"Ivan",
 			new("Ivanov"),
-			core_test_utils.CreatedAt,
+			test_utils.CreatedAt,
 			new("I like pizza"),
-			core_test_utils.PasswordHash,
+			test_utils.PasswordHash,
 		),
 
 		wantHasherCalled: true,
@@ -90,8 +90,8 @@ var tests = []struct {
 			"password",
 		),
 
-		hasherError: core_test_utils.HasherError,
-		wantError:   core_test_utils.HasherError,
+		hasherError: test_utils.HasherError,
+		wantError:   test_utils.HasherError,
 
 		wantHasherCalled: true,
 		wantRepoCalled:   false,
@@ -107,8 +107,8 @@ var tests = []struct {
 			"password",
 		),
 
-		repoError: core_test_utils.RepoError,
-		wantError: core_test_utils.RepoError,
+		repoError: test_utils.RepoError,
+		wantError: test_utils.RepoError,
 
 		wantHasherCalled: true,
 		wantRepoCalled:   true,
@@ -128,7 +128,7 @@ func TestCreateUser(t *testing.T) {
 					tt.user.Username,
 					tt.user.FirstName,
 					tt.user.LastName,
-					core_test_utils.CreatedAt,
+					test_utils.CreatedAt,
 					tt.user.Bio,
 					pswHash,
 				)

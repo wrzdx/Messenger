@@ -1,4 +1,4 @@
-package core_config
+package config
 
 import (
 	"fmt"

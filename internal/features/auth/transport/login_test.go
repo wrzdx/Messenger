@@ -3,10 +3,9 @@ package auth_transport_http
 import (
 	"bytes"
 	"encoding/json"
-	core_auth "messenger/internal/core/auth"
 	"messenger/internal/core/domain"
-	core_http_response "messenger/internal/core/transport/http/response"
-	core_test_utils "messenger/internal/core/utils/test"
+	http_response "messenger/internal/core/transport/http/response"
+	test_utils "messenger/internal/core/utils/test"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -38,7 +37,7 @@ func TestLogin(t *testing.T) {
 			name:              "invalid credentials",
 			wantServiceCalled: true,
 			wantStatus:        http.StatusUnauthorized,
-			wantError:         core_http_response.MapError(domain.ErrInvalidCredentials).Message,
+			wantError:         http_response.MapError(domain.ErrInvalidCredentials).Message,
 			serviceErr:        domain.ErrInvalidCredentials,
 			body: LoginRequest{
 				Username: "i.ivanov",
@@ -82,12 +81,12 @@ func TestLogin(t *testing.T) {
 				LoginFn: func(
 					username string,
 					password string,
-				) (core_auth.AuthTokens, error) {
+				) (domain.TokenPair, error) {
 					serviceCalled = true
 					gotUsername = username
 					gotPassword = password
 
-					return core_auth.AuthTokens{
+					return domain.TokenPair{
 						Access:  "access-token",
 						Refresh: "refresh-token",
 					}, tt.serviceErr
@@ -117,7 +116,7 @@ func TestLogin(t *testing.T) {
 				"/login",
 				bytes.NewReader(body),
 			)
-			ctx := core_test_utils.GetLoggerContext(req.Context())
+			ctx := test_utils.GetLoggerContext(req.Context())
 
 			handler.Login(rec, req.WithContext(ctx))
 
@@ -172,7 +171,7 @@ func TestLogin(t *testing.T) {
 			}
 
 			if tt.wantError != "" {
-				var gotError core_http_response.ErrorResponse
+				var gotError http_response.ErrorResponse
 				if err := json.NewDecoder(rec.Body).Decode(&gotError); err != nil {
 					t.Fatal(err)
 				}
