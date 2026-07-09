@@ -1,279 +1,197 @@
 package users_transport_http
 
-// import (
-// 	"bytes"
-// 	"encoding/json"
-// 	"errors"
-// 	auth "messenger/internal/core/auth"
-// 	"messenger/internal/core/domain"
-// 	http_response "messenger/internal/core/transport/http/response"
-// 	test_utils "messenger/internal/core/utils/test"
-// 	"net/http"
-// 	"net/http/httptest"
-// 	"strings"
-// 	"testing"
+import (
+	"bytes"
+	"encoding/json"
+	core_context "messenger/internal/core/context"
+	"messenger/internal/core/domain"
+	core_errors "messenger/internal/core/errors"
+	http_response "messenger/internal/core/transport/http/response"
+	test_utils "messenger/internal/core/utils/test"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
 
-// 	"github.com/google/go-cmp/cmp"
-// 	"github.com/google/uuid"
-// )
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+)
 
-// func TestPatchMe(t *testing.T) {
-// 	user := test_utils.Users[0]
+func TestPatchMeHandler_Success(t *testing.T) {
+	service := NewMockUsersService(t)
 
-// 	tests := []struct {
-// 		name string
-// 		body map[string]any
+	id := uuid.New()
 
-// 		serviceErr        error
-// 		wantServiceCalled bool
-// 		wantServicePatch  domain.UserPatch
-// 		wantStatus        int
-// 		wantError         string
-// 		wantResponse      PatchUserResponse
-// 	}{
-// 		{
-// 			name:              "patch username",
-// 			wantServiceCalled: true,
-// 			wantStatus:        http.StatusOK,
-// 			body: map[string]any{
-// 				"username": "new_username",
-// 			},
-// 			wantServicePatch: domain.UserPatch{
-// 				Username: domain.Nullable[string]{
-// 					Value: new("new_username"),
-// 					Set:   true,
-// 				},
-// 			},
-// 			wantResponse: PatchUserResponse{
-// 				ID:        user.ID,
-// 				Username:  "new_username",
-// 				FirstName: user.FirstName,
-// 				LastName:  user.LastName,
-// 				Bio:       user.Bio,
-// 				CreatedAt: user.CreatedAt,
-// 			},
-// 		},
-// 		{
-// 			name:              "patch all fields",
-// 			wantServiceCalled: true,
-// 			wantStatus:        http.StatusOK,
-// 			body: map[string]any{
-// 				"username":   "new_username",
-// 				"first_name": "Ivan",
-// 				"last_name":  "Ivanov",
-// 				"Bio":        "I like pizza!",
-// 			},
-// 			wantServicePatch: domain.UserPatch{
-// 				Username: domain.Nullable[string]{
-// 					Value: new("new_username"),
-// 					Set:   true,
-// 				},
-// 				FirstName: domain.Nullable[string]{
-// 					Value: new("Ivan"),
-// 					Set:   true,
-// 				},
-// 				LastName: domain.Nullable[string]{
-// 					Value: new("Ivanov"),
-// 					Set:   true,
-// 				},
-// 				Bio: domain.Nullable[string]{
-// 					Value: new("I like pizza!"),
-// 					Set:   true,
-// 				},
-// 			},
-// 			wantResponse: PatchUserResponse{
-// 				ID:        user.ID,
-// 				Username:  "new_username",
-// 				FirstName: "Ivan",
-// 				LastName:  new("Ivanov"),
-// 				Bio:       new("I like pizza!"),
-// 				CreatedAt: user.CreatedAt,
-// 			},
-// 		},
-// 		{
-// 			name:              "username too short",
-// 			wantStatus:        http.StatusBadRequest,
-// 			wantServiceCalled: true,
-// 			wantServicePatch: domain.UserPatch{
-// 				Username: domain.Nullable[string]{
-// 					Value: new("abc"),
-// 					Set:   true,
-// 				},
-// 			},
-// 			serviceErr: domain.ErrInvalidUsername,
-// 			wantError:  http_response.MapError(domain.ErrInvalidUsername).Message,
-// 			body: map[string]any{
-// 				"username": "abc",
-// 			},
-// 		},
-// 		{
-// 			name:              "username too long",
-// 			wantStatus:        http.StatusBadRequest,
-// 			wantServiceCalled: true,
-// 			wantServicePatch: domain.UserPatch{
-// 				Username: domain.Nullable[string]{
-// 					Value: new(strings.Repeat("a", 33)),
-// 					Set:   true,
-// 				},
-// 			},
-// 			serviceErr: domain.ErrInvalidUsername,
-// 			wantError:  http_response.MapError(domain.ErrInvalidUsername).Message,
-// 			body: map[string]any{
-// 				"username": strings.Repeat("a", 33),
-// 			},
-// 		},
-// 		{
-// 			name:              "username is null",
-// 			wantStatus:        http.StatusBadRequest,
-// 			wantServiceCalled: true,
-// 			wantServicePatch: domain.UserPatch{
-// 				Username: domain.Nullable[string]{
-// 					Value: nil,
-// 					Set:   true,
-// 				},
-// 			},
-// 			serviceErr: domain.ErrNullUsername,
-// 			wantError:  http_response.MapError(domain.ErrNullUsername).Message,
-// 			body: map[string]any{
-// 				"username": nil,
-// 			},
-// 		},
-// 		{
-// 			name:              "first name is null",
-// 			wantServiceCalled: true,
-// 			wantServicePatch: domain.UserPatch{
-// 				FirstName: domain.Nullable[string]{
-// 					Value: nil,
-// 					Set:   true,
-// 				},
-// 			},
-// 			wantStatus: http.StatusBadRequest,
-// 			serviceErr: domain.ErrNullFirstname,
-// 			wantError:  http_response.MapError(domain.ErrNullFirstname).Message,
+	username := "fsociety"
 
-// 			body: map[string]any{
-// 				"first_name": nil,
-// 			},
-// 		},
-// 		{
-// 			name:              "service error",
-// 			wantServiceCalled: true,
-// 			wantStatus:        http.StatusInternalServerError,
-// 			wantError:         http_response.MapError(errors.New("service error")).Message,
-// 			serviceErr:        errors.New("service error"),
-// 			body: map[string]any{
-// 				"username": "new_username",
-// 			},
-// 			wantServicePatch: domain.UserPatch{
-// 				Username: domain.Nullable[string]{
-// 					Value: new("new_username"),
-// 					Set:   true,
-// 				},
-// 			},
-// 		},
-// 	}
+	request := map[string]string{
+		"username": username,
+	}
+	expectedPatch := domain.UserPatch{
+		Username: domain.Nullable[string]{
+			Value: &username,
+			Set:   true,
+		},
+	}
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
+	user := domain.User{
+		ID:        id,
+		Username:  username,
+		FirstName: "Elliot",
+		CreatedAt: time.Now().Round(0),
+	}
 
-// 			var (
-// 				serviceCalled bool
-// 				serviceGotID  uuid.UUID
-// 				servicePatch  domain.UserPatch
-// 			)
+	service.EXPECT().
+		PatchUser(mock.Anything, id, expectedPatch).
+		Return(user, nil).
+		Once()
 
-// 			service := StubUsersService{
-// 				PatchUserFn: func(
-// 					id uuid.UUID,
-// 					patch domain.UserPatch,
-// 				) (domain.User, error) {
+	handler := NewUsersHTTPHandler(service)
 
-// 					serviceCalled = true
-// 					serviceGotID = id
-// 					servicePatch = patch
+	body, err := json.Marshal(request)
+	require.NoError(t, err)
 
-// 					return domain.NewUser(
-// 						user.ID,
-// 						tt.wantResponse.Username,
-// 						tt.wantResponse.FirstName,
-// 						tt.wantResponse.LastName,
-// 						user.CreatedAt,
-// 						tt.wantResponse.Bio,
-// 						test_utils.PasswordHash,
-// 					), tt.serviceErr
-// 				},
-// 			}
+	req := httptest.NewRequest(
+		http.MethodPatch,
+		"/users/me",
+		bytes.NewReader(body),
+	)
 
-// 			handler := NewUsersHTTPHandler(&service)
-// 			data, err := json.Marshal(tt.body)
-// 			if err != nil {
-// 				t.Fatal(err)
-// 			}
-// 			req := httptest.NewRequest(
-// 				http.MethodPatch,
-// 				"/users/me",
-// 				bytes.NewReader(data),
-// 			)
+	ctx := test_utils.GetLoggerContext(req.Context())
+	ctx = core_context.WithClaims(ctx, core_context.ContextClaims{
+		UserID: id,
+	})
+	req = req.WithContext(ctx)
 
-// 			ctx := test_utils.GetLoggerContext(req.Context())
-// 			ctx = coreWithUserID(ctx, user.ID)
+	rr := httptest.NewRecorder()
 
-// 			rec := httptest.NewRecorder()
+	handler.PatchMe(rr, req)
 
-// 			// action
-// 			handler.PatchMe(rec, req.WithContext(ctx))
+	require.Equal(t, http.StatusOK, rr.Code)
 
-// 			// check
+	var response struct {
+		Success bool              `json:"success"`
+		Data    PatchUserResponse `json:"data"`
+	}
 
-// 			if serviceCalled != tt.wantServiceCalled {
-// 				t.Fatalf(
-// 					"service called = %v, want %v",
-// 					serviceCalled,
-// 					tt.wantServiceCalled,
-// 				)
-// 			}
+	err = json.Unmarshal(rr.Body.Bytes(), &response)
+	require.NoError(t, err)
 
-// 			if serviceCalled {
-// 				if diff := cmp.Diff(user.ID, serviceGotID); diff != "" {
-// 					t.Fatalf("userID mismatch (-want +got):\n%s", diff)
-// 				}
+	assert.True(t, response.Success)
+	assert.Equal(
+		t,
+		PatchUserResponse(userDTOFromDomain(user)),
+		response.Data,
+	)
+}
 
-// 				if diff := cmp.Diff(tt.wantServicePatch, servicePatch); diff != "" {
-// 					t.Fatalf("patch mismatch (-want +got):\n%s", diff)
-// 				}
-// 			}
+func TestPatchMeHandler_Validation(t *testing.T) {
+	service := NewMockUsersService(t)
 
-// 			if rec.Code != tt.wantStatus {
-// 				t.Fatalf("got status %d, want %d", rec.Code, tt.wantStatus)
-// 			}
+	handler := NewUsersHTTPHandler(service)
 
-// 			if tt.wantError != "" {
-// 				var gotError http_response.ErrorResponse
+	username := "abc"
 
-// 				if err := json.NewDecoder(rec.Body).Decode(&gotError); err != nil {
-// 					t.Fatalf("unexpected error: %v", err)
-// 				}
+	request := map[string]string{
+		"username": username,
+	}
+	body, err := json.Marshal(request)
+	require.NoError(t, err)
 
-// 				if gotError.Error != tt.wantError {
-// 					t.Fatalf(
-// 						"ErrorResponse mismatch:\nwant: %s\ngot: %s",
-// 						tt.wantError,
-// 						gotError.Error,
-// 					)
-// 				}
-// 			} else {
-// 				var gotResponse PatchUserResponse
+	req := httptest.NewRequest(
+		http.MethodPatch,
+		"/users/me",
+		bytes.NewReader(body),
+	)
 
-// 				if err := json.NewDecoder(rec.Body).Decode(&gotResponse); err != nil {
-// 					t.Fatalf("unexpected error: %v", err)
-// 				}
+	ctx := test_utils.GetLoggerContext(req.Context())
+	ctx = core_context.WithClaims(ctx, core_context.ContextClaims{
+		UserID: uuid.New(),
+	})
+	req = req.WithContext(ctx)
 
-// 				gotResponse.CreatedAt = test_utils.CreatedAt
+	rr := httptest.NewRecorder()
 
-// 				if diff := cmp.Diff(tt.wantResponse, gotResponse); diff != "" {
-// 					t.Fatalf("PatchMeResponse mismatch (-want +got):\n%s", diff)
-// 				}
-// 			}
-// 		})
-// 	}
-// }
+	handler.PatchMe(rr, req)
+
+	require.Equal(t, http.StatusBadRequest, rr.Code)
+
+	var response struct {
+		Success bool                         `json:"success"`
+		Error   http_response.APIErrorDetail `json:"error"`
+	}
+
+	err = json.Unmarshal(rr.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, core_errors.VALIDATION_ERROR, response.Error.Code)
+	assert.Equal(
+		t,
+		domain.ErrInvalidUsername.Error(),
+		response.Error.Fields["username"],
+	)
+}
+
+func TestPatchMeHandler_ServiceError(t *testing.T) {
+	service := NewMockUsersService(t)
+
+	id := uuid.New()
+
+	username := "fsociety"
+
+	request := map[string]string{
+		"username": username,
+	}
+	expectedPatch := domain.UserPatch{
+		Username: domain.Nullable[string]{
+			Value: &username,
+			Set:   true,
+		},
+	}
+	service.EXPECT().
+		PatchUser(
+			mock.Anything,
+			id,
+			expectedPatch,
+		).
+		Return(
+			domain.User{},
+			domain.NotFoundErr(domain.UserEntity, "id", id.String()),
+		).
+		Once()
+
+	handler := NewUsersHTTPHandler(service)
+
+	body, err := json.Marshal(request)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(
+		http.MethodPatch,
+		"/users/me",
+		bytes.NewReader(body),
+	)
+
+	ctx := test_utils.GetLoggerContext(req.Context())
+	ctx = core_context.WithClaims(ctx, core_context.ContextClaims{
+		UserID: id,
+	})
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+
+	handler.PatchMe(rr, req)
+
+	require.Equal(t, http.StatusNotFound, rr.Code)
+
+	var response struct {
+		Success bool                         `json:"success"`
+		Error   http_response.APIErrorDetail `json:"error"`
+	}
+
+	err = json.Unmarshal(rr.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, core_errors.NOT_FOUND, response.Error.Code)
+}

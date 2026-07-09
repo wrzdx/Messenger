@@ -133,7 +133,7 @@ func TestCreateUser(t *testing.T) {
 				Username:  "ecorp",
 				FirstName: "Tyrell",
 				LastName:  new("Wellick"),
-				Bio:       new("Dead" ),
+				Bio:       new("Dead"),
 				Password:  "fsociet",
 			},
 			wantError: domain.ErrInvalidPassword,
@@ -144,8 +144,8 @@ func TestCreateUser(t *testing.T) {
 				Username:  "ecorp",
 				FirstName: "Tyrell",
 				LastName:  new("Wellick"),
-				Bio:       new("Dead" ),
-				Password:  "fsociety"+ strings.Repeat("a", 32),
+				Bio:       new("Dead"),
+				Password:  "fsociety" + strings.Repeat("a", 32),
 			},
 			wantError: domain.ErrInvalidPassword,
 		},
@@ -176,7 +176,6 @@ func TestCreateUser(t *testing.T) {
 			},
 			wantError: domain.ErrAlreadyExists,
 		},
-		
 	}
 
 	for _, tt := range tests {

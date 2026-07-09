@@ -92,5 +92,5 @@ func TestRefreshHandler_NoCookie(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, core_errors.INVALID_TOKEN, response.Error.Code)
-	assert.Equal(t, "get refresh token: invalid token",response.Error.Message)
+	assert.Equal(t, "get refresh token: invalid token", response.Error.Message)
 }

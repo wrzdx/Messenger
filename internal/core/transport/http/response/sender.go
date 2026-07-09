@@ -63,6 +63,9 @@ func (s *HTTPSender) OK(statusCode int, data any) {
 func (s *HTTPSender) json(success bool, statusCode int, data any, err core_errors.Error) {
 	s.rw.Header().Set("Content-Type", "application/json")
 	s.rw.WriteHeader(statusCode)
+	if statusCode == http.StatusNoContent {
+		return
+	}
 
 	var resp APIResponse
 	resp.Success = success

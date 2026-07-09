@@ -5,28 +5,18 @@ import (
 	"errors"
 	"testing"
 
-	"messenger/internal/core/domain"
-
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestUsersService_GetUser(t *testing.T) {
+func TestUsersService_DeleteUser(t *testing.T) {
 	ctx := context.Background()
-
 	id := uuid.New()
-
-	expectedUser := domain.User{
-		ID:        id,
-		Username:  "ecorp",
-		FirstName: "Elliot",
-	}
 
 	tests := []struct {
 		name     string
 		prepare  func(*MockUsersRepository)
-		wantUser domain.User
 		wantErr  error
 		errorMsg string
 	}{
@@ -34,21 +24,20 @@ func TestUsersService_GetUser(t *testing.T) {
 			name: "success",
 			prepare: func(repo *MockUsersRepository) {
 				repo.EXPECT().
-					GetUser(ctx, id).
-					Return(expectedUser, nil).
+					DeleteUser(ctx, id).
+					Return(nil).
 					Once()
 			},
-			wantUser: expectedUser,
 		},
 		{
 			name: "repository error",
 			prepare: func(repo *MockUsersRepository) {
 				repo.EXPECT().
-					GetUser(ctx, id).
-					Return(domain.User{}, errors.New("database error")).
+					DeleteUser(ctx, id).
+					Return(errors.New("database error")).
 					Once()
 			},
-			errorMsg: "get user",
+			errorMsg: "delete user",
 		},
 	}
 
@@ -60,7 +49,7 @@ func TestUsersService_GetUser(t *testing.T) {
 
 			service := NewUsersService(repo, nil)
 
-			gotUser, err := service.GetUser(ctx, id)
+			err := service.DeleteUser(ctx, id)
 
 			if tt.wantErr != nil {
 				require.Error(t, err)
@@ -75,7 +64,6 @@ func TestUsersService_GetUser(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, tt.wantUser, gotUser)
 		})
 	}
 }

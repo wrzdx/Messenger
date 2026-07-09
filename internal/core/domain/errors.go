@@ -8,7 +8,7 @@ import (
 type Entity string
 
 const (
-	UserEntity       Entity = "user"
+	UserEntity Entity = "user"
 )
 
 var (

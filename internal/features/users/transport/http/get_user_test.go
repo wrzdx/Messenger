@@ -1,132 +1,150 @@
 package users_transport_http
 
-// import (
-// 	"encoding/json"
-// 	"messenger/internal/core/domain"
-// 	http_response "messenger/internal/core/transport/http/response"
-// 	test_utils "messenger/internal/core/utils/test"
-// 	"net/http"
-// 	"net/http/httptest"
-// 	"strings"
-// 	"testing"
+import (
+	"context"
+	"encoding/json"
+	"messenger/internal/core/domain"
+	core_errors "messenger/internal/core/errors"
+	http_response "messenger/internal/core/transport/http/response"
+	test_utils "messenger/internal/core/utils/test"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
 
-// 	"github.com/google/go-cmp/cmp"
-// 	"github.com/google/uuid"
-// )
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+)
 
-// func TestGetUser(t *testing.T) {
-// 	user := test_utils.Users[0]
-// 	tests := []struct {
-// 		name              string
-// 		userID            string
-// 		serviceUser       domain.User
-// 		serviceErr        error
-// 		wantUser          UserDTOResponse
-// 		wantServiceUserId uuid.UUID
-// 		wantServiceCalled bool
-// 		wantStatus        int
-// 		wantError         string
-// 	}{
-// 		{
-// 			name:        "existing user",
-// 			userID:      user.ID.String(),
-// 			serviceUser: user,
-// 			wantUser: UserDTOResponse{
-// 				ID:        user.ID,
-// 				Username:  user.Username,
-// 				FirstName: user.FirstName,
-// 				LastName:  user.LastName,
-// 				CreatedAt: user.CreatedAt,
-// 				Bio:       user.Bio,
-// 			},
-// 			wantServiceUserId: user.ID,
-// 			wantServiceCalled: true,
-// 			wantStatus:        http.StatusOK,
-// 		},
-// 		{
-// 			name:              "non-existing user",
-// 			userID:            test_utils.ID.String(),
-// 			wantServiceUserId: test_utils.ID,
-// 			wantServiceCalled: true,
-// 			serviceErr:        domain.ErrUserNotFound,
-// 			wantStatus:        http.StatusNotFound,
-// 			wantError:         http_response.MapError(domain.ErrUserNotFound).Message,
-// 		},
-// 		{
-// 			name:       "invalid user id",
-// 			userID:     "asdf",
-// 			wantStatus: http.StatusBadRequest,
-// 			wantError:  http_response.ErrInvalidArgument.Error(),
-// 		},
-// 	}
+func TestGetUserHandler_Success(t *testing.T) {
+	service := NewMockUsersService(t)
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			var serviceCalled bool
-// 			var serviceGotID uuid.UUID
-// 			service := StubUsersService{
-// 				GetUserFn: func(id uuid.UUID) (domain.User, error) {
-// 					serviceCalled = true
-// 					serviceGotID = id
+	id := uuid.New()
+	now := time.Now().Round(0)
 
-// 					return tt.serviceUser, tt.serviceErr
-// 				},
-// 			}
-// 			rec := httptest.NewRecorder()
-// 			req := httptest.NewRequest(
-// 				http.MethodGet,
-// 				"/users/"+tt.userID,
-// 				nil,
-// 			)
-// 			req.SetPathValue("id", tt.userID)
-// 			ctx := test_utils.GetLoggerContext(req.Context())
-// 			handler := NewUsersHTTPHandler(&service)
+	user := domain.User{
+		ID:        id,
+		Username:  "ecorp",
+		FirstName: "Elliot",
+		CreatedAt: now,
+	}
 
-// 			// action
-// 			handler.GetUser(rec, req.WithContext(ctx))
+	service.EXPECT().
+		GetUser(mock.Anything, id).
+		Return(user, nil).
+		Once()
 
-// 			// check
-// 			if serviceCalled != tt.wantServiceCalled {
-// 				t.Fatalf(
-// 					"service called = %v, want %v",
-// 					serviceCalled,
-// 					tt.wantServiceCalled,
-// 				)
-// 			}
+	handler := NewUsersHTTPHandler(service)
 
-// 			if serviceCalled {
-// 				if diff := cmp.Diff(tt.wantServiceUserId, serviceGotID); diff != "" {
-// 					t.Fatalf("userID mismatch (-want +got):\n%s", diff)
-// 				}
-// 			}
+	req := httptest.NewRequest(http.MethodGet, "/users/"+id.String(), nil)
+	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
 
-// 			if rec.Code != tt.wantStatus {
-// 				t.Fatalf("got status %d, want %d", rec.Code, tt.wantStatus)
-// 			}
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("id", id.String())
 
-// 			if tt.wantError != "" {
-// 				var gotError http_response.ErrorResponse
-// 				if err := json.NewDecoder(rec.Body).Decode(&gotError); err != nil {
-// 					t.Fatalf("unexpected error: %v", err)
-// 				}
+	req = req.WithContext(
+		context.WithValue(req.Context(), chi.RouteCtxKey, rctx),
+	)
 
-// 				if !strings.HasSuffix(gotError.Error, tt.wantError) {
-// 					t.Fatalf(
-// 						"ErrorResponse mismatch:\nwant: %s\ngot: %s",
-// 						tt.wantError,
-// 						gotError.Error,
-// 					)
-// 				}
-// 			} else {
-// 				var gotResponse UserDTOResponse
-// 				if err := json.NewDecoder(rec.Body).Decode(&gotResponse); err != nil {
-// 					t.Fatalf("unexpected error: %v", err)
-// 				}
+	rr := httptest.NewRecorder()
 
-// 				if diff := cmp.Diff(tt.wantUser, gotResponse); diff != "" {
-// 					t.Fatalf("GetUsersResponse mismatch (-want +got):\n%s", diff)
-// 				}
-// 			}
-// 		})
-// 	}
-// }
+	handler.GetUser(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	var response struct {
+		Success bool            `json:"success"`
+		Data    GetUserResponse `json:"data"`
+	}
+
+	err := json.Unmarshal(rr.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.True(t, response.Success)
+	assert.Equal(t, GetUserResponse(userDTOFromDomain(user)), response.Data)
+}
+
+func TestGetUserHandler_InvalidID(t *testing.T) {
+	service := NewMockUsersService(t)
+
+	handler := NewUsersHTTPHandler(service)
+
+	req := httptest.NewRequest(http.MethodGet, "/users/invalid", nil)
+	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
+
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("id", "invalid")
+
+	req = req.WithContext(
+		context.WithValue(req.Context(), chi.RouteCtxKey, rctx),
+	)
+
+	rr := httptest.NewRecorder()
+
+	handler.GetUser(rr, req)
+
+	require.Equal(t, http.StatusBadRequest, rr.Code)
+
+	var response struct {
+		Success bool                         `json:"success"`
+		Error   http_response.APIErrorDetail `json:"error"`
+	}
+
+	err := json.Unmarshal(rr.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, core_errors.VALIDATION_ERROR, response.Error.Code)
+}
+
+func TestGetUserHandler_NotFound(t *testing.T) {
+	service := NewMockUsersService(t)
+
+	id := uuid.New()
+
+	service.EXPECT().
+		GetUser(mock.Anything, id).
+		Return(domain.User{}, domain.NotFoundErr(domain.UserEntity, "id", id.String())).
+		Once()
+
+	handler := NewUsersHTTPHandler(service)
+
+	req := httptest.NewRequest(http.MethodGet, "/users/"+id.String(), nil)
+	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
+
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("id", id.String())
+
+	req = req.WithContext(
+		context.WithValue(req.Context(), chi.RouteCtxKey, rctx),
+	)
+
+	rr := httptest.NewRecorder()
+
+	handler.GetUser(rr, req)
+
+	require.Equal(t, http.StatusNotFound, rr.Code)
+
+	var response struct {
+		Success bool                         `json:"success"`
+		Error   http_response.APIErrorDetail `json:"error"`
+	}
+
+	want := struct {
+		Success bool                         `json:"success"`
+		Error   http_response.APIErrorDetail `json:"error"`
+	}{
+		Success: false,
+		Error: http_response.APIErrorDetail{
+			Code:    core_errors.NOT_FOUND,
+			Message: domain.NotFoundErr(domain.UserEntity, "id", id.String()).Error(),
+		},
+	}
+
+	err := json.Unmarshal(rr.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, want, response)
+}
