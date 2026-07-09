@@ -25,9 +25,10 @@ func (r *UsersRepository) DeleteUser(
 	}
 
 	if cmdTag.RowsAffected() == 0 {
-		return fmt.Errorf("user with id='%d': %w",
-			id,
-			domain.ErrUserNotFound,
+		return domain.NotFoundErr(
+			domain.UserEntity,
+			"id",
+			id.String(),
 		)
 	}
 

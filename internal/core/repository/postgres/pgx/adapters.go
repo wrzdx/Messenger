@@ -39,6 +39,24 @@ type pgxCommandTag struct {
 	pgconn.CommandTag
 }
 
+type dbErrorWithConstraint struct {
+	constraint string
+	err        error
+	wrapped    error
+}
+
+func (e dbErrorWithConstraint) Error() string {
+	return fmt.Sprintf("%v: %v", e.wrapped, e.err)
+}
+
+func (e dbErrorWithConstraint) Unwrap() error {
+	return e.err
+}
+
+func (e dbErrorWithConstraint) Constraint() string {
+	return e.constraint
+}
+
 var violationErrs = map[string]error{
 	"23503": postgres.ErrViolatesForeignKey,
 	"23505": postgres.ErrViolatesUnique,
@@ -52,13 +70,20 @@ func mapErrors(err error) error {
 	}
 
 	mappedErr := postgres.ErrUnknown
+	var constraintName string
 
-	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
 		violationErr, ok := violationErrs[pgErr.Code]
 		if ok {
 			mappedErr = violationErr
+			constraintName = pgErr.ConstraintName 
 		}
 	}
 
-	return fmt.Errorf("%v: %w", err, mappedErr)
+	return dbErrorWithConstraint{
+		constraint: constraintName,
+		err:        mappedErr,
+		wrapped:    err,
+	}
 }

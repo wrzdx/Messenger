@@ -42,10 +42,11 @@ func (r *UsersRepository) CreateUser(
 	)
 	if err != nil {
 		if errors.Is(err, postgres.ErrViolatesUnique) {
-			return domain.User{}, fmt.Errorf(
-				"user with username=%s already exists: %w",
-				user.Username,
-				domain.ErrUserAlreadyExists,
+			failedField, failedValue := getConstraintValues(user, err)
+			return domain.User{}, domain.AlreadyExistsErr(
+				domain.UserEntity,
+				failedField,
+				failedValue,
 			)
 		}
 		return domain.User{}, fmt.Errorf("scan error: %w", err)

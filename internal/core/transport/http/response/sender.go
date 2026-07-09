@@ -37,9 +37,9 @@ func MapErrorCodeToStatus(errorCode core_errors.ErrorCode) int {
 	switch errorCode {
 	case core_errors.VALIDATION_ERROR:
 		return http.StatusBadRequest
-	case core_errors.USER_ALREADY_EXISTS:
+	case core_errors.ALREADY_EXISTS:
 		return http.StatusConflict
-	case core_errors.USER_NOT_FOUND:
+	case core_errors.NOT_FOUND:
 		return http.StatusNotFound
 	case core_errors.INVALID_CREDENTIALS,
 		core_errors.INVALID_TOKEN:

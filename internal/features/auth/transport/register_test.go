@@ -38,9 +38,9 @@ package auth_transport_http
 // 		{
 // 			name:              "username already exists",
 // 			wantServiceCalled: true,
-// 			serviceErr:        domain.ErrUserAlreadyExists,
+// 			serviceErr:        domain.ErrAlreadyExists,
 // 			wantStatus:        http.StatusConflict,
-// 			wantError:         http_response.MapError(domain.ErrUserAlreadyExists).Message,
+// 			wantError:         http_response.MapError(domain.ErrAlreadyExists).Message,
 // 			body: RegisterRequest{
 // 				Username:  "i.ivanov",
 // 				FirstName: "Ivan",

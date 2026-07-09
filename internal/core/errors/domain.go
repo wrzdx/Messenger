@@ -23,11 +23,11 @@ func domainError(e error) (Error, bool) {
 		errors.Is(e, domain.ErrNegativeOffset):
 		err.Code = VALIDATION_ERROR
 
-	case errors.Is(e, domain.ErrUserAlreadyExists):
-		err.Code = USER_ALREADY_EXISTS
+	case errors.Is(e, domain.ErrAlreadyExists):
+		err.Code = ALREADY_EXISTS
 
-	case errors.Is(e, domain.ErrUserNotFound):
-		err.Code = USER_NOT_FOUND
+	case errors.Is(e, domain.ErrNotFound):
+		err.Code = NOT_FOUND
 
 	case errors.Is(e, domain.ErrInvalidCredentials):
 		err.Code = INVALID_CREDENTIALS

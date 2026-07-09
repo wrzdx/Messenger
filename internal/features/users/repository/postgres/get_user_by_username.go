@@ -34,10 +34,10 @@ func (r *UsersRepository) GetUserByUsername(
 	)
 	if err != nil {
 		if errors.Is(err, postgres.ErrNoRows) {
-			return domain.User{}, fmt.Errorf(
-				"user with username='%s': %w",
+			return domain.User{}, domain.NotFoundErr(
+				domain.UserEntity,
+				"username",
 				username,
-				domain.ErrUserNotFound,
 			)
 		}
 
