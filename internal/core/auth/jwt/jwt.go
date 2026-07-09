@@ -20,19 +20,19 @@ type refreshClaims struct {
 	jwt.RegisteredClaims
 }
 
-type TokenService struct {
+type TokenProvider struct {
 	config Config
 }
 
-func NewTokenService(config Config) *TokenService {
-	return &TokenService{
+func NewTokenProvider(config Config) *TokenProvider {
+	return &TokenProvider{
 		config: config,
 	}
 }
 
-func (s *TokenService) GenerateTokenPair(user auth.AccessClaims, tokenID uuid.UUID) (auth.TokenPair, error) {
+func (s *TokenProvider) GenerateTokenPair(userID, tokenID uuid.UUID) (auth.TokenPair, error) {
 	aClaims := accessClaims{
-		UserID: user.UserID,
+		UserID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.config.AccessTokenTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -44,7 +44,7 @@ func (s *TokenService) GenerateTokenPair(user auth.AccessClaims, tokenID uuid.UU
 	}
 
 	rClaims := refreshClaims{
-		UserID:  user.UserID,
+		UserID:  userID,
 		TokenID: tokenID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.config.RefreshTokenTTL)),
@@ -62,39 +62,34 @@ func (s *TokenService) GenerateTokenPair(user auth.AccessClaims, tokenID uuid.UU
 	}, nil
 }
 
-func (s *TokenService) ParseAccessToken(tokenStr string) (auth.AccessClaims, error) {
+func (s *TokenProvider) ParseAccessToken(tokenStr string) (uuid.UUID, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &accessClaims{}, func(token *jwt.Token) (any, error) {
 		return s.config.Secret, nil
 	})
 	if err != nil || !token.Valid {
-		return auth.AccessClaims{}, auth.ErrInvalidToken
+		return uuid.UUID{}, auth.ErrInvalidToken
 	}
 
 	claims, ok := token.Claims.(*accessClaims)
 	if !ok {
-		return auth.AccessClaims{}, auth.ErrInvalidToken
+		return uuid.UUID{}, auth.ErrInvalidToken
 	}
 
-	return auth.AccessClaims{
-		UserID: claims.UserID,
-	}, nil
+	return claims.UserID, nil
 }
 
-func (s *TokenService) ParseRefreshToken(tokenStr string) (auth.RefreshClaims, error) {
+func (s *TokenProvider) ParseRefreshToken(tokenStr string) (uuid.UUID, uuid.UUID, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &refreshClaims{}, func(token *jwt.Token) (any, error) {
 		return s.config.Secret, nil
 	})
 	if err != nil || !token.Valid {
-		return auth.RefreshClaims{}, auth.ErrInvalidToken
+		return uuid.UUID{}, uuid.UUID{}, auth.ErrInvalidToken
 	}
 
 	claims, ok := token.Claims.(*refreshClaims)
 	if !ok {
-		return auth.RefreshClaims{}, auth.ErrInvalidToken
+		return uuid.UUID{}, uuid.UUID{}, auth.ErrInvalidToken
 	}
 
-	return auth.RefreshClaims{
-		UserID:  claims.UserID,
-		TokenID: claims.TokenID,
-	}, nil
+	return claims.UserID, claims.TokenID, nil
 }

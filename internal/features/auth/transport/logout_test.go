@@ -1,28 +1,28 @@
 package auth_transport_http
 
-// import (
-// 	"net/http"
-// 	"net/http/httptest"
-// 	"testing"
-// )
+import (
+	test_utils "messenger/internal/core/utils/test"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 
-// func TestLogout(t *testing.T) {
-// 	var called bool
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+)
 
-// 	cookies := StubCookieManager{
-// 		ClearRefreshTokenFn: func(w http.ResponseWriter) {
-// 			called = true
-// 		},
-// 	}
+func TestLogout(t *testing.T) {
+	service := NewMockAuthService(t)
+	cookie := NewMockCookieManager(t)
+	cookie.EXPECT().ClearRefreshToken(mock.Anything).Once()
+	handler := NewAuthHTTPHandler(service, cookie)
 
-// 	handler := NewAuthHTTPHandler(&StubAuthService{}, &cookies)
+	req := httptest.NewRequest(http.MethodPost, "/auth/logout", nil)
+	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
 
-// 	rec := httptest.NewRecorder()
-// 	req := httptest.NewRequest(http.MethodPost, "/logout", nil)
+	rr := httptest.NewRecorder()
 
-// 	handler.Logout(rec, req)
+	handler.Logout(rr, req)
 
-// 	if !called {
-// 		t.Fatal("ClearRefreshToken was not called")
-// 	}
-// }
+	assert.Equal(t, http.StatusOK, rr.Code)
+
+}

@@ -1,7 +1,6 @@
 package test_utils
 
 import (
-	"errors"
 	"messenger/internal/core/domain"
 	logger "messenger/internal/core/logger"
 	"time"
@@ -10,41 +9,44 @@ import (
 )
 
 var (
-	ID           = uuid.New()
-	CreatedAt    = time.Date(2025, 1, 1, 12, 0, 0, 0, time.UTC)
-	PasswordHash = "password_hash"
-	HasherError  = errors.New("hash failed")
-	JWTError     = errors.New("JWT Error")
-	RepoError    = errors.New("db error")
-	Log          = logger.NewTestLogger()
+	MockUser = domain.NewUser(
+		uuid.New(),
+		"ecorp",
+		"Tyrell",
+		new("Wellick"),
+		time.Now(),
+		new("Dead"),
+		"fsociety_hash",
+	)
+	Log = logger.NewTestLogger()
 )
 
-var Users = []domain.User{
+var MockUsers = []domain.User{
 	{
 		ID:           uuid.New(),
 		Username:     "user_1",
 		FirstName:    "Username",
 		LastName:     new("1"),
-		CreatedAt:    CreatedAt,
+		CreatedAt:    time.Now(),
 		Bio:          new("I'm user 1"),
-		PasswordHash: PasswordHash,
+		PasswordHash: "password hash",
 	},
 	{
 		ID:           uuid.New(),
 		Username:     "user_2",
 		FirstName:    "Username",
 		LastName:     new("2"),
-		CreatedAt:    CreatedAt,
+		CreatedAt:    time.Now(),
 		Bio:          new("I'm user 2"),
-		PasswordHash: PasswordHash,
+		PasswordHash: "password hash",
 	},
 	{
 		ID:           uuid.New(),
 		Username:     "user_3",
 		FirstName:    "Username",
 		LastName:     new("3"),
-		CreatedAt:    CreatedAt,
+		CreatedAt:    time.Now(),
 		Bio:          new("I'm user 3"),
-		PasswordHash: PasswordHash,
+		PasswordHash: "password hash",
 	},
 }

@@ -12,20 +12,17 @@ func (s *AuthService) Refresh(
 	ctx context.Context,
 	token string,
 ) (auth.TokenPair, error) {
-	payload, err := s.tokenService.ParseRefreshToken(token)
+	userID, tokenID, err := s.tokenProvider.ParseRefreshToken(token)
 	if err != nil {
 		return auth.TokenPair{}, fmt.Errorf("parse refresh: %w", err)
 	}
-	user, err := s.usersRepository.GetUser(ctx, payload.UserID)
+	user, err := s.usersRepository.GetUser(ctx, userID)
 	if err != nil {
 		return auth.TokenPair{}, fmt.Errorf("get user: %w", err)
 	}
 
-	tokenID := uuid.New()
-	claims := auth.AccessClaims{
-		UserID: user.ID,
-	}
-	tokens, err := s.tokenService.GenerateTokenPair(claims, tokenID)
+	tokenID = uuid.New()
+	tokens, err := s.tokenProvider.GenerateTokenPair(user.ID, tokenID)
 	if err != nil {
 		return auth.TokenPair{}, fmt.Errorf(
 			"generate tokens: %w",

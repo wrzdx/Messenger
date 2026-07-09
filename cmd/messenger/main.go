@@ -60,7 +60,7 @@ func main() {
 
 	hasher := auth_bcrypt.NewBcryptHasher()
 	jwtConfig := auth_jwt.NewConfigMust()
-	jwtProvider := auth_jwt.NewTokenService(jwtConfig)
+	jwtProvider := auth_jwt.NewTokenProvider(jwtConfig)
 	cookieManager := auth_cookie.NewCookieManager(
 		jwtConfig.RefreshTokenTTL,
 		cfg.Environment.IsProduction(),

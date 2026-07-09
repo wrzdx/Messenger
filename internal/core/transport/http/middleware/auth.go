@@ -2,13 +2,14 @@ package http_middleware
 
 import (
 	"fmt"
-	"messenger/internal/core/auth"
 	context "messenger/internal/core/context"
 	core_context "messenger/internal/core/context"
 	logger "messenger/internal/core/logger"
 	http_response "messenger/internal/core/transport/http/response"
 	"net/http"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 func extractToken(r *http.Request) string {
@@ -31,19 +32,23 @@ func extractToken(r *http.Request) string {
 	return token
 }
 
-func Auth(jwt auth.TokenService) Middleware {
+type TokenProvider interface {
+	ParseAccessToken(token string) (uuid.UUID, error)
+}
+
+func Auth(jwt TokenProvider) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			token := extractToken(r)
 			log := logger.FromContext(r.Context())
 			sender := http_response.NewHTTPSender(log, w)
-			payload, err := jwt.ParseAccessToken(token)
+			userID, err := jwt.ParseAccessToken(token)
 			if err != nil {
 				sender.Error(fmt.Errorf("failed to authenticate: %w", err))
 				return
 			}
 			appClaims := context.ContextClaims{
-				UserID: payload.UserID,
+				UserID: userID,
 			}
 			ctx := core_context.WithClaims(r.Context(), appClaims)
 			next.ServeHTTP(w, r.WithContext(ctx))

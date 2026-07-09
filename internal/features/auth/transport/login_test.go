@@ -1,198 +1,148 @@
 package auth_transport_http
 
-// import (
-// 	"bytes"
-// 	"encoding/json"
-// 	"messenger/internal/core/domain"
-// 	http_response "messenger/internal/core/transport/http/response"
-// 	test_utils "messenger/internal/core/utils/test"
-// 	"net/http"
-// 	"net/http/httptest"
-// 	"testing"
+import (
+	"bytes"
+	"encoding/json"
+	"messenger/internal/core/auth"
+	"messenger/internal/core/domain"
+	core_errors "messenger/internal/core/errors"
+	http_response "messenger/internal/core/transport/http/response"
+	test_utils "messenger/internal/core/utils/test"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 
-// 	"github.com/google/go-cmp/cmp"
-// )
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+)
 
-// func TestLogin(t *testing.T) {
-// 	tests := []struct {
-// 		name              string
-// 		serviceErr        error
-// 		wantServiceCalled bool
-// 		wantCookieCalled  bool
-// 		wantStatus        int
-// 		wantError         string
-// 		body              LoginRequest
-// 	}{
-// 		{
-// 			name:              "valid credentials",
-// 			wantServiceCalled: true,
-// 			wantCookieCalled:  true,
-// 			wantStatus:        http.StatusCreated,
-// 			body: LoginRequest{
-// 				Username: "i.ivanov",
-// 				Password: "password",
-// 			},
-// 		},
-// 		{
-// 			name:              "invalid credentials",
-// 			wantServiceCalled: true,
-// 			wantStatus:        http.StatusUnauthorized,
-// 			wantError:         http_response.MapError(domain.ErrInvalidCredentials).Message,
-// 			serviceErr:        domain.ErrInvalidCredentials,
-// 			body: LoginRequest{
-// 				Username: "i.ivanov",
-// 				Password: "password",
-// 			},
-// 		},
-// 		{
-// 			name:       "missing username",
-// 			wantStatus: http.StatusBadRequest,
-// 			wantError:  "username is required",
-// 			body: LoginRequest{
-// 				Password: "password",
-// 			},
-// 		},
-// 		{
-// 			name:       "missing password",
-// 			wantStatus: http.StatusBadRequest,
-// 			wantError:  "password is required",
-// 			body: LoginRequest{
-// 				Username: "i.ivanov",
-// 			},
-// 		},
-// 	}
+func TestLogin_Success(t *testing.T) {
+	service := NewMockAuthService(t)
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			want := LoginResponse{
-// 				Access: "access-token",
-// 			}
+	expectedTokens := auth.TokenPair{Access: "access", Refresh: "refresh"}
+	service.EXPECT().
+		Login(mock.Anything, "ecorp", "fsociety").
+		Return(expectedTokens, nil).
+		Once()
 
-// 			var (
-// 				serviceCalled bool
-// 				gotUsername   string
-// 				gotPassword   string
+	cookie := NewMockCookieManager(t)
+	cookie.EXPECT().SetRefreshToken(mock.Anything, "refresh").Once()
+	handler := NewAuthHTTPHandler(service, cookie)
 
-// 				cookieCalled bool
-// 				gotRefresh   string
-// 			)
+	requestBody := map[string]string{
+		"username": "ecorp",
+		"password": "fsociety",
+	}
+	bodyBytes, err := json.Marshal(requestBody)
+	require.NoError(t, err)
 
-// 			service := StubAuthService{
-// 				LoginFn: func(
-// 					username string,
-// 					password string,
-// 				) (domain.TokenPair, error) {
-// 					serviceCalled = true
-// 					gotUsername = username
-// 					gotPassword = password
+	req := httptest.NewRequest(http.MethodPost, "/auth/login", bytes.NewReader(bodyBytes))
+	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
 
-// 					return domain.TokenPair{
-// 						Access:  "access-token",
-// 						Refresh: "refresh-token",
-// 					}, tt.serviceErr
-// 				},
-// 			}
+	rr := httptest.NewRecorder()
 
-// 			cookies := StubCookieManager{
-// 				SetRefreshTokenFn: func(
-// 					w http.ResponseWriter,
-// 					refresh string,
-// 				) {
-// 					cookieCalled = true
-// 					gotRefresh = refresh
-// 				},
-// 			}
+	handler.Login(rr, req)
 
-// 			handler := NewAuthHTTPHandler(&service, &cookies)
+	require.Equal(t, http.StatusOK, rr.Code)
 
-// 			body, err := json.Marshal(tt.body)
-// 			if err != nil {
-// 				t.Fatal(err)
-// 			}
+	var responseBody struct {
+		Success bool          `json:"success"`
+		Data    LoginResponse `json:"data"`
+	}
+	err = json.Unmarshal(rr.Body.Bytes(), &responseBody)
+	require.NoError(t, err)
+	assert.Equal(t, responseBody.Success, true)
+	assert.Equal(t, expectedTokens.Access, responseBody.Data.Access)
+}
 
-// 			rec := httptest.NewRecorder()
-// 			req := httptest.NewRequest(
-// 				http.MethodPost,
-// 				"/login",
-// 				bytes.NewReader(body),
-// 			)
-// 			ctx := test_utils.GetLoggerContext(req.Context())
+func TestLogin_Fail(t *testing.T) {
+	service := NewMockAuthService(t)
 
-// 			handler.Login(rec, req.WithContext(ctx))
+	service.EXPECT().
+		Login(mock.Anything, "ecorp", "fsociety").
+		Return(auth.TokenPair{}, domain.ErrInvalidCredentials).
+		Once()
 
-// 			if serviceCalled != tt.wantServiceCalled {
-// 				t.Fatalf(
-// 					"service called = %v, want %v",
-// 					serviceCalled,
-// 					tt.wantServiceCalled,
-// 				)
-// 			}
+	cookie := NewMockCookieManager(t)
+	handler := NewAuthHTTPHandler(service, cookie)
 
-// 			if serviceCalled {
-// 				if gotUsername != tt.body.Username {
-// 					t.Fatalf(
-// 						"username = %q, want %q",
-// 						gotUsername,
-// 						tt.body.Username,
-// 					)
-// 				}
+	requestBody := map[string]string{
+		"username": "ecorp",
+		"password": "fsociety",
+	}
+	bodyBytes, err := json.Marshal(requestBody)
+	require.NoError(t, err)
 
-// 				if gotPassword != tt.body.Password {
-// 					t.Fatalf(
-// 						"password = %q, want %q",
-// 						gotPassword,
-// 						tt.body.Password,
-// 					)
-// 				}
-// 			}
+	req := httptest.NewRequest(http.MethodPost, "/auth/login", bytes.NewReader(bodyBytes))
+	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
 
-// 			if cookieCalled != tt.wantCookieCalled {
-// 				t.Fatalf(
-// 					"cookie called = %v, want %v",
-// 					cookieCalled,
-// 					tt.wantCookieCalled,
-// 				)
-// 			}
+	rr := httptest.NewRecorder()
 
-// 			if cookieCalled && gotRefresh != "refresh-token" {
-// 				t.Fatalf(
-// 					"refresh token = %q, want %q",
-// 					gotRefresh,
-// 					"refresh-token",
-// 				)
-// 			}
+	handler.Login(rr, req)
 
-// 			if rec.Code != tt.wantStatus {
-// 				t.Fatalf(
-// 					"status = %d, want %d",
-// 					rec.Code,
-// 					tt.wantStatus,
-// 				)
-// 			}
+	require.Equal(t, http.StatusUnauthorized, rr.Code)
 
-// 			if tt.wantError != "" {
-// 				var gotError http_response.ErrorResponse
-// 				if err := json.NewDecoder(rec.Body).Decode(&gotError); err != nil {
-// 					t.Fatal(err)
-// 				}
+	var responseBody struct {
+		Success bool                         `json:"success"`
+		Error   http_response.APIErrorDetail `json:"error"`
+	}
 
-// 				if gotError.Error != tt.wantError {
-// 					t.Fatalf(
-// 						"want error %q, got %q",
-// 						tt.wantError,
-// 						gotError.Error,
-// 					)
-// 				}
-// 			} else {
-// 				var got LoginResponse
-// 				if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
-// 					t.Fatal(err)
-// 				}
+	want := struct {
+		Success bool                         `json:"success"`
+		Error   http_response.APIErrorDetail `json:"error"`
+	}{
+		Success: false,
+		Error: http_response.APIErrorDetail{
+			Code:    core_errors.INVALID_CREDENTIALS,
+			Message: domain.ErrInvalidCredentials.Error(),
+		},
+	}
 
-// 				if diff := cmp.Diff(want, got); diff != "" {
-// 					t.Fatalf("LoginResponse mismatch (-want +got):\n%s", diff)
-// 				}
-// 			}
-// 		})
-// 	}
-// }
+	err = json.Unmarshal(rr.Body.Bytes(), &responseBody)
+	require.NoError(t, err)
+	assert.Equal(t, want, responseBody)
+}
+
+func TestLogin_Validation(t *testing.T) {
+	service := NewMockAuthService(t)
+	cookie := NewMockCookieManager(t)
+	handler := NewAuthHTTPHandler(service, cookie)
+
+	requestBody := map[string]string{}
+	bodyBytes, err := json.Marshal(requestBody)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/auth/login", bytes.NewReader(bodyBytes))
+	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
+
+	rr := httptest.NewRecorder()
+
+	handler.Login(rr, req)
+
+	require.Equal(t, http.StatusBadRequest, rr.Code)
+
+	var responseBody struct {
+		Success bool                         `json:"success"`
+		Error   http_response.APIErrorDetail `json:"error"`
+	}
+
+	want := struct {
+		Success bool                         `json:"success"`
+		Error   http_response.APIErrorDetail `json:"error"`
+	}{
+		Success: false,
+		Error: http_response.APIErrorDetail{
+			Code:    core_errors.VALIDATION_ERROR,
+			Message: core_errors.ErrValidation.Error(),
+			Fields: map[string]string{
+				"username": "username is required",
+				"password": "password is required",
+			},
+		},
+	}
+
+	err = json.Unmarshal(rr.Body.Bytes(), &responseBody)
+	require.NoError(t, err)
+	assert.Equal(t, want, responseBody)
+}

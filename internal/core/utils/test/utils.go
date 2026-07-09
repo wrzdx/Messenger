@@ -28,7 +28,7 @@ func LoadData(t *testing.T, db postgres.DB) {
 	INSERT INTO users (id, username, first_name, last_name, created_at, bio, password_hash)
 	VALUES ($1, $2,$3,$4,$5,$6, $7) 
 	`
-	for _, user := range Users {
+	for _, user := range MockUsers {
 		_, err := db.Exec(
 			t.Context(),
 			query,
@@ -36,9 +36,9 @@ func LoadData(t *testing.T, db postgres.DB) {
 			user.Username,
 			user.FirstName,
 			user.LastName,
-			CreatedAt,
+			user.CreatedAt,
 			user.Bio,
-			PasswordHash,
+			user.PasswordHash,
 		)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
