@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"messenger/internal/core/domain"
-	core_postgres "messenger/internal/core/repository/postgres"
+	postgres "messenger/internal/core/repository/postgres"
 
 	"github.com/google/uuid"
 )
@@ -35,11 +35,11 @@ func (r *UsersRepository) GetUser(
 		&userModel.PasswordHash,
 	)
 	if err != nil {
-		if errors.Is(err, core_postgres.ErrNoRows) {
-			return domain.User{}, fmt.Errorf(
-				"user with id='%d': %w",
-				id,
-				domain.ErrUserNotFound,
+		if errors.Is(err, postgres.ErrNoRows) {
+			return domain.User{}, domain.NotFoundErr(
+				domain.UserEntity,
+				"id",
+				id.String(),
 			)
 		}
 

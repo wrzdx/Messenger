@@ -1,9 +1,9 @@
-package core_auth_bcrypt
+package auth_bcrypt
 
 import (
 	"errors"
 	"fmt"
-	"messenger/internal/core/domain"
+	"messenger/internal/core/auth"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -33,7 +33,7 @@ func (h BcryptHasher) Compare(hash, password string) error {
 		[]byte(password),
 	)
 	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-		return domain.ErrInvalidCredentials
+		return auth.ErrPasswordMismatch
 	}
 	return err
 }

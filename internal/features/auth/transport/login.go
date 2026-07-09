@@ -1,10 +1,9 @@
 package auth_transport_http
 
 import (
-	"fmt"
-	core_logger "messenger/internal/core/logger"
-	core_http_request "messenger/internal/core/transport/http/request"
-	core_http_response "messenger/internal/core/transport/http/response"
+	logger "messenger/internal/core/logger"
+	http_request "messenger/internal/core/transport/http/request"
+	http_response "messenger/internal/core/transport/http/response"
 	"net/http"
 )
 
@@ -19,21 +18,11 @@ type LoginResponse struct {
 
 func (h *AuthHTTPHandler) Login(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	log := core_logger.FromContext(ctx)
-	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
+	log := logger.FromContext(ctx)
+	sender := http_response.NewHTTPSender(log, w)
 	var request LoginRequest
-	if err := core_http_request.DecodeAndValidateRequest(r, &request); err != nil {
-		responseHandler.ErrorResponse(
-			core_http_response.Error{
-				Error: fmt.Errorf(
-					"%v: %w",
-					err,
-					core_http_response.ErrInvalidArgument,
-				),
-				Status:  http.StatusBadRequest,
-				Message: err.Error(),
-			},
-		)
+	if err := http_request.DecodeAndValidateRequest(r, &request); err != nil {
+		sender.Error(err)
 		return
 	}
 
@@ -43,7 +32,7 @@ func (h *AuthHTTPHandler) Login(w http.ResponseWriter, r *http.Request) {
 		request.Password,
 	)
 	if err != nil {
-		responseHandler.ErrorResponse(core_http_response.MapError(err))
+		sender.Error(err)
 		return
 	}
 	response := LoginResponse{
@@ -51,5 +40,5 @@ func (h *AuthHTTPHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.cookieManger.SetRefreshToken(w, tokens.Refresh)
-	responseHandler.JSONResponse(response, http.StatusCreated)
+	sender.OK(http.StatusCreated, response)
 }

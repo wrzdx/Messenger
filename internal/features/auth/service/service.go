@@ -2,7 +2,7 @@ package auth_service
 
 import (
 	"context"
-	core_auth "messenger/internal/core/auth"
+	"messenger/internal/core/auth"
 	"messenger/internal/core/domain"
 
 	"github.com/google/uuid"
@@ -10,8 +10,8 @@ import (
 
 type AuthService struct {
 	usersRepository UsersRepository
-	hasher          Hasher
-	jwtProvider     JWTProvider
+	hasher          auth.Hasher
+	tokenService    auth.TokenService
 }
 
 type UsersRepository interface {
@@ -31,24 +31,14 @@ type UsersRepository interface {
 	) (domain.User, error)
 }
 
-type Hasher interface {
-	Hash(password string) (string, error)
-	Compare(hash, password string) error
-}
-
-type JWTProvider interface {
-	GenerateTokens(id uuid.UUID) (core_auth.AuthTokens, error)
-	ParseToken(token string) (core_auth.Claims, error)
-}
-
 func NewAuthService(
 	userRepository UsersRepository,
-	hasher Hasher,
-	jwtProvider JWTProvider,
+	hasher auth.Hasher,
+	tokenService auth.TokenService,
 ) *AuthService {
 	return &AuthService{
 		usersRepository: userRepository,
 		hasher:          hasher,
-		jwtProvider:     jwtProvider,
+		tokenService:    tokenService,
 	}
 }

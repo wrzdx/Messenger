@@ -1,94 +1,100 @@
-package core_auth_jwt
+package auth_jwt
 
 import (
 	"fmt"
-	core_auth "messenger/internal/core/auth"
+	"messenger/internal/core/auth"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
-type JWTProvider struct {
+type accessClaims struct {
+	UserID uuid.UUID `json:"user_id"`
+	jwt.RegisteredClaims
+}
+
+type refreshClaims struct {
+	UserID  uuid.UUID `json:"user_id"`
+	TokenID uuid.UUID `json:"token_id"`
+	jwt.RegisteredClaims
+}
+
+type TokenService struct {
 	config Config
 }
 
-func NewJWTProvider(config Config) *JWTProvider {
-	return &JWTProvider{
+func NewTokenService(config Config) *TokenService {
+	return &TokenService{
 		config: config,
 	}
 }
 
-func (j *JWTProvider) generate(
-	userID uuid.UUID,
-	ttl time.Duration,
-	tokenType core_auth.TokenType,
-) (string, error) {
-	now := time.Now()
-	expires := now.Add(ttl)
-
-	claims := jwtClaims{
-		Claims: core_auth.Claims{
-			UserID:    userID,
-			Type:      tokenType,
-			IssuedAt:  now,
-			ExpiresAt: expires,
-		},
-
+func (s *TokenService) GenerateTokenPair(user auth.AccessClaims, tokenID uuid.UUID) (auth.TokenPair, error) {
+	aClaims := accessClaims{
+		UserID: user.UserID,
 		RegisteredClaims: jwt.RegisteredClaims{
-			IssuedAt:  jwt.NewNumericDate(now),
-			ExpiresAt: jwt.NewNumericDate(expires),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.config.AccessTokenTTL)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	signed, err := token.SignedString([]byte(j.config.Secret))
+	accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, aClaims).SignedString(s.config.Secret)
 	if err != nil {
-		return "", fmt.Errorf(
-			"sign token: %w",
-			err,
-		)
+		return auth.TokenPair{}, fmt.Errorf("access: %w", err)
 	}
 
-	return signed, nil
-}
+	rClaims := refreshClaims{
+		UserID:  user.UserID,
+		TokenID: tokenID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.config.RefreshTokenTTL)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+	refreshToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, rClaims).SignedString(s.config.Secret)
+	if err != nil {
+		return auth.TokenPair{}, fmt.Errorf("refresh: %w", err)
+	}
 
-func (j *JWTProvider) GenerateTokens(id uuid.UUID) (core_auth.AuthTokens, error) {
-	access, err := j.generate(
-		id,
-		j.config.AccessTokenTTL,
-		core_auth.TokenTypeAccess,
-	)
-	if err != nil {
-		return core_auth.AuthTokens{}, err
-	}
-	refresh, err := j.generate(
-		id,
-		j.config.RefreshTokenTTL,
-		core_auth.TokenTypeRefresh,
-	)
-	if err != nil {
-		return core_auth.AuthTokens{}, err
-	}
-	return core_auth.AuthTokens{
-		Access:  access,
-		Refresh: refresh,
+	return auth.TokenPair{
+		Access:  accessToken,
+		Refresh: refreshToken,
 	}, nil
 }
 
-func (j *JWTProvider) ParseToken(token string) (core_auth.Claims, error) {
-	var claims jwtClaims
-
-	_, err := jwt.ParseWithClaims(
-		token,
-		&claims,
-		func(token *jwt.Token) (any, error) {
-			return []byte(j.config.Secret), nil
-		},
-	)
-	if err != nil {
-		return core_auth.Claims{}, fmt.Errorf("parse JWT: %w", err)
+func (s *TokenService) ParseAccessToken(tokenStr string) (auth.AccessClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenStr, &accessClaims{}, func(token *jwt.Token) (any, error) {
+		return s.config.Secret, nil
+	})
+	if err != nil || !token.Valid {
+		return auth.AccessClaims{}, auth.ErrInvalidToken
 	}
 
-	return claims.Claims, nil
+	claims, ok := token.Claims.(*accessClaims)
+	if !ok {
+		return auth.AccessClaims{}, auth.ErrInvalidToken
+	}
+
+	return auth.AccessClaims{
+		UserID: claims.UserID,
+	}, nil
+}
+
+func (s *TokenService) ParseRefreshToken(tokenStr string) (auth.RefreshClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenStr, &refreshClaims{}, func(token *jwt.Token) (any, error) {
+		return s.config.Secret, nil
+	})
+	if err != nil || !token.Valid {
+		return auth.RefreshClaims{}, auth.ErrInvalidToken
+	}
+
+	claims, ok := token.Claims.(*refreshClaims)
+	if !ok {
+		return auth.RefreshClaims{}, auth.ErrInvalidToken
+	}
+
+	return auth.RefreshClaims{
+		UserID:  claims.UserID,
+		TokenID: claims.TokenID,
+	}, nil
 }

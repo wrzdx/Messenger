@@ -2,35 +2,44 @@ package auth_service
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	core_auth "messenger/internal/core/auth"
+	"messenger/internal/core/auth"
 	"messenger/internal/core/domain"
+
+	"github.com/google/uuid"
 )
 
 func (s *AuthService) Login(
 	ctx context.Context,
 	username string,
 	password string,
-) (core_auth.AuthTokens, error) {
+) (auth.TokenPair, error) {
 	user, err := s.usersRepository.GetUserByUsername(
 		ctx,
 		username,
 	)
 	if err != nil {
-		return core_auth.AuthTokens{}, domain.ErrInvalidCredentials
+		return auth.TokenPair{}, domain.ErrInvalidCredentials
 	}
 
 	if err := s.hasher.Compare(user.PasswordHash, password); err != nil {
-		return core_auth.AuthTokens{}, fmt.Errorf(
+		if errors.Is(err, auth.ErrPasswordMismatch) {
+			return auth.TokenPair{}, domain.ErrInvalidCredentials
+		}
+		return auth.TokenPair{}, fmt.Errorf(
 			"compare passwords: %w",
 			err,
 		)
 	}
-
-	tokens, err := s.jwtProvider.GenerateTokens(user.ID)
+	claims := auth.AccessClaims{
+		UserID: user.ID,
+	}
+	tokenID := uuid.New()
+	tokens, err := s.tokenService.GenerateTokenPair(claims, tokenID)
 	if err != nil {
-		return core_auth.AuthTokens{}, fmt.Errorf(
-			"generate refresh token: %w",
+		return auth.TokenPair{}, fmt.Errorf(
+			"generate tokens: %w",
 			err,
 		)
 	}

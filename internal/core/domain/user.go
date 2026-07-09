@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"fmt"
 	"unicode/utf8"
 
 	"time"
@@ -102,7 +101,6 @@ func (p *UserPatch) Validate() error {
 			return err
 		}
 	}
-
 	if p.LastName.Set && p.LastName.Value != nil {
 		if err := ValidateLastName(*p.LastName.Value); err != nil {
 			return err
@@ -113,16 +111,14 @@ func (p *UserPatch) Validate() error {
 		if err := ValidateBio(*p.Bio.Value); err != nil {
 			return err
 		}
-
 	}
 
 	return nil
-
 }
 
 func (u *User) ApplyPatch(patch UserPatch) error {
 	if err := patch.Validate(); err != nil {
-		return fmt.Errorf("validate user patch: %w", err)
+		return err
 	}
 
 	tmp := *u
@@ -144,7 +140,7 @@ func (u *User) ApplyPatch(patch UserPatch) error {
 	}
 
 	if err := tmp.Validate(); err != nil {
-		return fmt.Errorf("validate patched user: %w", err)
+		return err
 	}
 
 	*u = tmp

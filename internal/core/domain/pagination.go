@@ -13,11 +13,31 @@ func NewPagination(limit, offset *int) Pagination {
 }
 
 func (p Pagination) Validate() error {
-	if p.Limit != nil && *p.Limit < 0 {
+	if p.Limit != nil {
+		if err := ValidateLimit(*p.Limit); err != nil {
+			return err
+		}
+	}
+
+	if p.Offset != nil {
+		if err := ValidateOffset(*p.Offset); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func ValidateLimit(limit int) error {
+	if limit < 0 {
 		return ErrNegativeLimit
 	}
 
-	if p.Offset != nil && *p.Offset < 0 {
+	return nil
+}
+
+func ValidateOffset(offset int) error {
+	if offset < 0 {
 		return ErrNegativeOffset
 	}
 

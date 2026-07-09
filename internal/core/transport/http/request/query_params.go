@@ -1,10 +1,10 @@
-package core_http_request
+package http_request
 
 import (
 	"fmt"
+	core_errors "messenger/internal/core/errors"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/google/uuid"
 )
@@ -21,24 +21,15 @@ func GetQueryParam[T any](r *http.Request, key string) (*T, error) {
 	case *int:
 		val, err := strconv.Atoi(param)
 		if err != nil {
-			return nil, fmt.Errorf("param='%s' by key='%s' not a valid integer: %w", param, key, err)
+			return nil, fmt.Errorf("param='%s' by key='%s' not a valid integer: %w", param, key, core_errors.ErrValidation)
 		}
 		res := any(val).(T)
-		return &res, nil
-
-	case *time.Time:
-		const layout = "2006-01-02"
-		date, err := time.Parse(layout, param)
-		if err != nil {
-			return nil, fmt.Errorf("param='%s' by key='%s' not a valid date: %w", param, key, err)
-		}
-		res := any(date).(T)
 		return &res, nil
 
 	case *uuid.UUID:
 		id, err := uuid.Parse(param)
 		if err != nil {
-			return nil, fmt.Errorf("param='%s' by key='%s' not a valid uuid: %w", param, key, err)
+			return nil, fmt.Errorf("param='%s' by key='%s' not a valid uuid: %w", param, key, core_errors.ErrValidation)
 		}
 		res := any(id).(T)
 		return &res, nil

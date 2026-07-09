@@ -1,7 +1,8 @@
-package core_http_request
+package http_request
 
 import (
 	"fmt"
+	core_errors "messenger/internal/core/errors"
 	"net/http"
 	"strconv"
 
@@ -20,14 +21,14 @@ func GetPathValue[T any](r *http.Request, key string) (T, error) {
 	case *int:
 		val, err := strconv.Atoi(pathValue)
 		if err != nil {
-			return zero, fmt.Errorf("path value='%s' by key='%s' not a valid integer: %w", pathValue, key, err)
+			return zero, fmt.Errorf("path value='%s' by key='%s' not a valid integer: %w", pathValue, key, core_errors.ErrValidation)
 		}
 		return any(val).(T), nil
 
 	case *uuid.UUID:
 		val, err := uuid.Parse(pathValue)
 		if err != nil {
-			return zero, fmt.Errorf("path value='%s' by key='%s' not a valid uuid: %w", pathValue, key, err)
+			return zero, fmt.Errorf("path value='%s' by key='%s' not a valid uuid: %w", pathValue, key,  core_errors.ErrValidation)
 		}
 		return any(val).(T), nil
 

@@ -1,6 +1,8 @@
-package core_auth_cookie
+package auth_cookie
 
 import (
+	"errors"
+	"messenger/internal/core/auth"
 	"net/http"
 	"time"
 )
@@ -30,6 +32,9 @@ func (c *CookieManager) GetRefreshToken(
 ) (string, error) {
 	cookie, err := r.Cookie(refreshCookieName)
 	if err != nil {
+		if errors.Is(err, http.ErrNoCookie) {
+			return "", auth.ErrInvalidToken
+		}
 		return "", err
 	}
 

@@ -1,10 +1,10 @@
-package core_http_server
+package http_server
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	core_logger "messenger/internal/core/logger"
+	logger "messenger/internal/core/logger"
 	"net/http"
 
 	"go.uber.org/zap"
@@ -13,10 +13,10 @@ import (
 type HTTPServer struct {
 	router http.Handler
 	config Config
-	log    *core_logger.Logger
+	log    *logger.Logger
 }
 
-func NewHTTPServer(config Config, log *core_logger.Logger, router http.Handler) *HTTPServer {
+func NewHTTPServer(config Config, log *logger.Logger, router http.Handler) *HTTPServer {
 	return &HTTPServer{
 		router: router,
 		config: config,

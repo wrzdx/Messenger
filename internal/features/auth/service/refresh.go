@@ -3,27 +3,32 @@ package auth_service
 import (
 	"context"
 	"fmt"
-	core_auth "messenger/internal/core/auth"
-	"messenger/internal/core/domain"
+	"messenger/internal/core/auth"
+
+	"github.com/google/uuid"
 )
 
 func (s *AuthService) Refresh(
 	ctx context.Context,
 	token string,
-) (core_auth.AuthTokens, error) {
-	claims, err := s.jwtProvider.ParseToken(token)
+) (auth.TokenPair, error) {
+	payload, err := s.tokenService.ParseRefreshToken(token)
 	if err != nil {
-		return core_auth.AuthTokens{}, domain.ErrInvalidRefreshToken
+		return auth.TokenPair{}, fmt.Errorf("parse refresh: %w", err)
 	}
-	user, err := s.usersRepository.GetUser(ctx, claims.UserID)
+	user, err := s.usersRepository.GetUser(ctx, payload.UserID)
 	if err != nil {
-		return core_auth.AuthTokens{}, domain.ErrUserNotFound
+		return auth.TokenPair{}, fmt.Errorf("get user: %w", err)
 	}
 
-	tokens, err := s.jwtProvider.GenerateTokens(user.ID)
+	tokenID := uuid.New()
+	claims := auth.AccessClaims{
+		UserID: user.ID,
+	}
+	tokens, err := s.tokenService.GenerateTokenPair(claims, tokenID)
 	if err != nil {
-		return core_auth.AuthTokens{}, fmt.Errorf(
-			"generate refresh token: %w",
+		return auth.TokenPair{}, fmt.Errorf(
+			"generate tokens: %w",
 			err,
 		)
 	}

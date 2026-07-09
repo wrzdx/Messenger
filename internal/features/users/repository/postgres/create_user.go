@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"messenger/internal/core/domain"
-	core_postgres "messenger/internal/core/repository/postgres"
+	postgres "messenger/internal/core/repository/postgres"
 )
 
 func (r *UsersRepository) CreateUser(
@@ -41,11 +41,12 @@ func (r *UsersRepository) CreateUser(
 		&userModel.PasswordHash,
 	)
 	if err != nil {
-		if errors.Is(err, core_postgres.ErrViolatesUnique) {
-			return domain.User{}, fmt.Errorf(
-				"user with username=%s already exists: %w",
-				user.Username,
-				domain.ErrUserAlreadyExists,
+		if errors.Is(err, postgres.ErrViolatesUnique) {
+			failedField, failedValue := getConstraintValues(user, err)
+			return domain.User{}, domain.AlreadyExistsErr(
+				domain.UserEntity,
+				failedField,
+				failedValue,
 			)
 		}
 		return domain.User{}, fmt.Errorf("scan error: %w", err)

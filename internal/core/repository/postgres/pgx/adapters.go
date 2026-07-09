@@ -1,9 +1,9 @@
-package core_pgx_pool
+package pgx_pool
 
 import (
 	"errors"
 	"fmt"
-	core_postgres "messenger/internal/core/repository/postgres"
+	postgres "messenger/internal/core/repository/postgres"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -39,26 +39,51 @@ type pgxCommandTag struct {
 	pgconn.CommandTag
 }
 
+type dbErrorWithConstraint struct {
+	constraint string
+	err        error
+	wrapped    error
+}
+
+func (e dbErrorWithConstraint) Error() string {
+	return fmt.Sprintf("%v: %v", e.wrapped, e.err)
+}
+
+func (e dbErrorWithConstraint) Unwrap() error {
+	return e.err
+}
+
+func (e dbErrorWithConstraint) Constraint() string {
+	return e.constraint
+}
+
 var violationErrs = map[string]error{
-	"23503": core_postgres.ErrViolatesForeignKey,
-	"23505": core_postgres.ErrViolatesUnique,
-	"23514": core_postgres.ErrViolatesCheck,
-	"22001": core_postgres.ErrTooLongVarchar,
+	"23503": postgres.ErrViolatesForeignKey,
+	"23505": postgres.ErrViolatesUnique,
+	"23514": postgres.ErrViolatesCheck,
+	"22001": postgres.ErrTooLongVarchar,
 }
 
 func mapErrors(err error) error {
 	if errors.Is(err, pgx.ErrNoRows) {
-		return core_postgres.ErrNoRows
+		return postgres.ErrNoRows
 	}
 
-	mappedErr := core_postgres.ErrUnknown
+	mappedErr := postgres.ErrUnknown
+	var constraintName string
 
-	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
 		violationErr, ok := violationErrs[pgErr.Code]
 		if ok {
 			mappedErr = violationErr
+			constraintName = pgErr.ConstraintName 
 		}
 	}
 
-	return fmt.Errorf("%v: %w", err, mappedErr)
+	return dbErrorWithConstraint{
+		constraint: constraintName,
+		err:        mappedErr,
+		wrapped:    err,
+	}
 }

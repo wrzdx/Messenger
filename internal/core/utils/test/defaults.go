@@ -1,9 +1,9 @@
-package core_test_utils
+package test_utils
 
 import (
 	"errors"
 	"messenger/internal/core/domain"
-	core_logger "messenger/internal/core/logger"
+	logger "messenger/internal/core/logger"
 	"time"
 
 	"github.com/google/uuid"
@@ -16,7 +16,7 @@ var (
 	HasherError  = errors.New("hash failed")
 	JWTError     = errors.New("JWT Error")
 	RepoError    = errors.New("db error")
-	Log          = core_logger.NewTestLogger()
+	Log          = logger.NewTestLogger()
 )
 
 var Users = []domain.User{
