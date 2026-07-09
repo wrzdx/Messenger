@@ -1,230 +1,193 @@
 package users_service
 
-// import (
-// 	"errors"
-// 	"messenger/internal/core/domain"
-// 	test_utils "messenger/internal/core/utils/test"
-// 	"testing"
+import (
+	"context"
+	"errors"
+	"messenger/internal/core/auth"
+	"messenger/internal/core/domain"
+	"testing"
 
-// 	"github.com/google/go-cmp/cmp"
-// 	"github.com/google/uuid"
-// )
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
 
-// func TestChangePassword(t *testing.T) {
-// 	user := test_utils.Users[0]
+func TestUsersService_ChangePassword(t *testing.T) {
+	ctx := context.Background()
 
-// 	tests := []struct {
-// 		name string
+	id := uuid.New()
 
-// 		userID      uuid.UUID
-// 		oldPassword string
-// 		newPassword string
+	user := domain.User{
+		ID:           id,
+		PasswordHash: "old-hash",
+	}
 
-// 		getUserErr        error
-// 		compareErr        error
-// 		hashErr           error
-// 		changePasswordErr error
+	tests := []struct {
+		name     string
+		prepare  func(*MockUsersRepository, *MockHasher)
+		wantErr  error
+		errorMsg string
+	}{
+		{
+			name: "success",
+			prepare: func(repo *MockUsersRepository, hasher *MockHasher) {
+				repo.EXPECT().
+					GetUser(ctx, id).
+					Return(user, nil).
+					Once()
 
-// 		wantGetUserCalled        bool
-// 		wantCompareCalled        bool
-// 		wantHashCalled           bool
-// 		wantChangePasswordCalled bool
+				hasher.EXPECT().
+					Compare("old-hash", "old-password").
+					Return(nil).
+					Once()
 
-// 		wantError error
-// 	}{
-// 		{
-// 			name:        "success",
-// 			userID:      user.ID,
-// 			oldPassword: "old_password",
-// 			newPassword: "new_password",
+				hasher.EXPECT().
+					Hash("new-password").
+					Return("new-hash", nil).
+					Once()
 
-// 			wantGetUserCalled:        true,
-// 			wantCompareCalled:        true,
-// 			wantHashCalled:           true,
-// 			wantChangePasswordCalled: true,
-// 		},
-// 		{
-// 			name:        "user not found",
-// 			userID:      user.ID,
-// 			oldPassword: "old_password",
-// 			newPassword: "new_password",
+				repo.EXPECT().
+					ChangePassword(ctx, id, "new-hash").
+					Return(nil).
+					Once()
+			},
+		},
+		{
+			name: "get user error",
+			prepare: func(repo *MockUsersRepository, hasher *MockHasher) {
+				repo.EXPECT().
+					GetUser(ctx, id).
+					Return(domain.User{}, errors.New("db error")).
+					Once()
+			},
+			errorMsg: "get user",
+		},
+		{
+			name: "wrong password",
+			prepare: func(repo *MockUsersRepository, hasher *MockHasher) {
+				repo.EXPECT().
+					GetUser(ctx, id).
+					Return(user, nil).
+					Once()
 
-// 			getUserErr: domain.ErrUserNotFound,
+				hasher.EXPECT().
+					Compare("old-hash", "old-password").
+					Return(auth.ErrPasswordMismatch).
+					Once()
+			},
+			wantErr: domain.ErrWrongPassword,
+		},
+		{
+			name: "compare error",
+			prepare: func(repo *MockUsersRepository, hasher *MockHasher) {
+				repo.EXPECT().
+					GetUser(ctx, id).
+					Return(user, nil).
+					Once()
 
-// 			wantGetUserCalled: true,
+				hasher.EXPECT().
+					Compare("old-hash", "old-password").
+					Return(errors.New("bcrypt error")).
+					Once()
+			},
+			errorMsg: "compare passwords",
+		},
+		{
+			name: "invalid new password",
+			prepare: func(repo *MockUsersRepository, hasher *MockHasher) {
+				repo.EXPECT().
+					GetUser(ctx, id).
+					Return(user, nil).
+					Once()
 
-// 			wantError: domain.ErrUserNotFound,
-// 		},
-// 		{
-// 			name:        "invalid credentials",
-// 			userID:      user.ID,
-// 			oldPassword: "wrong_password",
-// 			newPassword: "new_password",
+				hasher.EXPECT().
+					Compare("old-hash", "old-password").
+					Return(nil).
+					Once()
+			},
+			errorMsg: "validate new password",
+		},
+		{
+			name: "hash error",
+			prepare: func(repo *MockUsersRepository, hasher *MockHasher) {
+				repo.EXPECT().
+					GetUser(ctx, id).
+					Return(user, nil).
+					Once()
 
-// 			compareErr: domain.ErrInvalidCredentials,
+				hasher.EXPECT().
+					Compare("old-hash", "old-password").
+					Return(nil).
+					Once()
 
-// 			wantGetUserCalled: true,
-// 			wantCompareCalled: true,
+				hasher.EXPECT().
+					Hash("new-password").
+					Return("", errors.New("hash error")).
+					Once()
+			},
+			errorMsg: "hash password",
+		},
+		{
+			name: "repository error",
+			prepare: func(repo *MockUsersRepository, hasher *MockHasher) {
+				repo.EXPECT().
+					GetUser(ctx, id).
+					Return(user, nil).
+					Once()
 
-// 			wantError: domain.ErrWrongPassword,
-// 		},
-// 		{
-// 			name:        "invalid new password",
-// 			userID:      user.ID,
-// 			oldPassword: "old_password",
-// 			newPassword: "123",
+				hasher.EXPECT().
+					Compare("old-hash", "old-password").
+					Return(nil).
+					Once()
 
-// 			wantGetUserCalled: true,
-// 			wantCompareCalled: true,
+				hasher.EXPECT().
+					Hash("new-password").
+					Return("new-hash", nil).
+					Once()
 
-// 			wantError: domain.ErrInvalidPassword,
-// 		},
-// 		{
-// 			name:        "hash error",
-// 			userID:      user.ID,
-// 			oldPassword: "old_password",
-// 			newPassword: "new_password",
+				repo.EXPECT().
+					ChangePassword(ctx, id, "new-hash").
+					Return(errors.New("db error")).
+					Once()
+			},
+			errorMsg: "change user password",
+		},
+	}
 
-// 			hashErr: test_utils.HasherError,
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := NewMockUsersRepository(t)
+			hasher := NewMockHasher(t)
 
-// 			wantGetUserCalled: true,
-// 			wantCompareCalled: true,
-// 			wantHashCalled:    true,
+			tt.prepare(repo, hasher)
 
-// 			wantError: test_utils.HasherError,
-// 		},
-// 		{
-// 			name:        "repository error",
-// 			userID:      user.ID,
-// 			oldPassword: "old_password",
-// 			newPassword: "new_password",
+			service := NewUsersService(repo, hasher)
 
-// 			changePasswordErr: test_utils.RepoError,
+			newPassword := "new-password"
+			if tt.name == "invalid new password" {
+				newPassword = "123"
+			}
 
-// 			wantGetUserCalled:        true,
-// 			wantCompareCalled:        true,
-// 			wantHashCalled:           true,
-// 			wantChangePasswordCalled: true,
+			err := service.ChangePassword(
+				ctx,
+				id,
+				"old-password",
+				newPassword,
+			)
 
-// 			wantError: test_utils.RepoError,
-// 		},
-// 	}
+			if tt.wantErr != nil {
+				require.Error(t, err)
+				assert.ErrorIs(t, err, tt.wantErr)
+				return
+			}
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
+			if tt.errorMsg != "" {
+				require.Error(t, err)
+				assert.ErrorContains(t, err, tt.errorMsg)
+				return
+			}
 
-// 			var (
-// 				getUserCalled bool
-
-// 				compareCalled bool
-// 				compareHash   string
-// 				comparePass   string
-
-// 				hashCalled bool
-// 				hashPass   string
-
-// 				changeCalled bool
-// 				changeID     uuid.UUID
-// 				changeHash   string
-// 			)
-
-// 			repo := StubUsersRepository{
-// 				GetUserFn: func(id uuid.UUID) (domain.User, error) {
-// 					getUserCalled = true
-// 					return user, tt.getUserErr
-// 				},
-// 				ChangePasswordFn: func(id uuid.UUID, hash string) error {
-// 					changeCalled = true
-// 					changeID = id
-// 					changeHash = hash
-// 					return tt.changePasswordErr
-// 				},
-// 			}
-
-// 			hasher := StubHasher{
-// 				CompareFn: func(hash string, password string) error {
-// 					compareCalled = true
-// 					compareHash = hash
-// 					comparePass = password
-// 					return tt.compareErr
-// 				},
-// 				HashFn: func(password string) (string, error) {
-// 					hashCalled = true
-// 					hashPass = password
-// 					return test_utils.PasswordHash, tt.hashErr
-// 				},
-// 			}
-
-// 			service := NewUsersService(&repo, &hasher)
-
-// 			err := service.ChangePassword(
-// 				t.Context(),
-// 				tt.userID,
-// 				tt.oldPassword,
-// 				tt.newPassword,
-// 			)
-
-// 			if getUserCalled != tt.wantGetUserCalled {
-// 				t.Fatalf(
-// 					"GetUser called = %v, want %v",
-// 					getUserCalled,
-// 					tt.wantGetUserCalled,
-// 				)
-// 			}
-
-// 			if compareCalled != tt.wantCompareCalled {
-// 				t.Fatalf(
-// 					"Compare called = %v, want %v",
-// 					compareCalled,
-// 					tt.wantCompareCalled,
-// 				)
-// 			}
-
-// 			if hashCalled != tt.wantHashCalled {
-// 				t.Fatalf(
-// 					"Hash called = %v, want %v",
-// 					hashCalled,
-// 					tt.wantHashCalled,
-// 				)
-// 			}
-
-// 			if changeCalled != tt.wantChangePasswordCalled {
-// 				t.Fatalf(
-// 					"ChangePassword called = %v, want %v",
-// 					changeCalled,
-// 					tt.wantChangePasswordCalled,
-// 				)
-// 			}
-
-// 			if compareCalled {
-// 				if diff := cmp.Diff(user.PasswordHash, compareHash); diff != "" {
-// 					t.Fatalf("compare hash mismatch (-want +got):\n%s", diff)
-// 				}
-
-// 				if diff := cmp.Diff(tt.oldPassword, comparePass); diff != "" {
-// 					t.Fatalf("compare password mismatch (-want +got):\n%s", diff)
-// 				}
-// 			}
-
-// 			if hashCalled {
-// 				if diff := cmp.Diff(tt.newPassword, hashPass); diff != "" {
-// 					t.Fatalf("hash password mismatch (-want +got):\n%s", diff)
-// 				}
-// 			}
-
-// 			if changeCalled {
-// 				if diff := cmp.Diff(tt.userID, changeID); diff != "" {
-// 					t.Fatalf("userID mismatch (-want +got):\n%s", diff)
-// 				}
-
-// 				if diff := cmp.Diff(test_utils.PasswordHash, changeHash); diff != "" {
-// 					t.Fatalf("password hash mismatch (-want +got):\n%s", diff)
-// 				}
-// 			}
-
-// 			if !errors.Is(err, tt.wantError) {
-// 				t.Fatalf("want %v, got %v", tt.wantError, err)
-// 			}
-// 		})
-// 	}
-// }
+			require.NoError(t, err)
+		})
+	}
+}

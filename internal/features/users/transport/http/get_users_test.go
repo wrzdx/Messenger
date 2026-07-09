@@ -1,195 +1,218 @@
 package users_transport_http
 
-// import (
-// 	"encoding/json"
-// 	"messenger/internal/core/domain"
-// 	http_response "messenger/internal/core/transport/http/response"
-// 	test_utils "messenger/internal/core/utils/test"
-// 	"net/http"
-// 	"net/http/httptest"
-// 	"net/url"
-// 	"strings"
-// 	"testing"
+import (
+	"encoding/json"
+	"errors"
+	"messenger/internal/core/domain"
+	core_errors "messenger/internal/core/errors"
+	http_response "messenger/internal/core/transport/http/response"
+	test_utils "messenger/internal/core/utils/test"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 
-// 	"github.com/google/go-cmp/cmp"
-// )
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+)
 
-// func TestGetUsers(t *testing.T) {
-// 	tests := []struct {
-// 		name              string
-// 		limit             string
-// 		offset            string
-// 		serviceUsers      []domain.User
-// 		serviceErr        error
-// 		wantServiceLimit  *int
-// 		wantServiceOffset *int
-// 		wantServiceCalled bool
-// 		wantStatus        int
-// 		wantError         string
-// 	}{
-// 		{
-// 			name:              "return all users",
-// 			wantServiceCalled: true,
-// 			wantStatus:        http.StatusOK,
-// 			serviceUsers:      test_utils.Users,
-// 		},
-// 		{
-// 			name:              "limit users",
-// 			limit:             "1",
-// 			wantServiceLimit:  new(1),
-// 			serviceUsers:      test_utils.Users[:1],
-// 			wantServiceCalled: true,
-// 			wantStatus:        http.StatusOK,
-// 		},
-// 		{
-// 			name:              "negative limit",
-// 			limit:             "-1",
-// 			wantServiceCalled: true,
-// 			wantServiceLimit:  new(-1),
-// 			serviceErr:        domain.ErrNegativeLimit,
-// 			wantError:         http_response.MapError(domain.ErrNegativeLimit).Message,
-// 			wantStatus:        http.StatusBadRequest,
-// 		},
-// 		{
-// 			name:              "offset users",
-// 			offset:            "1",
-// 			wantServiceOffset: new(1),
-// 			serviceUsers:      test_utils.Users[1:],
-// 			wantServiceCalled: true,
-// 			wantStatus:        http.StatusOK,
-// 		},
-// 		{
-// 			name:              "negative offset",
-// 			offset:            "-1",
-// 			wantServiceCalled: true,
-// 			wantServiceOffset: new(-1),
-// 			serviceErr:        domain.ErrNegativeOffset,
-// 			wantError:         http_response.MapError(domain.ErrNegativeOffset).Message,
-// 			wantStatus:        http.StatusBadRequest,
-// 		},
-// 		{
-// 			name:              "limit offset users",
-// 			limit:             "1",
-// 			offset:            "1",
-// 			wantServiceLimit:  new(1),
-// 			wantServiceOffset: new(1),
-// 			serviceUsers:      test_utils.Users[1:2],
-// 			wantServiceCalled: true,
+func TestGetUsersHandler_Success(t *testing.T) {
+	service := NewMockUsersService(t)
 
-// 			wantStatus: http.StatusOK,
-// 		},
-// 		{
-// 			name:              "empty users",
-// 			limit:             "1",
-// 			offset:            "2",
-// 			wantServiceLimit:  new(1),
-// 			wantServiceOffset: new(2),
-// 			serviceUsers:      test_utils.Users[2:2],
-// 			wantServiceCalled: true,
-// 			wantStatus:        http.StatusOK,
-// 		},
-// 		{
-// 			name:       "invalid limit",
-// 			limit:      "asadf",
-// 			wantError:  http_response.ErrInvalidArgument.Error(),
-// 			wantStatus: http.StatusBadRequest,
-// 		},
-// 		{
-// 			name:      "invalid offset",
-// 			offset:    "asadf",
-// 			wantError: http_response.ErrInvalidArgument.Error(),
+	users := []domain.User{
+		{
+			Username:  "alice",
+			FirstName: "Alice",
+		},
+		{
+			Username:  "bob",
+			FirstName: "Bob",
+		},
+	}
 
-// 			wantStatus: http.StatusBadRequest,
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			// Setup
-// 			wantUsers := make([]UserDTOResponse, len(tt.serviceUsers))
-// 			for i, user := range tt.serviceUsers {
-// 				wantUsers[i] = userDTOFromDomain(user)
-// 			}
-// 			var (
-// 				serviceCalled    bool
-// 				serviceGotLimit  *int
-// 				serviceGotOffset *int
-// 			)
+	service.EXPECT().
+		GetUsers(mock.Anything, domain.Pagination{}).
+		Return(users, nil).
+		Once()
 
-// 			service := StubUsersService{
-// 				GetUsersFn: func(limit, offset *int) ([]domain.User, error) {
-// 					serviceCalled = true
-// 					serviceGotLimit = limit
-// 					serviceGotOffset = offset
+	handler := NewUsersHTTPHandler(service)
 
-// 					return tt.serviceUsers, tt.serviceErr
-// 				},
-// 			}
+	req := httptest.NewRequest(http.MethodGet, "/users", nil)
+	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
 
-// 			handler := NewUsersHTTPHandler(&service)
-// 			rec := httptest.NewRecorder()
-// 			values := url.Values{}
-// 			if tt.limit != "" {
-// 				values.Set("limit", tt.limit)
-// 			}
-// 			if tt.offset != "" {
-// 				values.Set("offset", tt.offset)
-// 			}
+	rr := httptest.NewRecorder()
 
-// 			req := httptest.NewRequest(
-// 				http.MethodGet,
-// 				"/users?"+values.Encode(),
-// 				nil,
-// 			)
+	handler.GetUsers(rr, req)
 
-// 			ctx := test_utils.GetLoggerContext(req.Context())
-// 			// action
-// 			handler.GetUsers(rec, req.WithContext(ctx))
+	require.Equal(t, http.StatusOK, rr.Code)
 
-// 			// check
-// 			if serviceCalled != tt.wantServiceCalled {
-// 				t.Fatalf(
-// 					"service called = %v, want %v",
-// 					serviceCalled,
-// 					tt.wantServiceCalled,
-// 				)
-// 			}
+	var response struct {
+		Success bool             `json:"success"`
+		Data    GetUsersResponse `json:"data"`
+	}
 
-// 			if serviceCalled {
-// 				if diff := cmp.Diff(tt.wantServiceLimit, serviceGotLimit); diff != "" {
-// 					t.Fatalf("limit mismatch (-want +got):\n%s", diff)
-// 				}
-// 				if diff := cmp.Diff(tt.wantServiceOffset, serviceGotOffset); diff != "" {
-// 					t.Fatalf("offset mismatch (-want +got):\n%s", diff)
-// 				}
-// 			}
+	err := json.Unmarshal(rr.Body.Bytes(), &response)
+	require.NoError(t, err)
 
-// 			if rec.Code != tt.wantStatus {
-// 				t.Fatalf("got status %d, want %d", rec.Code, tt.wantStatus)
-// 			}
+	assert.True(t, response.Success)
+	assert.Equal(
+		t,
+		GetUsersResponse(usersDTOFromDomains(users)),
+		response.Data,
+	)
+}
 
-// 			if tt.wantError != "" {
-// 				var gotError http_response.ErrorResponse
-// 				if err := json.NewDecoder(rec.Body).Decode(&gotError); err != nil {
-// 					t.Fatalf("unexpected error: %v", err)
-// 				}
+func TestGetUsersHandler_WithPagination(t *testing.T) {
+	service := NewMockUsersService(t)
 
-// 				if !strings.HasSuffix(gotError.Error, tt.wantError) {
-// 					t.Fatalf(
-// 						"ErrorResponse mismatch:\nwant: %s\ngot: %s",
-// 						tt.wantError,
-// 						gotError.Error,
-// 					)
-// 				}
-// 			} else {
-// 				var gotResponse []UserDTOResponse
-// 				if err := json.NewDecoder(rec.Body).Decode(&gotResponse); err != nil {
-// 					t.Fatalf("unexpected error: %v", err)
-// 				}
+	limit := 10
+	offset := 20
 
-// 				if diff := cmp.Diff(wantUsers, gotResponse); diff != "" {
-// 					t.Fatalf("GetUsersResponse mismatch (-want +got):\n%s", diff)
-// 				}
-// 			}
-// 		})
-// 	}
-// }
+	pagination := domain.NewPagination(&limit, &offset)
+
+	service.EXPECT().
+		GetUsers(mock.Anything, pagination).
+		Return([]domain.User{}, nil).
+		Once()
+
+	handler := NewUsersHTTPHandler(service)
+
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/users?limit=10&offset=20",
+		nil,
+	)
+	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
+
+	rr := httptest.NewRecorder()
+
+	handler.GetUsers(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+}
+
+func TestGetUsersHandler_InvalidLimit(t *testing.T) {
+	service := NewMockUsersService(t)
+
+	handler := NewUsersHTTPHandler(service)
+
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/users?limit=abc",
+		nil,
+	)
+	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
+
+	rr := httptest.NewRecorder()
+
+	handler.GetUsers(rr, req)
+
+	require.Equal(t, http.StatusBadRequest, rr.Code)
+}
+
+func TestGetUsersHandler_InvalidOffset(t *testing.T) {
+	service := NewMockUsersService(t)
+
+	handler := NewUsersHTTPHandler(service)
+
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/users?offset=abc",
+		nil,
+	)
+	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
+
+	rr := httptest.NewRecorder()
+
+	handler.GetUsers(rr, req)
+
+	require.Equal(t, http.StatusBadRequest, rr.Code)
+}
+
+func TestGetUsersHandler_NegativeLimit(t *testing.T) {
+	service := NewMockUsersService(t)
+
+	handler := NewUsersHTTPHandler(service)
+
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/users?limit=-1",
+		nil,
+	)
+	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
+
+	rr := httptest.NewRecorder()
+
+	handler.GetUsers(rr, req)
+
+	require.Equal(t, http.StatusBadRequest, rr.Code)
+
+	var response struct {
+		Success bool                         `json:"success"`
+		Error   http_response.APIErrorDetail `json:"error"`
+	}
+
+	err := json.Unmarshal(rr.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, core_errors.VALIDATION_ERROR, response.Error.Code)
+	assert.Equal(
+		t,
+		domain.ErrNegativeLimit.Error(),
+		response.Error.Fields["limit"],
+	)
+}
+
+func TestGetUsersHandler_NegativeOffset(t *testing.T) {
+	service := NewMockUsersService(t)
+
+	handler := NewUsersHTTPHandler(service)
+
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/users?offset=-1",
+		nil,
+	)
+	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
+
+	rr := httptest.NewRecorder()
+
+	handler.GetUsers(rr, req)
+
+	require.Equal(t, http.StatusBadRequest, rr.Code)
+
+	var response struct {
+		Success bool                         `json:"success"`
+		Error   http_response.APIErrorDetail `json:"error"`
+	}
+
+	err := json.Unmarshal(rr.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, core_errors.VALIDATION_ERROR, response.Error.Code)
+	assert.Equal(
+		t,
+		domain.ErrNegativeOffset.Error(),
+		response.Error.Fields["offset"],
+	)
+}
+
+func TestGetUsersHandler_ServiceError(t *testing.T) {
+	service := NewMockUsersService(t)
+
+	service.EXPECT().
+		GetUsers(mock.Anything, domain.Pagination{}).
+		Return(nil, errors.New("database error")).
+		Once()
+
+	handler := NewUsersHTTPHandler(service)
+
+	req := httptest.NewRequest(http.MethodGet, "/users", nil)
+	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
+
+	rr := httptest.NewRecorder()
+
+	handler.GetUsers(rr, req)
+
+	require.Equal(t, http.StatusInternalServerError, rr.Code)
+}

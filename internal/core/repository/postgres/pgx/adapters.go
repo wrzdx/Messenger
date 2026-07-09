@@ -77,7 +77,7 @@ func mapErrors(err error) error {
 		violationErr, ok := violationErrs[pgErr.Code]
 		if ok {
 			mappedErr = violationErr
-			constraintName = pgErr.ConstraintName 
+			constraintName = pgErr.ConstraintName
 		}
 	}
 

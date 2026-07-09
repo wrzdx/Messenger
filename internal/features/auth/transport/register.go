@@ -27,12 +27,12 @@ func (r *RegisterRequest) Validate() map[string]string {
 	}
 
 	if err := domain.ValidateFirstName(r.FirstName); err != nil {
-		fields["first name"] = err.Error()
+		fields["first_name"] = err.Error()
 	}
 
 	if r.LastName != nil {
 		if err := domain.ValidateLastName(*r.LastName); err != nil {
-			fields["last name"] = err.Error()
+			fields["last_name"] = err.Error()
 		}
 	}
 

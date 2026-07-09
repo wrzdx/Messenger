@@ -1,0 +1,7 @@
+all: false
+recursive: true
+
+packages:
+  messenger/internal/features/...:
+    config:
+      all: true

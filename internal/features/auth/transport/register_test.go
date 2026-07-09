@@ -1,263 +1,181 @@
 package auth_transport_http
 
-// import (
-// 	"bytes"
-// 	"encoding/json"
-// 	"messenger/internal/core/domain"
-// 	http_response "messenger/internal/core/transport/http/response"
-// 	test_utils "messenger/internal/core/utils/test"
-// 	"net/http"
-// 	"net/http/httptest"
-// 	"strings"
-// 	"testing"
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"messenger/internal/core/auth"
+	"messenger/internal/core/domain"
+	core_errors "messenger/internal/core/errors"
+	http_response "messenger/internal/core/transport/http/response"
+	test_utils "messenger/internal/core/utils/test"
+	auth_service "messenger/internal/features/auth/service"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
 
-// 	"github.com/google/go-cmp/cmp"
-// )
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+)
 
-// func TestRegister(t *testing.T) {
-// 	tests := []struct {
-// 		name              string
-// 		serviceErr        error
-// 		wantServiceCalled bool
-// 		wantStatus        int
-// 		wantError         string
-// 		body              RegisterRequest
-// 	}{
-// 		{
-// 			name:              "valid user",
-// 			wantServiceCalled: true,
-// 			wantStatus:        http.StatusCreated,
-// 			body: RegisterRequest{
-// 				Username:  "i.ivanov",
-// 				FirstName: "Ivan",
-// 				LastName:  new("Ivanov"),
-// 				Bio:       new("I like pizza!"),
-// 				Password:  "password",
-// 			},
-// 		},
-// 		{
-// 			name:              "username already exists",
-// 			wantServiceCalled: true,
-// 			serviceErr:        domain.ErrAlreadyExists,
-// 			wantStatus:        http.StatusConflict,
-// 			wantError:         http_response.MapError(domain.ErrAlreadyExists).Message,
-// 			body: RegisterRequest{
-// 				Username:  "i.ivanov",
-// 				FirstName: "Ivan",
-// 				LastName:  new("Ivanov"),
-// 				Bio:       new("I like pizza!"),
-// 				Password:  "password",
-// 			},
-// 		},
-// 		{
-// 			name:       "missing username",
-// 			wantStatus: http.StatusBadRequest,
-// 			wantError:  "username is required",
-// 			body: RegisterRequest{
-// 				FirstName: "Ivan",
-// 				Password:  "password",
-// 			},
-// 		},
-// 		{
-// 			name:              "username too short",
-// 			wantStatus:        http.StatusBadRequest,
-// 			wantServiceCalled: true,
-// 			serviceErr:        domain.ErrInvalidUsername,
-// 			wantError:         http_response.MapError(domain.ErrInvalidUsername).Message,
-// 			body: RegisterRequest{
-// 				Username:  "ivan",
-// 				FirstName: "Ivan",
-// 				Password:  "password",
-// 			},
-// 		},
-// 		{
-// 			name:              "username too long",
-// 			wantStatus:        http.StatusBadRequest,
-// 			wantServiceCalled: true,
-// 			serviceErr:        domain.ErrInvalidUsername,
-// 			wantError:         http_response.MapError(domain.ErrInvalidUsername).Message,
-// 			body: RegisterRequest{
-// 				Username:  strings.Repeat("a", 33),
-// 				FirstName: "Ivan",
-// 				Password:  "password",
-// 			},
-// 		},
-// 		{
-// 			name:       "missing first name",
-// 			wantStatus: http.StatusBadRequest,
-// 			wantError:  "first_name is required",
-// 			body: RegisterRequest{
-// 				Username: "i.ivanov",
-// 				Password: "password",
-// 			},
-// 		},
-// 		{
-// 			name:              "first name too long",
-// 			wantStatus:        http.StatusBadRequest,
-// 			wantServiceCalled: true,
-// 			serviceErr:        domain.ErrInvalidFirstName,
-// 			wantError:         http_response.MapError(domain.ErrInvalidFirstName).Message,
-// 			body: RegisterRequest{
-// 				Username:  "i.ivanov",
-// 				FirstName: strings.Repeat("a", 65),
-// 				Password:  "password",
-// 			},
-// 		},
-// 		{
-// 			name:              "last name too long",
-// 			wantStatus:        http.StatusBadRequest,
-// 			wantServiceCalled: true,
-// 			serviceErr:        domain.ErrInvalidLastName,
-// 			wantError:         http_response.MapError(domain.ErrInvalidLastName).Message,
-// 			body: RegisterRequest{
-// 				Username:  "i.ivanov",
-// 				FirstName: "Ivan",
-// 				LastName:  new(strings.Repeat("a", 65)),
-// 				Password:  "password",
-// 			},
-// 		},
-// 		{
-// 			name:              "bio too long",
-// 			wantStatus:        http.StatusBadRequest,
-// 			wantServiceCalled: true,
-// 			serviceErr:        domain.ErrInvalidBio,
-// 			wantError:         http_response.MapError(domain.ErrInvalidBio).Message,
-// 			body: RegisterRequest{
-// 				Username:  "i.ivanov",
-// 				FirstName: "Ivan",
-// 				Bio:       new(strings.Repeat("a", 71)),
-// 				Password:  "password",
-// 			},
-// 		},
-// 		{
-// 			name:              "password too short",
-// 			wantStatus:        http.StatusBadRequest,
-// 			wantServiceCalled: true,
-// 			serviceErr:        domain.ErrInvalidPassword,
-// 			wantError:         http_response.MapError(domain.ErrInvalidPassword).Message,
-// 			body: RegisterRequest{
-// 				Username:  "i.ivanov",
-// 				FirstName: "Ivan",
-// 				Password:  "pass",
-// 			},
-// 		},
-// 		{
-// 			name:              "password too long",
-// 			wantStatus:        http.StatusBadRequest,
-// 			wantServiceCalled: true,
-// 			serviceErr:        domain.ErrInvalidPassword,
-// 			wantError:         http_response.MapError(domain.ErrInvalidPassword).Message,
-// 			body: RegisterRequest{
-// 				Username:  "i.ivanov",
-// 				FirstName: "Ivan",
-// 				Password:  strings.Repeat("a", 33),
-// 			},
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			// Setup
-// 			userResponse := UserResponse{
-// 				ID:        test_utils.ID,
-// 				Username:  tt.body.Username,
-// 				FirstName: tt.body.FirstName,
-// 				LastName:  tt.body.LastName,
-// 				CreatedAt: test_utils.CreatedAt,
-// 				Bio:       tt.body.Bio,
-// 			}
+func TestRegister_Success(t *testing.T) {
+	service := NewMockAuthService(t)
+	mockUser := test_utils.MockUser
+	tokens := auth.TokenPair{Access: "access", Refresh: "refresh"}
+	service.EXPECT().
+		Register(mock.Anything, auth_service.NewRegisterPayload(
+			mockUser.Username,
+			mockUser.FirstName,
+			mockUser.LastName,
+			mockUser.Bio,
+			"fsociety",
+		)).
+		Return(mockUser, tokens, nil).
+		Once()
 
-// 			want := RegisterResponse{
-// 				User: userResponse,
-// 			}
+	cookie := NewMockCookieManager(t)
+	cookie.EXPECT().SetRefreshToken(mock.Anything, "refresh").Once()
+	handler := NewAuthHTTPHandler(service, cookie)
 
-// 			wantServiceGotPayload := domain.NewRegisterUserPayload(
-// 				tt.body.Username,
-// 				tt.body.FirstName,
-// 				tt.body.LastName,
-// 				tt.body.Bio,
-// 				tt.body.Password,
-// 			)
-// 			var servicePayload domain.RegisterUserPayload
-// 			var serviceCalled bool
-// 			service := StubAuthService{
-// 				CreateUserFn: func(
-// 					payload domain.RegisterUserPayload,
-// 				) (domain.User, domain.TokenPair, error) {
-// 					serviceCalled = true
-// 					servicePayload = domain.NewRegisterUserPayload(
-// 						payload.Username,
-// 						payload.FirstName,
-// 						payload.LastName,
-// 						payload.Bio,
-// 						payload.Password,
-// 					)
-// 					return domain.NewUser(
-// 						test_utils.ID,
-// 						tt.body.Username,
-// 						tt.body.FirstName,
-// 						tt.body.LastName,
-// 						test_utils.CreatedAt,
-// 						tt.body.Bio,
-// 						test_utils.PasswordHash,
-// 					), domain.TokenPair{}, tt.serviceErr
-// 				},
-// 			}
+	requestBody := map[string]string{
+		"username":   mockUser.Username,
+		"first_name": mockUser.FirstName,
+		"last_name":  *mockUser.LastName,
+		"bio":        *mockUser.Bio,
+		"password":   "fsociety",
+	}
+	bodyBytes, err := json.Marshal(requestBody)
+	require.NoError(t, err)
 
-// 			handler := NewAuthHTTPHandler(&service, &StubCookieManager{})
-// 			body, err := json.Marshal(tt.body)
-// 			if err != nil {
-// 				t.Fatal(err)
-// 			}
-// 			rec := httptest.NewRecorder()
-// 			req := httptest.NewRequest("", "/users", bytes.NewReader(body))
-// 			ctx := test_utils.GetLoggerContext(req.Context())
+	req := httptest.NewRequest(http.MethodPost, "/auth/register", bytes.NewReader(bodyBytes))
+	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
 
-// 			// Action
-// 			handler.Register(rec, req.WithContext(ctx))
+	rr := httptest.NewRecorder()
 
-// 			// Check
-// 			if serviceCalled != tt.wantServiceCalled {
-// 				t.Fatalf(
-// 					"service called = %v, want %v",
-// 					serviceCalled,
-// 					tt.wantServiceCalled,
-// 				)
-// 			}
-// 			if serviceCalled {
-// 				if diff := cmp.Diff(wantServiceGotPayload, servicePayload); diff != "" {
-// 					t.Fatalf("ServiceGotUser mismatch (-want +got):\n%s", diff)
-// 				}
-// 			}
+	handler.Register(rr, req)
 
-// 			if rec.Code != tt.wantStatus {
-// 				t.Fatalf("got status %d, want %d", rec.Code, tt.wantStatus)
-// 			}
+	require.Equal(t, http.StatusCreated, rr.Code)
 
-// 			if tt.wantError != "" {
-// 				var gotError http_response.ErrorResponse
-// 				if err := json.NewDecoder(rec.Body).Decode(&gotError); err != nil {
-// 					t.Fatalf("unexpected error: %v", err)
-// 				}
+	var responseBody struct {
+		Success bool             `json:"success"`
+		Data    RegisterResponse `json:"data"`
+	}
+	err = json.Unmarshal(rr.Body.Bytes(), &responseBody)
+	require.NoError(t, err)
+	assert.Equal(t, responseBody.Success, true)
+	assert.Equal(t, tokens.Access, responseBody.Data.Access)
+	assert.Equal(t, mockUser.ID, responseBody.Data.User.ID)
+	assert.Equal(t, mockUser.FirstName, responseBody.Data.User.FirstName)
+	assert.Equal(t, mockUser.LastName, responseBody.Data.User.LastName)
+	assert.Equal(t, mockUser.Bio, responseBody.Data.User.Bio)
+}
 
-// 				if gotError.Error != tt.wantError {
-// 					t.Fatalf(
-// 						"ErrorResponse mismatch:\nwant: %s\ngot: %s",
-// 						tt.wantError,
-// 						gotError.Error,
-// 					)
-// 				}
-// 			} else {
-// 				var gotResponse RegisterResponse
-// 				if err := json.NewDecoder(rec.Body).Decode(&gotResponse); err != nil {
-// 					t.Fatalf("unexpected error: %v", err)
-// 				}
-// 				gotResponse.User.CreatedAt = test_utils.CreatedAt
+func TestRegister_Fail(t *testing.T) {
+	service := NewMockAuthService(t)
+	mockUser := test_utils.MockUser
+	service.EXPECT().
+		Register(mock.Anything, auth_service.NewRegisterPayload(
+			mockUser.Username,
+			mockUser.FirstName,
+			mockUser.LastName,
+			mockUser.Bio,
+			"fsociety",
+		)).
+		Return(domain.User{}, auth.TokenPair{},
+			domain.AlreadyExistsErr(
+				domain.UserEntity,
+				"username",
+				mockUser.Username,
+			),
+		).
+		Once()
 
-// 				if diff := cmp.Diff(want, gotResponse); diff != "" {
-// 					t.Fatalf("CreateUserResponse mismatch (-want +got):\n%s", diff)
-// 				}
-// 			}
+	cookie := NewMockCookieManager(t)
+	handler := NewAuthHTTPHandler(service, cookie)
 
-// 		})
-// 	}
-// }
+	requestBody := map[string]string{
+		"username":   mockUser.Username,
+		"first_name": mockUser.FirstName,
+		"last_name":  *mockUser.LastName,
+		"bio":        *mockUser.Bio,
+		"password":   "fsociety",
+	}
+	bodyBytes, err := json.Marshal(requestBody)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/auth/register", bytes.NewReader(bodyBytes))
+	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
+
+	rr := httptest.NewRecorder()
+
+	handler.Register(rr, req)
+
+	require.Equal(t, http.StatusConflict, rr.Code)
+
+	var responseBody struct {
+		Success bool                         `json:"success"`
+		Error   http_response.APIErrorDetail `json:"error"`
+	}
+	err = json.Unmarshal(rr.Body.Bytes(), &responseBody)
+	require.NoError(t, err)
+	assert.Equal(t, responseBody.Success, false)
+	assert.Equal(t, core_errors.ALREADY_EXISTS, responseBody.Error.Code)
+	assert.Equal(t,
+		fmt.Sprintf(
+			"user with username='%s' already exists",
+			mockUser.Username,
+		),
+		responseBody.Error.Message,
+	)
+}
+
+func TestRegister_Validation(t *testing.T) {
+	service := NewMockAuthService(t)
+	cookie := NewMockCookieManager(t)
+	handler := NewAuthHTTPHandler(service, cookie)
+
+	requestBody := map[string]string{
+		"last_name": strings.Repeat("a", 65),
+		"bio":       strings.Repeat("a", 71),
+	}
+	bodyBytes, err := json.Marshal(requestBody)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/auth/register", bytes.NewReader(bodyBytes))
+	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
+
+	rr := httptest.NewRecorder()
+
+	handler.Register(rr, req)
+
+	require.Equal(t, http.StatusBadRequest, rr.Code)
+
+	var responseBody struct {
+		Success bool                         `json:"success"`
+		Error   http_response.APIErrorDetail `json:"error"`
+	}
+
+	want := struct {
+		Success bool                         `json:"success"`
+		Error   http_response.APIErrorDetail `json:"error"`
+	}{
+		Success: false,
+		Error: http_response.APIErrorDetail{
+			Code:    core_errors.VALIDATION_ERROR,
+			Message: core_errors.ErrValidation.Error(),
+			Fields: map[string]string{
+				"username":   "username is required and username must be between 5 and 32 characters",
+				"first_name": "first_name is required and first_name must be between 1 and 64 characters",
+				"last_name":  "last_name cannot exceed 64 characters",
+				"bio":        "bio cannot exceed 70 characters",
+				"password":   "password is required and password must be between 8 and 32 characters",
+			},
+		},
+	}
+
+	err = json.Unmarshal(rr.Body.Bytes(), &responseBody)
+	require.NoError(t, err)
+	assert.Equal(t, want, responseBody)
+}

@@ -44,14 +44,14 @@ func Validate(dest any) map[string]string {
 	return fields
 }
 
-func split(str string) string {
+func toSnakeCase(str string) string {
 	var matchFirstCap = true
 	var buf bytes.Buffer
 
 	for i, r := range str {
 		if i > 0 && unicode.IsUpper(r) {
 			if matchFirstCap {
-				buf.WriteRune(' ')
+				buf.WriteRune('_')
 			}
 		}
 		buf.WriteRune(unicode.ToLower(r))
@@ -61,7 +61,7 @@ func split(str string) string {
 }
 
 func formatField(err validator.FieldError) (string, string) {
-	field := split(err.Field())
+	field := toSnakeCase(err.Field())
 	var msg string
 	switch err.Tag() {
 	case "required":

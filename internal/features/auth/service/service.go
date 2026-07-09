@@ -10,8 +10,8 @@ import (
 
 type AuthService struct {
 	usersRepository UsersRepository
-	hasher          auth.Hasher
-	tokenService    auth.TokenService
+	hasher          Hasher
+	tokenProvider   TokenProvider
 }
 
 type UsersRepository interface {
@@ -31,14 +31,25 @@ type UsersRepository interface {
 	) (domain.User, error)
 }
 
+type Hasher interface {
+	Hash(password string) (string, error)
+	Compare(hash, password string) error
+}
+
+type TokenProvider interface {
+	GenerateTokenPair(userID, tokenID uuid.UUID) (auth.TokenPair, error)
+	ParseAccessToken(token string) (uuid.UUID, error)
+	ParseRefreshToken(token string) (uuid.UUID, uuid.UUID, error)
+}
+
 func NewAuthService(
 	userRepository UsersRepository,
-	hasher auth.Hasher,
-	tokenService auth.TokenService,
+	hasher Hasher,
+	tokenProvider TokenProvider,
 ) *AuthService {
 	return &AuthService{
 		usersRepository: userRepository,
 		hasher:          hasher,
-		tokenService:    tokenService,
+		tokenProvider:   tokenProvider,
 	}
 }

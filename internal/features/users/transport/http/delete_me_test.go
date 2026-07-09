@@ -1,110 +1,124 @@
 package users_transport_http
 
-// import (
-// 	"encoding/json"
-// 	auth "messenger/internal/core/auth"
-// 	"messenger/internal/core/domain"
-// 	http_response "messenger/internal/core/transport/http/response"
-// 	test_utils "messenger/internal/core/utils/test"
-// 	"net/http"
-// 	"net/http/httptest"
-// 	"testing"
+import (
+	"encoding/json"
+	"errors"
+	core_context "messenger/internal/core/context"
+	"messenger/internal/core/domain"
+	core_errors "messenger/internal/core/errors"
+	http_response "messenger/internal/core/transport/http/response"
+	test_utils "messenger/internal/core/utils/test"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 
-// 	"github.com/google/go-cmp/cmp"
-// 	"github.com/google/uuid"
-// )
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	mock "github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+)
 
-// func TestDeleteMe(t *testing.T) {
-// 	tests := []struct {
-// 		name              string
-// 		userID            uuid.UUID
-// 		serviceErr        error
-// 		wantServiceCalled bool
-// 		wantStatus        int
-// 		wantError         string
-// 	}{
-// 		{
-// 			name:              "existing user",
-// 			wantServiceCalled: true,
-// 			wantStatus:        http.StatusNoContent,
-// 		},
-// 		{
-// 			name:              "non-existing user",
-// 			serviceErr:        domain.ErrUserNotFound,
-// 			wantServiceCalled: true,
-// 			wantStatus:        http.StatusNotFound,
-// 			wantError:         http_response.MapError(domain.ErrUserNotFound).Message,
-// 		},
-// 	}
+func TestDeleteMeHandler_Success(t *testing.T) {
+	service := NewMockUsersService(t)
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			var (
-// 				serviceCalled bool
-// 				serviceGotID  uuid.UUID
-// 			)
+	id := uuid.New()
 
-// 			service := StubUsersService{
-// 				DeleteUserFn: func(id uuid.UUID) error {
-// 					serviceCalled = true
-// 					serviceGotID = id
+	service.EXPECT().
+		DeleteUser(mock.Anything, id).
+		Return(nil).
+		Once()
 
-// 					return tt.serviceErr
-// 				},
-// 			}
+	handler := NewUsersHTTPHandler(service)
 
-// 			rec := httptest.NewRecorder()
-// 			req := httptest.NewRequest(
-// 				http.MethodDelete,
-// 				"/users/me",
-// 				nil,
-// 			)
+	req := httptest.NewRequest(http.MethodDelete, "/users/me", nil)
 
-// 			ctx := test_utils.GetLoggerContext(req.Context())
-// 			ctx = coreWithUserID(ctx, tt.userID)
+	ctx := test_utils.GetLoggerContext(req.Context())
+	ctx = core_context.WithClaims(ctx, core_context.ContextClaims{
+		UserID: id,
+	})
 
-// 			handler := NewUsersHTTPHandler(&service)
+	req = req.WithContext(ctx)
 
-// 			// action
-// 			handler.DeleteMe(rec, req.WithContext(ctx))
+	rr := httptest.NewRecorder()
 
-// 			// check
-// 			if serviceCalled != tt.wantServiceCalled {
-// 				t.Fatalf(
-// 					"service called = %v, want %v",
-// 					serviceCalled,
-// 					tt.wantServiceCalled,
-// 				)
-// 			}
+	handler.DeleteMe(rr, req)
 
-// 			if serviceCalled {
-// 				if diff := cmp.Diff(tt.userID, serviceGotID); diff != "" {
-// 					t.Fatalf("userID mismatch (-want +got):\n%s", diff)
-// 				}
-// 			}
+	require.Equal(t, http.StatusNoContent, rr.Code)
+	assert.Empty(t, rr.Body.String())
+}
 
-// 			if rec.Code != tt.wantStatus {
-// 				t.Fatalf("got status %d, want %d", rec.Code, tt.wantStatus)
-// 			}
+func TestDeleteMeHandler_NotFound(t *testing.T) {
+	service := NewMockUsersService(t)
 
-// 			if tt.wantError != "" {
-// 				var gotError http_response.ErrorResponse
-// 				if err := json.NewDecoder(rec.Body).Decode(&gotError); err != nil {
-// 					t.Fatalf("unexpected error: %v", err)
-// 				}
+	id := uuid.New()
 
-// 				if gotError.Error != tt.wantError {
-// 					t.Fatalf(
-// 						"ErrorResponse mismatch:\nwant: %s\ngot: %s",
-// 						tt.wantError,
-// 						gotError.Error,
-// 					)
-// 				}
-// 			} else {
-// 				if rec.Body.Len() != 0 {
-// 					t.Fatalf("expected empty response body, got %q", rec.Body.String())
-// 				}
-// 			}
-// 		})
-// 	}
-// }
+	service.EXPECT().
+		DeleteUser(mock.Anything, id).
+		Return(domain.NotFoundErr(domain.UserEntity, "id", id.String())).
+		Once()
+
+	handler := NewUsersHTTPHandler(service)
+
+	req := httptest.NewRequest(http.MethodDelete, "/users/me", nil)
+
+	ctx := test_utils.GetLoggerContext(req.Context())
+	ctx = core_context.WithClaims(ctx, core_context.ContextClaims{
+		UserID: id,
+	})
+
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+
+	handler.DeleteMe(rr, req)
+
+	require.Equal(t, http.StatusNotFound, rr.Code)
+
+	var response struct {
+		Success bool                         `json:"success"`
+		Error   http_response.APIErrorDetail `json:"error"`
+	}
+
+	err := json.Unmarshal(rr.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, core_errors.NOT_FOUND, response.Error.Code)
+}
+
+func TestDeleteMeHandler_InternalError(t *testing.T) {
+	service := NewMockUsersService(t)
+
+	id := uuid.New()
+
+	service.EXPECT().
+		DeleteUser(mock.Anything, id).
+		Return(errors.New("database error")).
+		Once()
+
+	handler := NewUsersHTTPHandler(service)
+
+	req := httptest.NewRequest(http.MethodDelete, "/users/me", nil)
+
+	ctx := test_utils.GetLoggerContext(req.Context())
+	ctx = core_context.WithClaims(ctx, core_context.ContextClaims{
+		UserID: id,
+	})
+
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+
+	handler.DeleteMe(rr, req)
+
+	require.Equal(t, http.StatusInternalServerError, rr.Code)
+
+	var response struct {
+		Success bool                         `json:"success"`
+		Error   http_response.APIErrorDetail `json:"error"`
+	}
+
+	err := json.Unmarshal(rr.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, core_errors.INTERNAL_ERROR, response.Error.Code)
+}

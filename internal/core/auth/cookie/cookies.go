@@ -2,6 +2,7 @@ package auth_cookie
 
 import (
 	"errors"
+	"fmt"
 	"messenger/internal/core/auth"
 	"net/http"
 	"time"
@@ -33,7 +34,7 @@ func (c *CookieManager) GetRefreshToken(
 	cookie, err := r.Cookie(refreshCookieName)
 	if err != nil {
 		if errors.Is(err, http.ErrNoCookie) {
-			return "", auth.ErrInvalidToken
+			return "", fmt.Errorf("refresh: %w", auth.ErrInvalidToken)
 		}
 		return "", err
 	}

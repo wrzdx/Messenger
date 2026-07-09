@@ -35,11 +35,8 @@ func (s *AuthService) Register(
 		payload.Bio,
 		passwordHash,
 	)
-	claims := auth.AccessClaims{
-		UserID: user.ID,
-	}
 	tokenID := uuid.New()
-	tokens, err := s.tokenService.GenerateTokenPair(claims, tokenID)
+	tokens, err := s.tokenProvider.GenerateTokenPair(user.ID, tokenID)
 	if err != nil {
 		return domain.User{}, auth.TokenPair{}, fmt.Errorf(
 			"generate refresh token: %w",

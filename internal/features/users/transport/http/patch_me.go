@@ -1,6 +1,7 @@
 package users_transport_http
 
 import (
+	"fmt"
 	core_context "messenger/internal/core/context"
 	"messenger/internal/core/domain"
 	logger "messenger/internal/core/logger"
@@ -20,6 +21,7 @@ func (h *UsersHTTPHandler) PatchMe(w http.ResponseWriter, r *http.Request) {
 
 	var request PatchUserRequest
 	if err := http_request.DecodeAndValidateRequest(r, &request); err != nil {
+		fmt.Printf("%+v\n", err)
 		sender.Error(err)
 		return
 	}
@@ -55,21 +57,21 @@ func (p *PatchUserRequest) Validate() map[string]string {
 
 	if p.FirstName.Set {
 		if p.FirstName.Value == nil {
-			fields["first name"] = domain.ErrNullFirstname.Error()
-		}
-		if err := domain.ValidateFirstName(*p.FirstName.Value); err != nil {
-			fields["first name"] = err.Error()
+			fields["first_name"] = domain.ErrNullFirstname.Error()
+
+		} else if err := domain.ValidateFirstName(*p.FirstName.Value); err != nil {
+			fields["first_name"] = err.Error()
 		}
 	}
 	if p.LastName.Set && p.LastName.Value != nil {
 		if err := domain.ValidateLastName(*p.LastName.Value); err != nil {
-			fields["last name"] = err.Error()
+			fields["last_name"] = err.Error()
 		}
 	}
 
 	if p.Bio.Set && p.Bio.Value != nil {
 		if err := domain.ValidateBio(*p.Bio.Value); err != nil {
-			fields["first name"] = err.Error()
+			fields["bio"] = err.Error()
 		}
 	}
 

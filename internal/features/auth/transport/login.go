@@ -38,7 +38,6 @@ func (h *AuthHTTPHandler) Login(w http.ResponseWriter, r *http.Request) {
 	response := LoginResponse{
 		Access: tokens.Access,
 	}
-
 	h.cookieManger.SetRefreshToken(w, tokens.Refresh)
-	sender.OK(http.StatusCreated, response)
+	sender.OK(http.StatusOK, response)
 }

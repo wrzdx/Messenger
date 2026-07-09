@@ -8,20 +8,22 @@ import (
 type Entity string
 
 const (
-	UserEntity       Entity = "user"
+	UserEntity Entity = "user"
 )
 
 var (
 	// Generic
+
 	ErrAlreadyExists = errors.New("already exists")
 	ErrNotFound      = errors.New("not found")
 
 	// Pure
+
 	ErrNullUsername     = errors.New("username cannot be null")
 	ErrInvalidUsername  = errors.New("username must be between 5 and 32 characters")
-	ErrNullFirstname    = errors.New("first name cannot be null")
-	ErrInvalidFirstName = errors.New("first name must be between 1 and 64 characters")
-	ErrInvalidLastName  = errors.New("last name cannot exceed 64 characters")
+	ErrNullFirstname    = errors.New("first_name cannot be null")
+	ErrInvalidFirstName = errors.New("first_name must be between 1 and 64 characters")
+	ErrInvalidLastName  = errors.New("last_name cannot exceed 64 characters")
 	ErrInvalidBio       = errors.New("bio cannot exceed 70 characters")
 	ErrInvalidPassword  = errors.New("password must be between 8 and 32 characters")
 

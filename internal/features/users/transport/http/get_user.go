@@ -1,11 +1,13 @@
 package users_transport_http
 
 import (
+	"fmt"
+	core_errors "messenger/internal/core/errors"
 	logger "messenger/internal/core/logger"
-	http_request "messenger/internal/core/transport/http/request"
 	http_response "messenger/internal/core/transport/http/response"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
@@ -16,9 +18,11 @@ func (h *UsersHTTPHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	log := logger.FromContext(ctx)
 	sender := http_response.NewHTTPSender(log, w)
 
-	userID, err := http_request.GetPathValue[uuid.UUID](r, "id")
+	idStr := chi.URLParam(r, "id")
+
+	userID, err := uuid.Parse(idStr)
 	if err != nil {
-		sender.Error(err)
+		sender.Error(fmt.Errorf("invalid user id: %w", core_errors.ErrValidation))
 		return
 	}
 	user, err := h.usersService.GetUser(ctx, userID)

@@ -16,6 +16,7 @@ func (h *UsersHTTPHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	user, err := h.usersService.GetUser(ctx, claims.UserID)
 	if err != nil {
 		sender.Error(err)
+		return
 	}
 
 	response := GetUserResponse(userDTOFromDomain(user))

@@ -5,13 +5,14 @@ import (
 	"messenger/internal/core/auth"
 	"messenger/internal/core/domain"
 	auth_service "messenger/internal/features/auth/service"
+	"net/http"
 
 	"github.com/go-chi/chi/v5"
 )
 
 type AuthHTTPHandler struct {
 	authService  AuthService
-	cookieManger auth.CookieManager
+	cookieManger CookieManager
 }
 
 type AuthService interface {
@@ -32,9 +33,24 @@ type AuthService interface {
 	) (auth.TokenPair, error)
 }
 
+type CookieManager interface {
+	SetRefreshToken(
+		w http.ResponseWriter,
+		token string,
+	)
+
+	ClearRefreshToken(
+		w http.ResponseWriter,
+	)
+
+	GetRefreshToken(
+		r *http.Request,
+	) (string, error)
+}
+
 func NewAuthHTTPHandler(
 	authService AuthService,
-	cookieManager auth.CookieManager,
+	cookieManager CookieManager,
 ) *AuthHTTPHandler {
 	return &AuthHTTPHandler{
 		cookieManger: cookieManager,
