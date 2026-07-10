@@ -30,7 +30,7 @@ CREATE TABLE messages (
     id         UUID        PRIMARY KEY,
     chat_id    UUID        NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
     sender_id  UUID        NOT NULL REFERENCES users(id),
-    content    TEXT        NOT NULL,
+    content    TEXT        NOT NULL CHECK (char_length(content) <= 4096),
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ
 );

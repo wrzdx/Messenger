@@ -7,7 +7,9 @@ import (
 	"messenger/internal/core/domain"
 	core_errors "messenger/internal/core/errors"
 	http_response "messenger/internal/core/transport/http/response"
+	http_types "messenger/internal/core/transport/http/types"
 	test_utils "messenger/internal/core/utils/test"
+	users_service "messenger/internal/features/users/service"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -29,8 +31,8 @@ func TestPatchMeHandler_Success(t *testing.T) {
 	request := map[string]string{
 		"username": username,
 	}
-	expectedPatch := domain.UserPatch{
-		Username: domain.Nullable[string]{
+	expectedPatch := users_service.UserPatch{
+		Username: http_types.Nullable[string]{
 			Value: &username,
 			Set:   true,
 		},
@@ -87,53 +89,6 @@ func TestPatchMeHandler_Success(t *testing.T) {
 	)
 }
 
-func TestPatchMeHandler_Validation(t *testing.T) {
-	service := NewMockUsersService(t)
-
-	handler := NewUsersHTTPHandler(service)
-
-	username := "abc"
-
-	request := map[string]string{
-		"username": username,
-	}
-	body, err := json.Marshal(request)
-	require.NoError(t, err)
-
-	req := httptest.NewRequest(
-		http.MethodPatch,
-		"/users/me",
-		bytes.NewReader(body),
-	)
-
-	ctx := test_utils.GetLoggerContext(req.Context())
-	ctx = core_context.WithClaims(ctx, core_context.ContextClaims{
-		UserID: uuid.New(),
-	})
-	req = req.WithContext(ctx)
-
-	rr := httptest.NewRecorder()
-
-	handler.PatchMe(rr, req)
-
-	require.Equal(t, http.StatusBadRequest, rr.Code)
-
-	var response struct {
-		Success bool                         `json:"success"`
-		Error   http_response.APIErrorDetail `json:"error"`
-	}
-
-	err = json.Unmarshal(rr.Body.Bytes(), &response)
-	require.NoError(t, err)
-
-	assert.Equal(t, core_errors.VALIDATION_ERROR, response.Error.Code)
-	assert.Equal(
-		t,
-		domain.ErrInvalidUsername.Error(),
-		response.Error.Fields["username"],
-	)
-}
-
 func TestPatchMeHandler_ServiceError(t *testing.T) {
 	service := NewMockUsersService(t)
 
@@ -144,8 +99,8 @@ func TestPatchMeHandler_ServiceError(t *testing.T) {
 	request := map[string]string{
 		"username": username,
 	}
-	expectedPatch := domain.UserPatch{
-		Username: domain.Nullable[string]{
+	expectedPatch := users_service.UserPatch{
+		Username: http_types.Nullable[string]{
 			Value: &username,
 			Set:   true,
 		},

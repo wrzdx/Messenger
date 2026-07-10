@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"messenger/internal/core/domain"
+	http_types "messenger/internal/core/transport/http/types"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -28,16 +29,16 @@ func TestUsersService_PatchUser(t *testing.T) {
 
 	username := "fsociety"
 
-	validPatch := domain.NewUserPatch(
-		domain.Nullable[string]{Value: &username, Set: true},
-		domain.Nullable[string]{},
-		domain.Nullable[string]{},
-		domain.Nullable[string]{},
-	)
+	validPatch := UserPatch{
+		http_types.Nullable[string]{Value: &username, Set: true},
+		http_types.Nullable[string]{},
+		http_types.Nullable[string]{},
+		http_types.Nullable[string]{},
+	}
 
 	tests := []struct {
 		name      string
-		patch     domain.UserPatch
+		patch     UserPatch
 		prepare   func(*MockUsersRepository)
 		wantUser  domain.User
 		wantErr   error
@@ -72,12 +73,12 @@ func TestUsersService_PatchUser(t *testing.T) {
 		},
 		{
 			name: "invalid username",
-			patch: domain.NewUserPatch(
-				domain.Nullable[string]{Value: new("abc"), Set: true},
-				domain.Nullable[string]{},
-				domain.Nullable[string]{},
-				domain.Nullable[string]{},
-			),
+			patch: UserPatch{
+				http_types.Nullable[string]{Value: new("abc"), Set: true},
+				http_types.Nullable[string]{},
+				http_types.Nullable[string]{},
+				http_types.Nullable[string]{},
+			},
 			prepare: func(repo *MockUsersRepository) {
 				repo.EXPECT().
 					GetUser(ctx, id).

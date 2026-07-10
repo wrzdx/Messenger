@@ -3,13 +3,14 @@ package domain
 import (
 	"errors"
 	"time"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 )
 
 var (
-	ErrNullChatName    = errors.New("chat name cannot be null")
-	ErrInvalidChatName = errors.New("chat name must be between 5 and 32 characters")
+	ErrInvalidChatName = errors.New("chat name must be between 1 and 128 characters")
+	ErrInvalidUserRole = errors.New("user role can be either 'member' or 'admin' or 'owner'")
 )
 
 type ChatType string
@@ -42,4 +43,11 @@ type ChatParticipant struct {
 	Role              UserRole
 	LastReadMessageID *uuid.UUID
 	JoinedAt          time.Time
+}
+
+func ValidateChatName(chatName string) error {
+	if l := utf8.RuneCountInString(chatName); l < 1 || l > 128 {
+		return ErrInvalidChatName
+	}
+	return nil
 }

@@ -31,7 +31,7 @@ func TestGetUsersHandler_Success(t *testing.T) {
 	}
 
 	service.EXPECT().
-		GetUsers(mock.Anything, domain.Pagination{}).
+		GetUsers(mock.Anything, mock.Anything, mock.Anything).
 		Return(users, nil).
 		Once()
 
@@ -68,10 +68,9 @@ func TestGetUsersHandler_WithPagination(t *testing.T) {
 	limit := 10
 	offset := 20
 
-	pagination := domain.NewPagination(&limit, &offset)
 
 	service.EXPECT().
-		GetUsers(mock.Anything, pagination).
+		GetUsers(mock.Anything, &limit, &offset).
 		Return([]domain.User{}, nil).
 		Once()
 
@@ -201,7 +200,7 @@ func TestGetUsersHandler_ServiceError(t *testing.T) {
 	service := NewMockUsersService(t)
 
 	service.EXPECT().
-		GetUsers(mock.Anything, domain.Pagination{}).
+		GetUsers(mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, errors.New("database error")).
 		Once()
 

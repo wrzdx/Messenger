@@ -10,7 +10,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type AuthHTTPHandler struct {
+type AuthHandler struct {
 	authService  AuthService
 	cookieManger CookieManager
 }
@@ -51,14 +51,14 @@ type CookieManager interface {
 func NewAuthHTTPHandler(
 	authService AuthService,
 	cookieManager CookieManager,
-) *AuthHTTPHandler {
-	return &AuthHTTPHandler{
+) *AuthHandler {
+	return &AuthHandler{
 		cookieManger: cookieManager,
 		authService:  authService,
 	}
 }
 
-func (h *AuthHTTPHandler) Router() chi.Router {
+func (h *AuthHandler) Router() chi.Router {
 	router := chi.NewRouter()
 	router.Post("/login", h.Login)
 	router.Post("/register", h.Register)

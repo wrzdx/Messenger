@@ -13,7 +13,7 @@ import (
 
 type GetUserResponse UserDTOResponse
 
-func (h *UsersHTTPHandler) GetUser(w http.ResponseWriter, r *http.Request) {
+func (h *UsersHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := logger.FromContext(ctx)
 	sender := http_response.NewHTTPSender(log, w)

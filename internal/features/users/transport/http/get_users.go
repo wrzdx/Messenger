@@ -28,7 +28,7 @@ func ValidatePagination(limit, offset *int) map[string]string {
 
 type GetUsersResponse []UserDTOResponse
 
-func (h *UsersHTTPHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
+func (h *UsersHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := logger.FromContext(ctx)
 	sender := http_response.NewHTTPSender(log, w)
@@ -42,8 +42,7 @@ func (h *UsersHTTPHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 		sender.Error(core_errors.ValidationError(fields))
 		return
 	}
-	pagination := domain.NewPagination(limit, offset)
-	userDomains, err := h.usersService.GetUsers(ctx, pagination)
+	userDomains, err := h.usersService.GetUsers(ctx, limit, offset)
 	if err != nil {
 		sender.Error(err)
 		return

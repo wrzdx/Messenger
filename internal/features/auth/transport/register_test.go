@@ -12,7 +12,6 @@ import (
 	auth_service "messenger/internal/features/auth/service"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -136,14 +135,7 @@ func TestRegister_Validation(t *testing.T) {
 	cookie := NewMockCookieManager(t)
 	handler := NewAuthHTTPHandler(service, cookie)
 
-	requestBody := map[string]string{
-		"last_name": strings.Repeat("a", 65),
-		"bio":       strings.Repeat("a", 71),
-	}
-	bodyBytes, err := json.Marshal(requestBody)
-	require.NoError(t, err)
-
-	req := httptest.NewRequest(http.MethodPost, "/auth/register", bytes.NewReader(bodyBytes))
+	req := httptest.NewRequest(http.MethodPost, "/auth/register", bytes.NewReader(nil))
 	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
 
 	rr := httptest.NewRecorder()
@@ -166,16 +158,14 @@ func TestRegister_Validation(t *testing.T) {
 			Code:    core_errors.VALIDATION_ERROR,
 			Message: core_errors.ErrValidation.Error(),
 			Fields: map[string]string{
-				"username":   "username is required and username must be between 5 and 32 characters",
-				"first_name": "first_name is required and first_name must be between 1 and 64 characters",
-				"last_name":  "last_name cannot exceed 64 characters",
-				"bio":        "bio cannot exceed 70 characters",
-				"password":   "password is required and password must be between 8 and 32 characters",
+				"username":   "username is required",
+				"first_name": "first_name is required",
+				"password":   "password is required",
 			},
 		},
 	}
 
-	err = json.Unmarshal(rr.Body.Bytes(), &responseBody)
+	err := json.Unmarshal(rr.Body.Bytes(), &responseBody)
 	require.NoError(t, err)
 	assert.Equal(t, want, responseBody)
 }

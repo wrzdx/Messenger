@@ -10,9 +10,7 @@ import (
 )
 
 var (
-	ErrNullUsername     = errors.New("username cannot be null")
 	ErrInvalidUsername  = errors.New("username must be between 5 and 32 characters")
-	ErrNullFirstname    = errors.New("first_name cannot be null")
 	ErrInvalidFirstName = errors.New("first_name must be between 1 and 64 characters")
 	ErrInvalidLastName  = errors.New("last_name cannot exceed 64 characters")
 	ErrInvalidBio       = errors.New("bio cannot exceed 70 characters")
@@ -73,91 +71,6 @@ func (u *User) Validate() error {
 		}
 	}
 
-	return nil
-}
-
-type UserPatch struct {
-	Username  Nullable[string]
-	FirstName Nullable[string]
-	LastName  Nullable[string]
-	Bio       Nullable[string]
-}
-
-func NewUserPatch(
-	username Nullable[string],
-	firstName Nullable[string],
-	lastName Nullable[string],
-	bio Nullable[string],
-) UserPatch {
-	return UserPatch{
-		Username:  username,
-		FirstName: firstName,
-		LastName:  lastName,
-		Bio:       bio,
-	}
-}
-
-func (p *UserPatch) Validate() error {
-	if p.Username.Set {
-		if p.Username.Value == nil {
-			return ErrNullUsername
-		}
-		if err := ValidateUsername(*p.Username.Value); err != nil {
-			return err
-		}
-	}
-
-	if p.FirstName.Set {
-		if p.FirstName.Value == nil {
-			return ErrNullFirstname
-		}
-		if err := ValidateFirstName(*p.FirstName.Value); err != nil {
-			return err
-		}
-	}
-	if p.LastName.Set && p.LastName.Value != nil {
-		if err := ValidateLastName(*p.LastName.Value); err != nil {
-			return err
-		}
-	}
-
-	if p.Bio.Set && p.Bio.Value != nil {
-		if err := ValidateBio(*p.Bio.Value); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (u *User) ApplyPatch(patch UserPatch) error {
-	if err := patch.Validate(); err != nil {
-		return err
-	}
-
-	tmp := *u
-
-	if patch.Username.Set {
-		tmp.Username = *patch.Username.Value
-	}
-
-	if patch.FirstName.Set {
-		tmp.FirstName = *patch.FirstName.Value
-	}
-
-	if patch.LastName.Set {
-		tmp.LastName = patch.LastName.Value
-	}
-
-	if patch.Bio.Set {
-		tmp.Bio = patch.Bio.Value
-	}
-
-	if err := tmp.Validate(); err != nil {
-		return err
-	}
-
-	*u = tmp
 	return nil
 }
 

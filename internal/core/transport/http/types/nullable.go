@@ -2,11 +2,11 @@ package http_types
 
 import (
 	"encoding/json"
-	"messenger/internal/core/domain"
 )
 
 type Nullable[T any] struct {
-	domain.Nullable[T]
+	Value *T
+	Set   bool
 }
 
 func (n *Nullable[T]) UnmarshalJSON(b []byte) error {
@@ -23,11 +23,4 @@ func (n *Nullable[T]) UnmarshalJSON(b []byte) error {
 	}
 	n.Value = &value
 	return nil
-}
-
-func (n *Nullable[T]) ToDomain() domain.Nullable[T] {
-	return domain.Nullable[T]{
-		Value: n.Value,
-		Set:   n.Set,
-	}
 }

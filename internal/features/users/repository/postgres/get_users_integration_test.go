@@ -78,9 +78,8 @@ func TestGetUsers(t *testing.T) {
 			defer tx.Rollback(t.Context())
 			test_utils.LoadData(t, tx)
 			repository := NewUsersRepository(tx)
-			pagination := domain.NewPagination(tt.limit, tt.offset)
 			// action
-			gotUsers, gotErr := repository.GetUsers(t.Context(), pagination)
+			gotUsers, gotErr := repository.GetUsers(t.Context(), tt.limit, tt.offset)
 
 			// assertion
 			if !errors.Is(gotErr, tt.wantError) {

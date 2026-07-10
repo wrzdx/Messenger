@@ -11,7 +11,7 @@ type RefreshResponse struct {
 	Access string `json:"access"`
 }
 
-func (h *AuthHTTPHandler) Refresh(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := logger.FromContext(ctx)
 	sender := http_response.NewHTTPSender(log, w)

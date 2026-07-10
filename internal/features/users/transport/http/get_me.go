@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func (h *UsersHTTPHandler) GetMe(w http.ResponseWriter, r *http.Request) {
+func (h *UsersHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := logger.FromContext(ctx)
 	claims := core_context.ClaimsRequired(ctx)

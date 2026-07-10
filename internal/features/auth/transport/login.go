@@ -16,7 +16,7 @@ type LoginResponse struct {
 	Access string `json:"access"`
 }
 
-func (h *AuthHTTPHandler) Login(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := logger.FromContext(ctx)
 	sender := http_response.NewHTTPSender(log, w)

@@ -17,10 +17,11 @@ func domainError(e error) (Error, bool) {
 		errors.Is(e, domain.ErrInvalidLastName),
 		errors.Is(e, domain.ErrInvalidBio),
 		errors.Is(e, domain.ErrInvalidPassword),
-		errors.Is(e, domain.ErrNullUsername),
-		errors.Is(e, domain.ErrNullFirstname),
 		errors.Is(e, domain.ErrNegativeLimit),
-		errors.Is(e, domain.ErrNegativeOffset):
+		errors.Is(e, domain.ErrNegativeOffset),
+		errors.Is(e, domain.ErrInvalidChatName),
+		errors.Is(e, domain.ErrEmptyMessage),
+		errors.Is(e, domain.ErrLongMessage):
 		err.Code = VALIDATION_ERROR
 
 	case errors.Is(e, domain.ErrAlreadyExists):
