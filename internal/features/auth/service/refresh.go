@@ -20,6 +20,9 @@ func (s *AuthService) Refresh(
 	if err != nil {
 		return auth.TokenPair{}, fmt.Errorf("get user: %w", err)
 	}
+	if user.DeletedAt != nil {
+		return auth.TokenPair{}, auth.ErrInvalidToken
+	}
 
 	tokenID = uuid.New()
 	tokens, err := s.tokenProvider.GenerateTokenPair(user.ID, tokenID)

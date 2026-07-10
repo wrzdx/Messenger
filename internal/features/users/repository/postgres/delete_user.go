@@ -15,8 +15,15 @@ func (r *UsersRepository) DeleteUser(
 	ctx, cancel := context.WithTimeout(ctx, r.db.OptTimeout())
 	defer cancel()
 	query := `
-	DELETE FROM users
-	WHERE id=$1;
+	UPDATE users
+	SET 
+		username='deleted_' || substr(md5(id::text), 1, 16),
+		first_name='Deleted Account',
+		last_name=NULL,
+		deleted_at=NOW(),
+		bio=NULL,
+		password_hash=''
+	WHERE id=$1 AND deleted_at IS NULL;
 	`
 
 	cmdTag, err := r.db.Exec(ctx, query, id)

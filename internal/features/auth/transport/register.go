@@ -12,6 +12,45 @@ import (
 	"github.com/google/uuid"
 )
 
+func (h *AuthHTTPHandler) Register(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	log := logger.FromContext(ctx)
+	sender := http_response.NewHTTPSender(log, w)
+	var request RegisterRequest
+	if err := http_request.DecodeAndValidateRequest(r, &request); err != nil {
+		sender.Error(err)
+		return
+	}
+	payload := auth_service.NewRegisterPayload(
+		request.Username,
+		request.FirstName,
+		request.LastName,
+		request.Bio,
+		request.Password,
+	)
+	userDomain, tokens, err := h.authService.Register(ctx, payload)
+	if err != nil {
+		sender.Error(err)
+		return
+	}
+
+	userResponse := UserResponse{
+		userDomain.ID,
+		userDomain.Username,
+		userDomain.FirstName,
+		userDomain.LastName,
+		userDomain.CreatedAt,
+		userDomain.Bio,
+	}
+	response := RegisterResponse{
+		User:   userResponse,
+		Access: tokens.Access,
+	}
+
+	h.cookieManger.SetRefreshToken(w, tokens.Refresh)
+	sender.OK(http.StatusCreated, response)
+}
+
 type RegisterRequest struct {
 	Username  string  `json:"username" validate:"required" example:"qwerty"`
 	FirstName string  `json:"first_name" validate:"required" example:"Ivan"`
@@ -61,43 +100,4 @@ type UserResponse struct {
 type RegisterResponse struct {
 	User   UserResponse `json:"user"`
 	Access string       `json:"access_token"`
-}
-
-func (h *AuthHTTPHandler) Register(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	log := logger.FromContext(ctx)
-	sender := http_response.NewHTTPSender(log, w)
-	var request RegisterRequest
-	if err := http_request.DecodeAndValidateRequest(r, &request); err != nil {
-		sender.Error(err)
-		return
-	}
-	payload := auth_service.NewRegisterPayload(
-		request.Username,
-		request.FirstName,
-		request.LastName,
-		request.Bio,
-		request.Password,
-	)
-	userDomain, tokens, err := h.authService.Register(ctx, payload)
-	if err != nil {
-		sender.Error(err)
-		return
-	}
-
-	userResponse := UserResponse{
-		userDomain.ID,
-		userDomain.Username,
-		userDomain.FirstName,
-		userDomain.LastName,
-		userDomain.CreatedAt,
-		userDomain.Bio,
-	}
-	response := RegisterResponse{
-		User:   userResponse,
-		Access: tokens.Access,
-	}
-
-	h.cookieManger.SetRefreshToken(w, tokens.Refresh)
-	sender.OK(http.StatusCreated, response)
 }

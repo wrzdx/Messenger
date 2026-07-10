@@ -17,7 +17,7 @@ func (r *UsersRepository) GetUsers(
 	defer cancel()
 
 	query := `
-	SELECT id, username, first_name, last_name, created_at, bio, password_hash
+	SELECT *
 	FROM users
 	LIMIT $1
 	OFFSET $2;
@@ -38,6 +38,7 @@ func (r *UsersRepository) GetUsers(
 			&userModel.FirstName,
 			&userModel.LastName,
 			&userModel.CreatedAt,
+			&userModel.DeletedAt,
 			&userModel.Bio,
 			&userModel.PasswordHash,
 		)

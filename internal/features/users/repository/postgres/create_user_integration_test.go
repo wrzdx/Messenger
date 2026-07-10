@@ -206,6 +206,7 @@ func TestCreateUser(t *testing.T) {
 				tt.user.FirstName,
 				tt.user.LastName,
 				gotUser.CreatedAt,
+				tt.user.DeletedAt,
 				tt.user.Bio,
 				tt.user.PasswordHash,
 			)
@@ -216,7 +217,7 @@ func TestCreateUser(t *testing.T) {
 
 			var userModel UserModel
 			query := `
-			SELECT id, username, first_name, last_name, created_at, bio, password_hash
+			SELECT id, username, first_name, last_name, created_at,deleted_at, bio, password_hash
 			FROM users WHERE id=$1;`
 			err = tx.QueryRow(t.Context(), query, gotUser.ID).Scan(
 				&userModel.ID,
@@ -224,6 +225,7 @@ func TestCreateUser(t *testing.T) {
 				&userModel.FirstName,
 				&userModel.LastName,
 				&userModel.CreatedAt,
+				&userModel.DeletedAt,
 				&userModel.Bio,
 				&userModel.PasswordHash,
 			)
@@ -236,6 +238,7 @@ func TestCreateUser(t *testing.T) {
 				userModel.FirstName,
 				userModel.LastName,
 				userModel.CreatedAt,
+				userModel.DeletedAt,
 				userModel.Bio,
 				userModel.PasswordHash,
 			)

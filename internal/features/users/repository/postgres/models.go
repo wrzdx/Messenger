@@ -13,20 +13,23 @@ type UserModel struct {
 	FirstName    string
 	LastName     *string
 	CreatedAt    time.Time
+	DeletedAt    *time.Time
 	Bio          *string
 	PasswordHash string
 }
 
 func UserDomainFromModel(user UserModel) domain.User {
-	return domain.NewUser(
+	domainUser := domain.NewUser(
 		user.ID,
 		user.Username,
 		user.FirstName,
 		user.LastName,
 		user.CreatedAt,
+		user.DeletedAt,
 		user.Bio,
 		user.PasswordHash,
 	)
+	return domainUser
 }
 
 func userDomainsFromModels(users []UserModel) []domain.User {
@@ -38,6 +41,7 @@ func userDomainsFromModels(users []UserModel) []domain.User {
 			user.FirstName,
 			user.LastName,
 			user.CreatedAt,
+			user.DeletedAt,
 			user.Bio,
 			user.PasswordHash,
 		)

@@ -17,7 +17,14 @@ func (r *UsersRepository) GetUser(
 	ctx, cancel := context.WithTimeout(ctx, r.db.OptTimeout())
 	defer cancel()
 	query := `
-	SELECT id, username, first_name, last_name, created_at, bio, password_hash
+	SELECT id,
+		   username,
+		   first_name,
+		   last_name,
+		   created_at,
+		   deleted_at,
+		   bio,
+		   password_hash
 	FROM users
 	WHERE id=$1;
 	`
@@ -31,6 +38,7 @@ func (r *UsersRepository) GetUser(
 		&userModel.FirstName,
 		&userModel.LastName,
 		&userModel.CreatedAt,
+		&userModel.DeletedAt,
 		&userModel.Bio,
 		&userModel.PasswordHash,
 	)
@@ -47,6 +55,5 @@ func (r *UsersRepository) GetUser(
 	}
 
 	userDomain := UserDomainFromModel(userModel)
-
 	return userDomain, nil
 }

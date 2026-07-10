@@ -14,6 +14,7 @@ type User struct {
 	FirstName    string
 	LastName     *string
 	CreatedAt    time.Time
+	DeletedAt    *time.Time
 	Bio          *string
 	PasswordHash string
 }
@@ -24,6 +25,7 @@ func NewUser(
 	firstName string,
 	lastName *string,
 	createdAt time.Time,
+	deletedAt *time.Time,
 	bio *string,
 	passwordHash string,
 ) User {
@@ -33,6 +35,7 @@ func NewUser(
 		FirstName:    firstName,
 		LastName:     lastName,
 		CreatedAt:    createdAt,
+		DeletedAt:    deletedAt,
 		Bio:          bio,
 		PasswordHash: passwordHash,
 	}

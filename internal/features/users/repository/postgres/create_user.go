@@ -16,9 +16,17 @@ func (r *UsersRepository) CreateUser(
 	defer cancel()
 
 	query := `
-	INSERT INTO users (id, username, first_name, last_name, created_at, bio, password_hash)
-	VALUES ($1, $2,$3,$4,$5,$6, $7) 
-	RETURNING id, username, first_name, last_name, created_at, bio, password_hash;
+	INSERT INTO users (id, username, first_name, last_name, created_at, deleted_at, bio, password_hash)
+	VALUES ($1, $2,$3,$4,$5,$6, $7,$8) 
+	RETURNING 
+		id,
+		username,
+		first_name,
+		last_name,
+		created_at,
+		deleted_at,
+		bio,
+		password_hash;
 	`
 	var userModel UserModel
 	err := r.db.QueryRow(
@@ -29,6 +37,7 @@ func (r *UsersRepository) CreateUser(
 		user.FirstName,
 		user.LastName,
 		user.CreatedAt,
+		user.DeletedAt,
 		user.Bio,
 		user.PasswordHash,
 	).Scan(
@@ -37,6 +46,7 @@ func (r *UsersRepository) CreateUser(
 		&userModel.FirstName,
 		&userModel.LastName,
 		&userModel.CreatedAt,
+		&user.DeletedAt,
 		&userModel.Bio,
 		&userModel.PasswordHash,
 	)

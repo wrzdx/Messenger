@@ -7,9 +7,11 @@ import (
 	"messenger/internal/core/domain"
 	pgx_pool "messenger/internal/core/repository/postgres/pgx"
 	test_utils "messenger/internal/core/utils/test"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDeleteUser(t *testing.T) {
@@ -52,10 +54,15 @@ func TestDeleteUser(t *testing.T) {
 			}
 
 			if tt.wantError == nil {
-				_, err := repository.GetUser(t.Context(), tt.userID)
-				if !errors.Is(err, domain.ErrNotFound) {
-					t.Fatalf("user was not deleted")
-				}
+				user, err := repository.GetUser(t.Context(), tt.userID)
+
+				require.NoError(t, err)
+				require.NotNil(t, user.DeletedAt)
+				require.Equal(t, "Deleted Account", user.FirstName)
+				require.Nil(t, user.LastName)
+				require.Nil(t, user.Bio)
+				require.Equal(t, "", user.PasswordHash)
+				require.True(t, strings.HasPrefix(user.Username, "deleted_"))
 			}
 		})
 	}

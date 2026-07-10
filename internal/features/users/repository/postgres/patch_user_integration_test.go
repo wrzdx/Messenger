@@ -33,6 +33,7 @@ func TestPatchUser(t *testing.T) {
 				"NewName",
 				new("NewLastName"),
 				test_utils.MockUsers[0].CreatedAt,
+				test_utils.MockUsers[0].DeletedAt,
 				new("New bio"),
 				test_utils.MockUsers[0].PasswordHash,
 			),
@@ -46,6 +47,7 @@ func TestPatchUser(t *testing.T) {
 				test_utils.MockUsers[0].FirstName,
 				nil,
 				test_utils.MockUsers[0].CreatedAt,
+				test_utils.MockUsers[0].DeletedAt,
 				nil,
 				test_utils.MockUsers[0].PasswordHash,
 			),
@@ -64,6 +66,7 @@ func TestPatchUser(t *testing.T) {
 				"Ivan",
 				nil,
 				test_utils.MockUsers[0].CreatedAt,
+				test_utils.MockUsers[0].DeletedAt,
 				nil,
 				test_utils.MockUsers[0].PasswordHash,
 			),
@@ -77,6 +80,7 @@ func TestPatchUser(t *testing.T) {
 						"Ivan",
 						nil,
 						test_utils.MockUsers[0].CreatedAt,
+						test_utils.MockUsers[0].DeletedAt,
 						nil,
 						test_utils.MockUsers[0].PasswordHash,
 					),
@@ -130,7 +134,14 @@ func TestPatchUser(t *testing.T) {
 			err = tx.QueryRow(
 				t.Context(),
 				`
-    SELECT id, username, first_name, last_name, created_at, bio, password_hash
+    SELECT id,
+    username,
+    first_name,
+    last_name,
+    created_at,
+    deleted_at,
+    bio,
+    password_hash
     FROM users
     WHERE id=$1
     `,
@@ -141,6 +152,7 @@ func TestPatchUser(t *testing.T) {
 				&userModel.FirstName,
 				&userModel.LastName,
 				&userModel.CreatedAt,
+				&userModel.DeletedAt,
 				&userModel.Bio,
 				&userModel.PasswordHash,
 			)
@@ -154,6 +166,7 @@ func TestPatchUser(t *testing.T) {
 				userModel.FirstName,
 				userModel.LastName,
 				userModel.CreatedAt,
+				userModel.DeletedAt,
 				userModel.Bio,
 				userModel.PasswordHash,
 			)

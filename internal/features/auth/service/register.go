@@ -32,6 +32,7 @@ func (s *AuthService) Register(
 		payload.FirstName,
 		payload.LastName,
 		time.Now(),
+		nil,
 		payload.Bio,
 		passwordHash,
 	)

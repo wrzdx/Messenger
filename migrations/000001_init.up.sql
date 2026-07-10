@@ -50,8 +50,8 @@ CREATE TABLE directs (
     user1_id UUID NOT NULL REFERENCES users(id), 
     user2_id UUID NOT NULL REFERENCES users(id),
 
-    UNIQUE(user1_id, user2_id)
-    CHECK(user1_id <> user2_id) 
+    UNIQUE(user1_id, user2_id),
+    CHECK(user1_id <> user2_id), 
     CHECK (user1_id < user2_id)
 );
 

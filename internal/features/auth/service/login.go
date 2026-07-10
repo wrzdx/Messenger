@@ -19,7 +19,7 @@ func (s *AuthService) Login(
 		ctx,
 		username,
 	)
-	if err != nil {
+	if err != nil || user.DeletedAt != nil {
 		return auth.TokenPair{}, domain.ErrInvalidCredentials
 	}
 

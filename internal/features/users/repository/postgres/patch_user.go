@@ -26,14 +26,14 @@ func (r *UsersRepository) PatchUser(
 		last_name=$3,
 		bio=$4
 	WHERE id=$5
-	RETURNING 
-		id,
-		username,
-		first_name,
-		last_name,
-		created_at,
-		bio,
-		password_hash;`
+	RETURNING id,
+    username,
+    first_name,
+    last_name,
+    created_at,
+    deleted_at,
+    bio,
+    password_hash;`
 
 	row := r.db.QueryRow(
 		ctx,
@@ -52,6 +52,7 @@ func (r *UsersRepository) PatchUser(
 		&userModel.FirstName,
 		&userModel.LastName,
 		&userModel.CreatedAt,
+		&user.DeletedAt,
 		&userModel.Bio,
 		&userModel.PasswordHash,
 	)
@@ -73,6 +74,7 @@ func (r *UsersRepository) PatchUser(
 		userModel.FirstName,
 		userModel.LastName,
 		userModel.CreatedAt,
+		userModel.DeletedAt,
 		userModel.Bio,
 		userModel.PasswordHash,
 	)

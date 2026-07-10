@@ -15,6 +15,7 @@ var (
 		"Tyrell",
 		new("Wellick"),
 		time.Now(),
+		nil,
 		new("Dead"),
 		"fsociety_hash",
 	)

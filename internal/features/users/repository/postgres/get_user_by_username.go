@@ -15,7 +15,7 @@ func (r *UsersRepository) GetUserByUsername(
 	ctx, cancel := context.WithTimeout(ctx, r.db.OptTimeout())
 	defer cancel()
 	query := `
-	SELECT id, username, first_name, last_name, created_at, bio, password_hash
+	SELECT *
 	FROM users
 	WHERE username=$1;
 	`
@@ -29,6 +29,7 @@ func (r *UsersRepository) GetUserByUsername(
 		&userModel.FirstName,
 		&userModel.LastName,
 		&userModel.CreatedAt,
+		&userModel.DeletedAt,
 		&userModel.Bio,
 		&userModel.PasswordHash,
 	)

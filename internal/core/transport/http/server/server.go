@@ -29,7 +29,11 @@ func (s *HTTPServer) Run(ctx context.Context) error {
 		Addr:    s.config.Addr,
 		Handler: s.router,
 	}
-	s.log.Warn("start HTTP server", zap.String("addr", s.config.Addr))
+	s.log.Warn(
+		"start HTTP server", 
+		zap.String("addr", s.config.Addr), 
+		zap.Strings("allowed_origins", s.config.AllowedOrigins),
+	)
 	ch := make(chan error, 1)
 
 	go func() {

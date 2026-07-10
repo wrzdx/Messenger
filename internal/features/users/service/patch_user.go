@@ -3,6 +3,7 @@ package users_service
 import (
 	"context"
 	"fmt"
+	"messenger/internal/core/auth"
 	"messenger/internal/core/domain"
 
 	"github.com/google/uuid"
@@ -16,6 +17,9 @@ func (s *UsersService) PatchUser(
 	user, err := s.userRepository.GetUser(ctx, id)
 	if err != nil {
 		return domain.User{}, fmt.Errorf("get user: %w", err)
+	}
+	if user.DeletedAt != nil {
+		return domain.User{}, auth.ErrInvalidToken
 	}
 
 	if err := user.ApplyPatch(patch); err != nil {
