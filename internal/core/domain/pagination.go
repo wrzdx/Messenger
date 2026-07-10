@@ -1,5 +1,12 @@
 package domain
 
+import "errors"
+
+var (
+	ErrNegativeLimit  = errors.New("limit must be non-negative")
+	ErrNegativeOffset = errors.New("offset must be non-negative")
+)
+
 type Pagination struct {
 	Limit  *int
 	Offset *int

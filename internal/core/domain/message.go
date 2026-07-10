@@ -1,6 +1,15 @@
 package domain
 
-import "github.com/google/uuid"
+import (
+	"errors"
+
+	"github.com/google/uuid"
+)
+
+
+var (
+	ErrEmptyMessage = errors.New("missing message content")
+)
 
 type Message struct {
 	ID        uuid.UUID

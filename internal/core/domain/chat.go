@@ -1,9 +1,15 @@
 package domain
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
+)
+
+var (
+	ErrNullChatName    = errors.New("chat name cannot be null")
+	ErrInvalidChatName = errors.New("chat name must be between 5 and 32 characters")
 )
 
 type ChatType string
