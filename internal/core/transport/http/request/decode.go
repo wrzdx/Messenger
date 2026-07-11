@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	core_errors "messenger/internal/core/errors"
+	"messenger/internal/core/domain"
 	"net/http"
 	"unicode"
 
@@ -66,9 +66,9 @@ func DecodeAndValidateRequest(r *http.Request, dest any) error {
 	if err != nil && !errors.Is(err, io.EOF) {
 		return fmt.Errorf("decode json: %w", err)
 	}
-	
+
 	if fields := Validate(dest); len(fields) != 0 {
-		return core_errors.ValidationError(fields)
+		return domain.ValidationErr("request", fields)
 	}
 	return nil
 }

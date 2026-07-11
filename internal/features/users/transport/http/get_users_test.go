@@ -156,7 +156,7 @@ func TestGetUsersHandler_NegativeLimit(t *testing.T) {
 
 	assert.Equal(
 		t,
-		domain.ErrNegativeLimit.Error(),
+		domain.ErrValidation.Error(),
 		response.Error.Message,
 	)
 }
@@ -189,7 +189,7 @@ func TestGetUsersHandler_NegativeOffset(t *testing.T) {
 
 	assert.Equal(
 		t,
-		domain.ErrNegativeOffset.Error(),
+		domain.ErrValidation.Error(),
 		response.Error.Message,
 	)
 }

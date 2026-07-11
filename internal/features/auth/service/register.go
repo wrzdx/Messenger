@@ -93,7 +93,7 @@ func (p *RegisterPayload) Validate() error {
 	passwordErr := domain.ValidatePassword(p.Password)
 	if userErr == nil {
 		if passwordErr != nil {
-			return domain.ValidationErr(domain.UserEntity, map[string]string{
+			return domain.ValidationErr("password", map[string]string{
 				"password": passwordErr.Error(),
 			})
 		}

@@ -72,7 +72,7 @@ func (u *User) Validate() error {
 		}
 	}
 	if len(fields) > 0 {
-		return ValidationErr(UserEntity, fields)
+		return ValidationErr(string(UserEntity), fields)
 	}
 	return nil
 }

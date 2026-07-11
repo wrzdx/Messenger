@@ -34,7 +34,7 @@ func (p Pagination) Validate() error {
 	}
 
 	if len(fields) > 0 {
-		return ValidationErr(PaginationEntity, fields)
+		return ValidationErr(string(PaginationEntity), fields)
 	}
 
 	return nil

@@ -141,15 +141,9 @@ func (t *Tx) Exec(
 }
 
 func (t *Tx) Commit(ctx context.Context) error {
-	if err := t.tx.Commit(ctx); err != nil {
-		return mapErrors(err)
-	}
-	return nil
+	return mapErrors(t.tx.Commit(ctx))
 }
 
 func (t *Tx) Rollback(ctx context.Context) error {
-	if err := t.tx.Rollback(ctx); err != nil {
-		return mapErrors(err)
-	}
-	return nil
+	return mapErrors(t.tx.Rollback(ctx))
 }

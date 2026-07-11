@@ -1,7 +1,6 @@
 package users_transport_http
 
 import (
-	"fmt"
 	"messenger/internal/core/domain"
 	logger "messenger/internal/core/logger"
 	http_response "messenger/internal/core/transport/http/response"
@@ -22,7 +21,7 @@ func (h *UsersHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := uuid.Parse(idStr)
 	if err != nil {
-		sender.Error(fmt.Errorf("invalid user id: %w", domain.ErrValidation))
+		sender.Error(domain.ValidationErr("user_id", nil))
 		return
 	}
 	user, err := h.usersService.GetUser(ctx, userID)

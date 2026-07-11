@@ -35,9 +35,9 @@ func AlreadyExistsErr(entity Entity, details map[string]string) DetailedError {
 	return de
 }
 
-func ValidationErr(entity Entity, details map[string]string) DetailedError {
+func ValidationErr(target string, details map[string]string) DetailedError {
 	de := DetailedError{
-		Err:     fmt.Errorf("%w %s", ErrValidation, entity),
+		Err:     fmt.Errorf("%w %s", ErrValidation, target),
 		Details: details,
 	}
 	return de

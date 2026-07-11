@@ -8,6 +8,7 @@ import (
 )
 
 type ChatsService struct {
+	txmanager TXManager
 	chatsRepo ChatsRepository
 	usersRepo UsersRepostiory
 }
@@ -21,6 +22,10 @@ type ChatsRepository interface {
 	) (domain.Chat, error)
 }
 
+type TXManager interface {
+	WithinTransaction(ctx context.Context, fn func(ctx context.Context) error) error
+}
+
 type UsersRepostiory interface {
 	GetUser(
 		ctx context.Context,
@@ -28,7 +33,7 @@ type UsersRepostiory interface {
 	) (domain.User, error)
 }
 
-func NewChatsService(repo ChatsRepository) *ChatsService {
+func NewChatsService(repo ChatsRepository, txmanager TXManager) *ChatsService {
 	return &ChatsService{
 		chatsRepo: repo,
 	}

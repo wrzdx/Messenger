@@ -46,19 +46,28 @@ var violationErrs = map[string]error{
 }
 
 func mapErrors(err error) error {
+	if err == nil {
+		return nil
+	}
 	if errors.Is(err, pgx.ErrNoRows) {
 		return postgres.ErrNoRows
 	}
 
 	mappedErr := postgres.ErrUnknown
+	var constraintName string
 
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {
 		violationErr, ok := violationErrs[pgErr.Code]
 		if ok {
 			mappedErr = violationErr
+			constraintName = pgErr.ConstraintName
 		}
 	}
 
-	return mappedErr
+	return postgres.DBError{
+		Err:        mappedErr,
+		Constraint: constraintName,
+		Wrapped:    err,
+	}
 }

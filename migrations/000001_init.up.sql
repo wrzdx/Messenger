@@ -46,7 +46,7 @@ CREATE TABLE chat_participants (
 );
 
 CREATE TABLE directs (
-    chat_id  UUID PRIMARY KEY REFERENCES chats(id),
+    chat_id  UUID PRIMARY KEY REFERENCES chats(id) ON DELETE CASCADE,
     user1_id UUID NOT NULL REFERENCES users(id), 
     user2_id UUID NOT NULL REFERENCES users(id),
 

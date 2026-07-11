@@ -58,7 +58,11 @@ func (r *UsersRepository) PatchUser(
 	)
 	if err != nil {
 		if errors.Is(err, postgres.ErrViolatesUnique) {
-			return domain.User{}, domain.ErrAlreadyExists
+			details := make(map[string]string)
+			if de, ok := err.(postgres.DBError); ok && de.Constraint == usernameUK {
+				details["username"] = fmt.Sprintf("username %s", domain.ErrAlreadyExists)
+			}
+			return domain.User{}, domain.AlreadyExistsErr(domain.UserEntity, details)
 		}
 		return domain.User{}, fmt.Errorf("scan error: %w", err)
 	}

@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"errors"
+	"fmt"
 )
 
 var (
@@ -12,3 +13,17 @@ var (
 	ErrViolatesCheck      = errors.New("violates check constraint")
 	ErrTooLongVarchar     = errors.New("value too long for type character varying")
 )
+
+type DBError struct {
+	Err        error
+	Constraint string
+	Wrapped    error
+}
+
+func (e DBError) Error() string {
+	return fmt.Sprintf("%v: %v", e.Err, e.Wrapped)
+}
+
+func (e DBError) Unwrap() error {
+	return e.Err
+}

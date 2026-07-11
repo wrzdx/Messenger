@@ -27,3 +27,14 @@ type CommandTag interface {
 	RowsAffected() int64
 }
 
+type Pool interface {
+	DB
+	Begin(ctx context.Context) (Tx, error)
+	Close()
+}
+
+type Tx interface {
+	DB
+	Commit(ctx context.Context) error
+	Rollback(ctx context.Context) error
+}

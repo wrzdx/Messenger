@@ -1,18 +1,8 @@
 package core_errors
 
 import (
-	"messenger/internal/core/domain"
 	"net/http"
 )
-
-func ValidationError(fields map[string]string) Error {
-	return Error{
-		err:     domain.ErrValidation,
-		Code:    http.StatusBadRequest,
-		Message: domain.ErrValidation.Error() + " request",
-		Details: fields,
-	}
-}
 
 func MapError(e error) Error {
 	if err, ok := e.(Error); ok {

@@ -13,3 +13,7 @@ func NewUsersRepository(db postgres.DB) *UsersRepository {
 		db: db,
 	}
 }
+
+var (
+	usernameUK = "users_username_key"
+)
