@@ -5,9 +5,7 @@ import (
 	"encoding/json"
 	core_context "messenger/internal/core/context"
 	"messenger/internal/core/domain"
-	core_errors "messenger/internal/core/errors"
 	http_response "messenger/internal/core/transport/http/response"
-	http_types "messenger/internal/core/transport/http/types"
 	test_utils "messenger/internal/core/utils/test"
 	users_service "messenger/internal/features/users/service"
 	"net/http"
@@ -32,10 +30,7 @@ func TestPatchMeHandler_Success(t *testing.T) {
 		"username": username,
 	}
 	expectedPatch := users_service.UserPatch{
-		Username: http_types.Nullable[string]{
-			Value: &username,
-			Set:   true,
-		},
+		Username: &username,
 	}
 
 	user := domain.User{
@@ -50,7 +45,7 @@ func TestPatchMeHandler_Success(t *testing.T) {
 		Return(user, nil).
 		Once()
 
-	handler := NewUsersHTTPHandler(service)
+	handler := NewUsersHandler(service)
 
 	body, err := json.Marshal(request)
 	require.NoError(t, err)
@@ -100,10 +95,7 @@ func TestPatchMeHandler_ServiceError(t *testing.T) {
 		"username": username,
 	}
 	expectedPatch := users_service.UserPatch{
-		Username: http_types.Nullable[string]{
-			Value: &username,
-			Set:   true,
-		},
+		Username: &username,
 	}
 	service.EXPECT().
 		PatchUser(
@@ -117,7 +109,7 @@ func TestPatchMeHandler_ServiceError(t *testing.T) {
 		).
 		Once()
 
-	handler := NewUsersHTTPHandler(service)
+	handler := NewUsersHandler(service)
 
 	body, err := json.Marshal(request)
 	require.NoError(t, err)
@@ -148,5 +140,4 @@ func TestPatchMeHandler_ServiceError(t *testing.T) {
 	err = json.Unmarshal(rr.Body.Bytes(), &response)
 	require.NoError(t, err)
 
-	assert.Equal(t, core_errors.NOT_FOUND, response.Error.Code)
 }

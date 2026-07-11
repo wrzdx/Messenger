@@ -27,24 +27,24 @@ func TestUsersService_GetUsers(t *testing.T) {
 	}
 
 	tests := []struct {
-		name      string
-		limit     *int
-		offset    *int
-		prepare   func(*MockUsersRepository)
-		wantUsers []domain.User
-		wantErr   error
-		errorMsg  string
+		name       string
+		pagination domain.Pagination
+		prepare    func(*MockUsersRepository)
+		wantUsers  []domain.User
+		wantErr    error
+		errorMsg   string
 	}{
 		{
-			name:   "success",
-			limit:  &limit,
-			offset: &offset,
+			name: "success",
+			pagination: domain.NewPagination(
+				&limit,
+				&offset,
+			),
 			prepare: func(repo *MockUsersRepository) {
 				repo.EXPECT().
 					GetUsers(
 						ctx,
-						&limit,
-						&offset,
+						domain.NewPagination(&limit, &offset),
 					).
 					Return(users, nil).
 					Once()
@@ -52,27 +52,32 @@ func TestUsersService_GetUsers(t *testing.T) {
 			wantUsers: users,
 		},
 		{
-			name:    "negative limit",
-			limit:   new(-1),
-			offset:  &offset,
-			wantErr: domain.ErrNegativeLimit,
+			name: "negative limit",
+			pagination: domain.NewPagination(
+				new(-1),
+				&offset,
+			),
+			wantErr: domain.ErrValidation,
 		},
 		{
-			name:    "negative offset",
-			limit:   &limit,
-			offset:  new(-1),
-			wantErr: domain.ErrNegativeOffset,
+			name: "negative offset",
+			pagination: domain.NewPagination(
+				&limit,
+				new(-1),
+			),
+			wantErr: domain.ErrValidation,
 		},
 		{
-			name:   "repository error",
-			limit:  &limit,
-			offset: &offset,
+			name: "repository error",
+			pagination: domain.NewPagination(
+				&limit,
+				&offset,
+			),
 			prepare: func(repo *MockUsersRepository) {
 				repo.EXPECT().
 					GetUsers(
 						ctx,
-						&limit,
-						&offset,
+						domain.NewPagination(&limit, &offset),
 					).
 					Return(nil, errors.New("database error")).
 					Once()
@@ -93,8 +98,7 @@ func TestUsersService_GetUsers(t *testing.T) {
 
 			gotUsers, err := service.GetUsers(
 				ctx,
-				tt.limit,
-				tt.offset,
+				tt.pagination,
 			)
 
 			if tt.wantErr != nil {

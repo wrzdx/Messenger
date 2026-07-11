@@ -3,7 +3,6 @@ package auth_transport_http
 import (
 	"encoding/json"
 	"messenger/internal/core/auth"
-	core_errors "messenger/internal/core/errors"
 	http_response "messenger/internal/core/transport/http/response"
 	test_utils "messenger/internal/core/utils/test"
 	"net/http"
@@ -91,6 +90,5 @@ func TestRefreshHandler_NoCookie(t *testing.T) {
 	err := json.Unmarshal(rr.Body.Bytes(), &response)
 	require.NoError(t, err)
 
-	assert.Equal(t, core_errors.INVALID_TOKEN, response.Error.Code)
 	assert.Equal(t, "get refresh token: invalid token", response.Error.Message)
 }

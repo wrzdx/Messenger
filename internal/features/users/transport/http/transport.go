@@ -17,8 +17,7 @@ type UsersHandler struct {
 type UsersService interface {
 	GetUsers(
 		ctx context.Context,
-		limit *int,
-		offset *int,
+		pagination domain.Pagination,
 	) ([]domain.User, error)
 
 	GetUser(
@@ -45,7 +44,7 @@ type UsersService interface {
 	) error
 }
 
-func NewUsersHTTPHandler(usersService UsersService) *UsersHandler {
+func NewUsersHandler(usersService UsersService) *UsersHandler {
 	return &UsersHandler{
 		usersService: usersService,
 	}

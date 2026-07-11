@@ -26,12 +26,7 @@ func (h *UsersHandler) PatchMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userPatch := users_service.UserPatch{
-		Username:  request.Username,
-		FirstName: request.FirstName,
-		LastName:  request.LastName,
-		Bio:       request.Bio,
-	}
+	userPatch := request.Convert()
 
 	userDomain, err := h.usersService.PatchUser(ctx, claims.UserID, userPatch)
 	if err != nil {
@@ -44,8 +39,17 @@ func (h *UsersHandler) PatchMe(w http.ResponseWriter, r *http.Request) {
 }
 
 type PatchUserRequest struct {
-	Username  http_types.Nullable[string] `json:"username" swaggertype:"string" example:"ivanov"`
-	FirstName http_types.Nullable[string] `json:"first_name" swaggertype:"string" example:"Sidor"`
+	Username  *string                     `json:"username" swaggertype:"string" example:"ivanov"`
+	FirstName *string                     `json:"first_name" swaggertype:"string" example:"Sidor"`
 	LastName  http_types.Nullable[string] `json:"last_name" swaggertype:"string" example:"Ivanov"`
 	Bio       http_types.Nullable[string] `json:"bio" swaggertype:"string" example:"I'like pizza!"`
+}
+
+func (r PatchUserRequest) Convert() users_service.UserPatch {
+	return users_service.UserPatch{
+		Username:  r.Username,
+		FirstName: r.FirstName,
+		LastName:  r.LastName.ToCore(),
+		Bio:       r.Bio.ToCore(),
+	}
 }

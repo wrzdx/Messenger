@@ -2,6 +2,7 @@ package auth_service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"messenger/internal/core/auth"
 	"messenger/internal/core/domain"
@@ -78,29 +79,34 @@ func NewRegisterPayload(
 }
 
 func (p *RegisterPayload) Validate() error {
-	if err := domain.ValidateUsername(p.Username); err != nil {
-		return err
-	}
-
-	if err := domain.ValidateFirstName(p.FirstName); err != nil {
-		return err
-	}
-
-	if p.LastName != nil {
-		if err := domain.ValidateLastName(*p.LastName); err != nil {
-			return err
+	tmpUser := domain.NewUser(
+		uuid.New(),
+		p.Username,
+		p.FirstName,
+		p.LastName,
+		time.Now(),
+		nil,
+		p.Bio,
+		"",
+	)
+	userErr := tmpUser.Validate()
+	passwordErr := domain.ValidatePassword(p.Password)
+	if userErr == nil {
+		if passwordErr != nil {
+			return domain.ValidationErr(domain.UserEntity, map[string]string{
+				"password": passwordErr.Error(),
+			})
 		}
-	}
+		return nil
 
-	if p.Bio != nil {
-		if err := domain.ValidateBio(*p.Bio); err != nil {
-			return err
+	} else {
+		de, ok := userErr.(domain.DetailedError)
+		if !ok {
+			return errors.New("validate user return unexpected type")
 		}
+		if passwordErr != nil {
+			de.Details["password"] = passwordErr.Error()
+		}
+		return de
 	}
-
-	if err := domain.ValidatePassword(p.Password); err != nil {
-		return err
-	}
-
-	return nil
 }

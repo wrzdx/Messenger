@@ -2,11 +2,11 @@ package http_types
 
 import (
 	"encoding/json"
+	core_types "messenger/internal/core/types"
 )
 
 type Nullable[T any] struct {
-	Value *T
-	Set   bool
+	core_types.Nullable[T]
 }
 
 func (n *Nullable[T]) UnmarshalJSON(b []byte) error {
@@ -23,4 +23,11 @@ func (n *Nullable[T]) UnmarshalJSON(b []byte) error {
 	}
 	n.Value = &value
 	return nil
+}
+
+func (n Nullable[T]) ToCore() core_types.Nullable[T] {
+	return core_types.Nullable[T]{
+		Value: n.Value,
+		Set:   n.Set,
+	}
 }

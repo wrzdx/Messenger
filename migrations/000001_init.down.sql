@@ -1,4 +1,3 @@
-DROP TABLE directs;
 DROP TABLE chat_participants;
 DROP TABLE messages;
 DROP TABLE chats;

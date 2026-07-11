@@ -1,6 +1,8 @@
 package postgres
 
-import "errors"
+import (
+	"errors"
+)
 
 var (
 	ErrNoRows             = errors.New("no rows")

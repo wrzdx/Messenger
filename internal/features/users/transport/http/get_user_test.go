@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"messenger/internal/core/domain"
-	core_errors "messenger/internal/core/errors"
 	http_response "messenger/internal/core/transport/http/response"
 	test_utils "messenger/internal/core/utils/test"
 	"net/http"
@@ -37,7 +36,7 @@ func TestGetUserHandler_Success(t *testing.T) {
 		Return(user, nil).
 		Once()
 
-	handler := NewUsersHTTPHandler(service)
+	handler := NewUsersHandler(service)
 
 	req := httptest.NewRequest(http.MethodGet, "/users/"+id.String(), nil)
 	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
@@ -70,7 +69,7 @@ func TestGetUserHandler_Success(t *testing.T) {
 func TestGetUserHandler_InvalidID(t *testing.T) {
 	service := NewMockUsersService(t)
 
-	handler := NewUsersHTTPHandler(service)
+	handler := NewUsersHandler(service)
 
 	req := httptest.NewRequest(http.MethodGet, "/users/invalid", nil)
 	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
@@ -96,7 +95,6 @@ func TestGetUserHandler_InvalidID(t *testing.T) {
 	err := json.Unmarshal(rr.Body.Bytes(), &response)
 	require.NoError(t, err)
 
-	assert.Equal(t, core_errors.VALIDATION_ERROR, response.Error.Code)
 }
 
 func TestGetUserHandler_NotFound(t *testing.T) {
@@ -109,7 +107,7 @@ func TestGetUserHandler_NotFound(t *testing.T) {
 		Return(domain.User{}, domain.NotFoundErr(domain.UserEntity, "id", id.String())).
 		Once()
 
-	handler := NewUsersHTTPHandler(service)
+	handler := NewUsersHandler(service)
 
 	req := httptest.NewRequest(http.MethodGet, "/users/"+id.String(), nil)
 	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
@@ -138,7 +136,6 @@ func TestGetUserHandler_NotFound(t *testing.T) {
 	}{
 		Success: false,
 		Error: http_response.APIErrorDetail{
-			Code:    core_errors.NOT_FOUND,
 			Message: domain.NotFoundErr(domain.UserEntity, "id", id.String()).Error(),
 		},
 	}

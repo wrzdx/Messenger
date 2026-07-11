@@ -74,7 +74,7 @@ func main() {
 
 	logger.Debug("initializing feature", zap.String("feature", "users"))
 	usersService := users_service.NewUsersService(usersRepository, hasher)
-	usersTranposrtHTTP := users_transport_http.NewUsersHTTPHandler(usersService)
+	usersTranposrtHTTP := users_transport_http.NewUsersHandler(usersService)
 
 	logger.Debug("initializing HTTP server")
 	httpConfig := http_server.NewConfigMust()

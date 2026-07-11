@@ -60,7 +60,7 @@ func TestCreateUser(t *testing.T) {
 				Bio:       new("Dead"),
 				Password:  "fsociety",
 			},
-			wantError: domain.ErrInvalidUsername,
+			wantError: domain.ErrValidation,
 		},
 		{
 			name: "short username",
@@ -71,7 +71,7 @@ func TestCreateUser(t *testing.T) {
 				Bio:       new("Dead"),
 				Password:  "fsociety",
 			},
-			wantError: domain.ErrInvalidUsername,
+			wantError: domain.ErrValidation,
 		},
 		{
 			name: "long username",
@@ -82,7 +82,7 @@ func TestCreateUser(t *testing.T) {
 				Bio:       new("Dead"),
 				Password:  "fsociety",
 			},
-			wantError: domain.ErrInvalidUsername,
+			wantError: domain.ErrValidation,
 		},
 		{
 			name: "missing firstname",
@@ -92,7 +92,7 @@ func TestCreateUser(t *testing.T) {
 				Bio:      new("Dead"),
 				Password: "fsociety",
 			},
-			wantError: domain.ErrInvalidFirstName,
+			wantError: domain.ErrValidation,
 		},
 		{
 			name: "long firstname",
@@ -103,7 +103,7 @@ func TestCreateUser(t *testing.T) {
 				Bio:       new("Dead"),
 				Password:  "fsociety",
 			},
-			wantError: domain.ErrInvalidFirstName,
+			wantError: domain.ErrValidation,
 		},
 		{
 			name: "long lastname",
@@ -114,7 +114,7 @@ func TestCreateUser(t *testing.T) {
 				Bio:       new("Dead"),
 				Password:  "fsociety",
 			},
-			wantError: domain.ErrInvalidLastName,
+			wantError: domain.ErrValidation,
 		},
 		{
 			name: "long bio",
@@ -125,7 +125,7 @@ func TestCreateUser(t *testing.T) {
 				Bio:       new("Dead" + strings.Repeat("a", 70)),
 				Password:  "fsociety",
 			},
-			wantError: domain.ErrInvalidBio,
+			wantError: domain.ErrValidation,
 		},
 		{
 			name: "short password",
@@ -136,7 +136,7 @@ func TestCreateUser(t *testing.T) {
 				Bio:       new("Dead"),
 				Password:  "fsociet",
 			},
-			wantError: domain.ErrInvalidPassword,
+			wantError: domain.ErrValidation,
 		},
 		{
 			name: "long password",
@@ -147,7 +147,7 @@ func TestCreateUser(t *testing.T) {
 				Bio:       new("Dead"),
 				Password:  "fsociety" + strings.Repeat("a", 32),
 			},
-			wantError: domain.ErrInvalidPassword,
+			wantError: domain.ErrValidation,
 		},
 		{
 			name: "Success",

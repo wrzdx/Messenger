@@ -28,32 +28,13 @@ type APIResponse struct {
 }
 
 type APIErrorDetail struct {
-	Code    string            `json:"code"`
 	Message string            `json:"message"`
 	Fields  map[string]string `json:"fields,omitempty"`
 }
 
-func MapErrorCodeToStatus(errorCode core_errors.ErrorCode) int {
-	switch errorCode {
-	case core_errors.VALIDATION_ERROR:
-		return http.StatusBadRequest
-	case core_errors.ALREADY_EXISTS:
-		return http.StatusConflict
-	case core_errors.NOT_FOUND:
-		return http.StatusNotFound
-	case core_errors.INVALID_CREDENTIALS,
-		core_errors.INVALID_TOKEN:
-		return http.StatusUnauthorized
-	case core_errors.WRONG_PASSWORD:
-		return http.StatusForbidden
-	}
-	return http.StatusInternalServerError
-}
-
 func (s *HTTPSender) Error(err error) {
 	errResp := core_errors.MapError(err)
-	statusCode := MapErrorCodeToStatus(errResp.Code)
-	s.json(false, statusCode, nil, errResp)
+	s.json(false, errResp.Code, nil, errResp)
 }
 
 func (s *HTTPSender) OK(statusCode int, data any) {
@@ -75,16 +56,14 @@ func (s *HTTPSender) json(success bool, statusCode int, data any, err core_error
 		if statusCode >= 500 {
 			s.log.Error(
 				"CRITICAL_SERVER_ERROR",
-				zap.String("code", string(err.Code)),
 				zap.Error(err),
 			)
 		} else {
-			s.log.Warn(string(err.Code), zap.Error(err))
+			s.log.Warn(err.Error())
 		}
 		resp.Error = &APIErrorDetail{
-			Code:    string(err.Code),
 			Message: err.Message,
-			Fields:  err.Fields,
+			Fields:  err.Details,
 		}
 	}
 

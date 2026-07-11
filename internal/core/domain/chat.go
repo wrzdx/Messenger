@@ -3,14 +3,17 @@ package domain
 import (
 	"errors"
 	"time"
-	"unicode/utf8"
 
 	"github.com/google/uuid"
 )
 
+const (
+	MinChatTitleLength int = 1
+	MaxChatTitleLength int = 128
+)
+
 var (
-	ErrInvalidChatName = errors.New("chat name must be between 1 and 128 characters")
-	ErrInvalidUserRole = errors.New("user role can be either 'member' or 'admin' or 'owner'")
+	ErrInvalidChatType = errors.New("chat type can be either 'direct' or 'group'")
 )
 
 type ChatType string
@@ -20,34 +23,48 @@ const (
 	ChatTypeGroup  ChatType = "group"
 )
 
-type UserRole string
-
-const (
-	UserRoleMember UserRole = "member"
-	UserRoleAdmin  UserRole = "admin"
-	UserRoleOwner  UserRole = "owner"
-)
-
 type Chat struct {
 	ID             uuid.UUID
 	Type           ChatType
-	Name           *string // direct has no name
+	Title          *string // direct has no name
 	LastMessageID  *uuid.UUID
 	LastActivityAt time.Time
 	CreatedAt      time.Time
 }
 
-type ChatParticipant struct {
-	ChatID            uuid.UUID
-	UserID            uuid.UUID
-	Role              UserRole
-	LastReadMessageID *uuid.UUID
-	JoinedAt          time.Time
+func NewChat(
+	id uuid.UUID,
+	chatType ChatType,
+	title *string,
+	lastMessageID *uuid.UUID,
+	lastActivityAt time.Time,
+	createdAt time.Time,
+) Chat {
+	return Chat{
+		ID:             id,
+		Type:           chatType,
+		Title:          title,
+		LastMessageID:  lastMessageID,
+		LastActivityAt: lastActivityAt,
+		CreatedAt:      createdAt,
+	}
 }
 
-func ValidateChatName(chatName string) error {
-	if l := utf8.RuneCountInString(chatName); l < 1 || l > 128 {
-		return ErrInvalidChatName
+func ValidateChatTitle(chatTitle string) error {
+	return validateLength(
+		"title",
+		chatTitle,
+		new(MinChatTitleLength),
+		new(MaxChatTitleLength),
+	)
+}
+
+func ValidateChatType(chatType string) error {
+	switch ChatType(chatType) {
+	case ChatTypeDirect,
+		ChatTypeGroup:
+		return nil
+	default:
+		return ErrInvalidChatType
 	}
-	return nil
 }

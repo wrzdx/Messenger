@@ -233,8 +233,8 @@ func (_c *MockUsersService_GetUser_Call) RunAndReturn(run func(ctx context.Conte
 }
 
 // GetUsers provides a mock function for the type MockUsersService
-func (_mock *MockUsersService) GetUsers(ctx context.Context, limit *int, offset *int) ([]domain.User, error) {
-	ret := _mock.Called(ctx, limit, offset)
+func (_mock *MockUsersService) GetUsers(ctx context.Context, pagination domain.Pagination) ([]domain.User, error) {
+	ret := _mock.Called(ctx, pagination)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetUsers")
@@ -242,18 +242,18 @@ func (_mock *MockUsersService) GetUsers(ctx context.Context, limit *int, offset 
 
 	var r0 []domain.User
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *int, *int) ([]domain.User, error)); ok {
-		return returnFunc(ctx, limit, offset)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.Pagination) ([]domain.User, error)); ok {
+		return returnFunc(ctx, pagination)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *int, *int) []domain.User); ok {
-		r0 = returnFunc(ctx, limit, offset)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.Pagination) []domain.User); ok {
+		r0 = returnFunc(ctx, pagination)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]domain.User)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *int, *int) error); ok {
-		r1 = returnFunc(ctx, limit, offset)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, domain.Pagination) error); ok {
+		r1 = returnFunc(ctx, pagination)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -267,30 +267,24 @@ type MockUsersService_GetUsers_Call struct {
 
 // GetUsers is a helper method to define mock.On call
 //   - ctx context.Context
-//   - limit *int
-//   - offset *int
-func (_e *MockUsersService_Expecter) GetUsers(ctx any, limit any, offset any) *MockUsersService_GetUsers_Call {
-	return &MockUsersService_GetUsers_Call{Call: _e.mock.On("GetUsers", ctx, limit, offset)}
+//   - pagination domain.Pagination
+func (_e *MockUsersService_Expecter) GetUsers(ctx any, pagination any) *MockUsersService_GetUsers_Call {
+	return &MockUsersService_GetUsers_Call{Call: _e.mock.On("GetUsers", ctx, pagination)}
 }
 
-func (_c *MockUsersService_GetUsers_Call) Run(run func(ctx context.Context, limit *int, offset *int)) *MockUsersService_GetUsers_Call {
+func (_c *MockUsersService_GetUsers_Call) Run(run func(ctx context.Context, pagination domain.Pagination)) *MockUsersService_GetUsers_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *int
+		var arg1 domain.Pagination
 		if args[1] != nil {
-			arg1 = args[1].(*int)
-		}
-		var arg2 *int
-		if args[2] != nil {
-			arg2 = args[2].(*int)
+			arg1 = args[1].(domain.Pagination)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
@@ -301,7 +295,7 @@ func (_c *MockUsersService_GetUsers_Call) Return(users []domain.User, err error)
 	return _c
 }
 
-func (_c *MockUsersService_GetUsers_Call) RunAndReturn(run func(ctx context.Context, limit *int, offset *int) ([]domain.User, error)) *MockUsersService_GetUsers_Call {
+func (_c *MockUsersService_GetUsers_Call) RunAndReturn(run func(ctx context.Context, pagination domain.Pagination) ([]domain.User, error)) *MockUsersService_GetUsers_Call {
 	_c.Call.Return(run)
 	return _c
 }

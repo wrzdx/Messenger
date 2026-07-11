@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"messenger/internal/core/auth"
 	"messenger/internal/core/domain"
-	http_types "messenger/internal/core/transport/http/types"
+	core_types "messenger/internal/core/types"
 
 	"github.com/google/uuid"
 )
@@ -36,25 +36,19 @@ func (s *UsersService) PatchUser(
 }
 
 type UserPatch struct {
-	Username  http_types.Nullable[string]
-	FirstName http_types.Nullable[string]
-	LastName  http_types.Nullable[string]
-	Bio       http_types.Nullable[string]
+	Username  *string
+	FirstName *string
+	LastName  core_types.Nullable[string]
+	Bio       core_types.Nullable[string]
 }
 
 func ApplyPatch(user domain.User, p UserPatch) (domain.User, error) {
-	if p.Username.Set {
-		if p.Username.Value == nil {
-			return domain.User{}, domain.ErrInvalidUsername
-		}
-		user.Username = *p.Username.Value
+	if p.Username != nil {
+		user.Username = *p.Username
 	}
 
-	if p.FirstName.Set {
-		if p.FirstName.Value == nil {
-			return domain.User{}, domain.ErrInvalidFirstName
-		}
-		user.FirstName = *p.FirstName.Value
+	if p.FirstName != nil {
+		user.FirstName = *p.FirstName
 	}
 
 	if p.LastName.Set {

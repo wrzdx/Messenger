@@ -5,6 +5,7 @@ package users_postgres_repository
 import (
 	"errors"
 	"messenger/internal/core/domain"
+	"messenger/internal/core/repository/postgres"
 	pgx_pool "messenger/internal/core/repository/postgres/pgx"
 	test_utils "messenger/internal/core/utils/test"
 	"testing"
@@ -37,7 +38,7 @@ func TestGetUsers(t *testing.T) {
 			name:      "negative limit",
 			users:     nil,
 			limit:     new(-1),
-			wantError: domain.ErrNegativeLimit,
+			wantError: postgres.ErrUnknown,
 		},
 		{
 			name:   "offset users",
@@ -48,7 +49,7 @@ func TestGetUsers(t *testing.T) {
 			name:      "negative offset",
 			users:     nil,
 			offset:    new(-1),
-			wantError: domain.ErrNegativeOffset,
+			wantError: postgres.ErrUnknown,
 		},
 		{
 			name:   "limit offset users",
@@ -78,8 +79,9 @@ func TestGetUsers(t *testing.T) {
 			defer tx.Rollback(t.Context())
 			test_utils.LoadData(t, tx)
 			repository := NewUsersRepository(tx)
+			pagination := domain.NewPagination(tt.limit, tt.offset)
 			// action
-			gotUsers, gotErr := repository.GetUsers(t.Context(), tt.limit, tt.offset)
+			gotUsers, gotErr := repository.GetUsers(t.Context(), pagination)
 
 			// assertion
 			if !errors.Is(gotErr, tt.wantError) {

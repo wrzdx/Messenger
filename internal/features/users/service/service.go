@@ -20,8 +20,7 @@ type Hasher interface {
 type UsersRepository interface {
 	GetUsers(
 		ctx context.Context,
-		limit *int,
-		offset *int,
+		pagination domain.Pagination,
 	) ([]domain.User, error)
 
 	GetUser(

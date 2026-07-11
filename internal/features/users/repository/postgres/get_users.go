@@ -8,20 +8,8 @@ import (
 
 func (r *UsersRepository) GetUsers(
 	ctx context.Context,
-	limit *int,
-	offset *int,
+	pagination domain.Pagination,
 ) ([]domain.User, error) {
-	if limit != nil {
-		if err := domain.ValidateLimit(*limit); err != nil {
-			return nil, err
-		}
-	}
-
-	if offset != nil {
-		if err := domain.ValidateOffset(*offset); err != nil {
-			return nil, err
-		}
-	}
 	ctx, cancel := context.WithTimeout(ctx, r.db.OptTimeout())
 	defer cancel()
 
@@ -32,7 +20,7 @@ func (r *UsersRepository) GetUsers(
 	OFFSET $2;
 	`
 
-	rows, err := r.db.Query(ctx, query, limit, offset)
+	rows, err := r.db.Query(ctx, query, pagination.Limit, pagination.Offset)
 	if err != nil {
 		return nil, fmt.Errorf("select users: %w", err)
 	}

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"messenger/internal/core/domain"
-	core_errors "messenger/internal/core/errors"
 	http_response "messenger/internal/core/transport/http/response"
 	test_utils "messenger/internal/core/utils/test"
 	"net/http"
@@ -31,11 +30,11 @@ func TestGetUsersHandler_Success(t *testing.T) {
 	}
 
 	service.EXPECT().
-		GetUsers(mock.Anything, mock.Anything, mock.Anything).
+		GetUsers(mock.Anything, domain.Pagination{}).
 		Return(users, nil).
 		Once()
 
-	handler := NewUsersHTTPHandler(service)
+	handler := NewUsersHandler(service)
 
 	req := httptest.NewRequest(http.MethodGet, "/users", nil)
 	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
@@ -68,13 +67,14 @@ func TestGetUsersHandler_WithPagination(t *testing.T) {
 	limit := 10
 	offset := 20
 
+	pagination := domain.NewPagination(&limit, &offset)
 
 	service.EXPECT().
-		GetUsers(mock.Anything, &limit, &offset).
+		GetUsers(mock.Anything, pagination).
 		Return([]domain.User{}, nil).
 		Once()
 
-	handler := NewUsersHTTPHandler(service)
+	handler := NewUsersHandler(service)
 
 	req := httptest.NewRequest(
 		http.MethodGet,
@@ -93,7 +93,7 @@ func TestGetUsersHandler_WithPagination(t *testing.T) {
 func TestGetUsersHandler_InvalidLimit(t *testing.T) {
 	service := NewMockUsersService(t)
 
-	handler := NewUsersHTTPHandler(service)
+	handler := NewUsersHandler(service)
 
 	req := httptest.NewRequest(
 		http.MethodGet,
@@ -112,7 +112,7 @@ func TestGetUsersHandler_InvalidLimit(t *testing.T) {
 func TestGetUsersHandler_InvalidOffset(t *testing.T) {
 	service := NewMockUsersService(t)
 
-	handler := NewUsersHTTPHandler(service)
+	handler := NewUsersHandler(service)
 
 	req := httptest.NewRequest(
 		http.MethodGet,
@@ -130,8 +130,8 @@ func TestGetUsersHandler_InvalidOffset(t *testing.T) {
 
 func TestGetUsersHandler_NegativeLimit(t *testing.T) {
 	service := NewMockUsersService(t)
-
-	handler := NewUsersHTTPHandler(service)
+	service.EXPECT().GetUsers(mock.Anything, domain.NewPagination(new(-1), nil)).Return(nil, domain.ErrValidation)
+	handler := NewUsersHandler(service)
 
 	req := httptest.NewRequest(
 		http.MethodGet,
@@ -154,18 +154,17 @@ func TestGetUsersHandler_NegativeLimit(t *testing.T) {
 	err := json.Unmarshal(rr.Body.Bytes(), &response)
 	require.NoError(t, err)
 
-	assert.Equal(t, core_errors.VALIDATION_ERROR, response.Error.Code)
 	assert.Equal(
 		t,
 		domain.ErrNegativeLimit.Error(),
-		response.Error.Fields["limit"],
+		response.Error.Message,
 	)
 }
 
 func TestGetUsersHandler_NegativeOffset(t *testing.T) {
 	service := NewMockUsersService(t)
-
-	handler := NewUsersHTTPHandler(service)
+	service.EXPECT().GetUsers(mock.Anything, domain.NewPagination(nil, new(-1))).Return(nil, domain.ErrValidation)
+	handler := NewUsersHandler(service)
 
 	req := httptest.NewRequest(
 		http.MethodGet,
@@ -188,11 +187,10 @@ func TestGetUsersHandler_NegativeOffset(t *testing.T) {
 	err := json.Unmarshal(rr.Body.Bytes(), &response)
 	require.NoError(t, err)
 
-	assert.Equal(t, core_errors.VALIDATION_ERROR, response.Error.Code)
 	assert.Equal(
 		t,
 		domain.ErrNegativeOffset.Error(),
-		response.Error.Fields["offset"],
+		response.Error.Message,
 	)
 }
 
@@ -200,11 +198,11 @@ func TestGetUsersHandler_ServiceError(t *testing.T) {
 	service := NewMockUsersService(t)
 
 	service.EXPECT().
-		GetUsers(mock.Anything, mock.Anything, mock.Anything).
+		GetUsers(mock.Anything, domain.Pagination{}).
 		Return(nil, errors.New("database error")).
 		Once()
 
-	handler := NewUsersHTTPHandler(service)
+	handler := NewUsersHandler(service)
 
 	req := httptest.NewRequest(http.MethodGet, "/users", nil)
 	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))

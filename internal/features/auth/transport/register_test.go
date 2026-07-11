@@ -3,10 +3,8 @@ package auth_transport_http
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"messenger/internal/core/auth"
 	"messenger/internal/core/domain"
-	core_errors "messenger/internal/core/errors"
 	http_response "messenger/internal/core/transport/http/response"
 	test_utils "messenger/internal/core/utils/test"
 	auth_service "messenger/internal/features/auth/service"
@@ -83,11 +81,7 @@ func TestRegister_Fail(t *testing.T) {
 			"fsociety",
 		)).
 		Return(domain.User{}, auth.TokenPair{},
-			domain.AlreadyExistsErr(
-				domain.UserEntity,
-				"username",
-				mockUser.Username,
-			),
+			domain.AlreadyExistsErr(domain.UserEntity, nil),
 		).
 		Once()
 
@@ -120,12 +114,8 @@ func TestRegister_Fail(t *testing.T) {
 	err = json.Unmarshal(rr.Body.Bytes(), &responseBody)
 	require.NoError(t, err)
 	assert.Equal(t, responseBody.Success, false)
-	assert.Equal(t, core_errors.ALREADY_EXISTS, responseBody.Error.Code)
 	assert.Equal(t,
-		fmt.Sprintf(
-			"user with username='%s' already exists",
-			mockUser.Username,
-		),
+		"user already exists",
 		responseBody.Error.Message,
 	)
 }
@@ -155,8 +145,7 @@ func TestRegister_Validation(t *testing.T) {
 	}{
 		Success: false,
 		Error: http_response.APIErrorDetail{
-			Code:    core_errors.VALIDATION_ERROR,
-			Message: core_errors.ErrValidation.Error(),
+			Message: domain.ErrValidation.Error() + " request",
 			Fields: map[string]string{
 				"username":   "username is required",
 				"first_name": "first_name is required",

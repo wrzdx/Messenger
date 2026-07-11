@@ -15,7 +15,7 @@ CREATE TABLE users (
 CREATE TABLE chats (
     id                UUID         PRIMARY KEY,
     type              chat_type    NOT NULL,
-    name              VARCHAR(128),
+    title             VARCHAR(128),
     last_message_id   UUID,
     last_activity_at  TIMESTAMPTZ  NOT NULL,
     created_at        TIMESTAMPTZ  NOT NULL,
@@ -51,8 +51,7 @@ CREATE TABLE directs (
     user2_id UUID NOT NULL REFERENCES users(id),
 
     UNIQUE(user1_id, user2_id),
-    CHECK(user1_id <> user2_id), 
-    CHECK (user1_id < user2_id)
+    CHECK (user1_id <= user2_id)
 );
 
 ALTER TABLE chats
@@ -68,3 +67,5 @@ ON chat_participants(user_id);
 
 CREATE INDEX idx_chats_activity
 ON chats(last_activity_at DESC);
+
+CREATE INDEX idx_chat_type ON chats(type);

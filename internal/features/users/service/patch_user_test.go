@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"messenger/internal/core/domain"
-	http_types "messenger/internal/core/transport/http/types"
+	core_types "messenger/internal/core/types"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -30,10 +30,10 @@ func TestUsersService_PatchUser(t *testing.T) {
 	username := "fsociety"
 
 	validPatch := UserPatch{
-		http_types.Nullable[string]{Value: &username, Set: true},
-		http_types.Nullable[string]{},
-		http_types.Nullable[string]{},
-		http_types.Nullable[string]{},
+		new(username),
+		nil,
+		core_types.Nullable[string]{},
+		core_types.Nullable[string]{},
 	}
 
 	tests := []struct {
@@ -74,10 +74,10 @@ func TestUsersService_PatchUser(t *testing.T) {
 		{
 			name: "invalid username",
 			patch: UserPatch{
-				http_types.Nullable[string]{Value: new("abc"), Set: true},
-				http_types.Nullable[string]{},
-				http_types.Nullable[string]{},
-				http_types.Nullable[string]{},
+				new("abc"),
+				nil,
+				core_types.Nullable[string]{},
+				core_types.Nullable[string]{},
 			},
 			prepare: func(repo *MockUsersRepository) {
 				repo.EXPECT().
@@ -85,7 +85,7 @@ func TestUsersService_PatchUser(t *testing.T) {
 					Return(user, nil).
 					Once()
 			},
-			wantErr: domain.ErrInvalidUsername,
+			wantErr: domain.ErrValidation,
 		},
 		{
 			name:  "repository error",

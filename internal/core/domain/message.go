@@ -1,15 +1,12 @@
 package domain
 
 import (
-	"errors"
-	"unicode/utf8"
-
 	"github.com/google/uuid"
 )
 
-var (
-	ErrEmptyMessage = errors.New("missing message content")
-	ErrLongMessage  = errors.New("message content can be at most 4096 characters")
+const (
+	MinMessageLength int = 1
+	MaxMessageLength int = 4096
 )
 
 type Message struct {
@@ -22,13 +19,10 @@ type Message struct {
 }
 
 func ValidateMessageContent(content string) error {
-	l := utf8.RuneCountInString(content)
-	if l < 1 {
-		return ErrEmptyMessage
-	}
-	if l > 4096 {
-		return ErrLongMessage
-	}
-
-	return nil
+	return validateLength(
+		"content",
+		content,
+		new(MinMessageLength),
+		new(MaxMessageLength),
+	)
 }

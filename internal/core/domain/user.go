@@ -1,20 +1,20 @@
 package domain
 
 import (
-	"errors"
-	"unicode/utf8"
-
 	"time"
 
 	"github.com/google/uuid"
 )
 
-var (
-	ErrInvalidUsername  = errors.New("username must be between 5 and 32 characters")
-	ErrInvalidFirstName = errors.New("first_name must be between 1 and 64 characters")
-	ErrInvalidLastName  = errors.New("last_name cannot exceed 64 characters")
-	ErrInvalidBio       = errors.New("bio cannot exceed 70 characters")
-	ErrInvalidPassword  = errors.New("password must be between 8 and 32 characters")
+const (
+	MaxUsernameLength  int = 32
+	MinUsernameLength  int = 5
+	MaxFirstnameLength int = 64
+	MinFirstnameLength int = 1
+	MaxLastNameLength  int = 64
+	MaxBioLength       int = 70
+	MaxPasswordLength  int = 32
+	MinPasswordLength  int = 8
 )
 
 type User struct {
@@ -51,56 +51,69 @@ func NewUser(
 }
 
 func (u *User) Validate() error {
+	fields := make(map[string]string)
 	if err := ValidateUsername(u.Username); err != nil {
-		return err
+		fields["username"] = err.Error()
 	}
 
 	if err := ValidateFirstName(u.FirstName); err != nil {
-		return err
+		fields["first_name"] = err.Error()
 	}
 
 	if u.LastName != nil {
 		if err := ValidateLastName(*u.LastName); err != nil {
-			return err
+			fields["last_name"] = err.Error()
 		}
 	}
 
 	if u.Bio != nil {
 		if err := ValidateBio(*u.Bio); err != nil {
-			return err
+			fields["bio"] = err.Error()
 		}
 	}
-
+	if len(fields) > 0 {
+		return ValidationErr(UserEntity, fields)
+	}
 	return nil
 }
 
 func ValidateUsername(username string) error {
-	if l := utf8.RuneCountInString(username); l < 5 || l > 32 {
-		return ErrInvalidUsername
-	}
-	return nil
+	return validateLength(
+		"username",
+		username,
+		new(MinUsernameLength),
+		new(MaxUsernameLength),
+	)
 }
 func ValidatePassword(password string) error {
-	if l := utf8.RuneCountInString(password); l < 8 || l > 32 {
-		return ErrInvalidPassword
-	}
-	return nil
+	return validateLength(
+		"password",
+		password,
+		new(MinPasswordLength),
+		new(MaxPasswordLength),
+	)
 }
 func ValidateFirstName(firstName string) error {
-	if l := utf8.RuneCountInString(firstName); l < 1 || l > 64 {
-		return ErrInvalidFirstName
-	}
-	return nil
+	return validateLength(
+		"first_name",
+		firstName,
+		new(MinFirstnameLength),
+		new(MaxFirstnameLength),
+	)
 }
 func ValidateLastName(lastName string) error {
-	if l := utf8.RuneCountInString(lastName); l > 64 {
-		return ErrInvalidLastName
-	}
-	return nil
+	return validateLength(
+		"last_name",
+		lastName,
+		nil,
+		new(MaxLastNameLength),
+	)
 }
 func ValidateBio(bio string) error {
-	if l := utf8.RuneCountInString(bio); l > 70 {
-		return ErrInvalidBio
-	}
-	return nil
+	return validateLength(
+		"bio",
+		bio,
+		nil,
+		new(MaxBioLength),
+	)
 }

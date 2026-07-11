@@ -58,12 +58,7 @@ func (r *UsersRepository) PatchUser(
 	)
 	if err != nil {
 		if errors.Is(err, postgres.ErrViolatesUnique) {
-			failedField, failedValue := getConstraintValues(user, err)
-			return domain.User{}, domain.AlreadyExistsErr(
-				domain.UserEntity,
-				failedField,
-				failedValue,
-			)
+			return domain.User{}, domain.ErrAlreadyExists
 		}
 		return domain.User{}, fmt.Errorf("scan error: %w", err)
 	}

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"messenger/internal/core/auth"
 	"messenger/internal/core/domain"
-	core_errors "messenger/internal/core/errors"
 	http_response "messenger/internal/core/transport/http/response"
 	test_utils "messenger/internal/core/utils/test"
 	"net/http"
@@ -94,7 +93,6 @@ func TestLogin_Fail(t *testing.T) {
 	}{
 		Success: false,
 		Error: http_response.APIErrorDetail{
-			Code:    core_errors.INVALID_CREDENTIALS,
 			Message: domain.ErrInvalidCredentials.Error(),
 		},
 	}
@@ -133,8 +131,7 @@ func TestLogin_Validation(t *testing.T) {
 	}{
 		Success: false,
 		Error: http_response.APIErrorDetail{
-			Code:    core_errors.VALIDATION_ERROR,
-			Message: core_errors.ErrValidation.Error(),
+			Message: domain.ErrValidation.Error() + " request",
 			Fields: map[string]string{
 				"username": "username is required",
 				"password": "password is required",
