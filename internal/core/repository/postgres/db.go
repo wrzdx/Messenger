@@ -9,6 +9,7 @@ type DB interface {
 	Query(ctx context.Context, sql string, args ...any) (Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) Row
 	Exec(ctx context.Context, sql string, arguments ...any) (CommandTag, error)
+	SendBatch(ctx context.Context, b Batch) BatchResults
 	OptTimeout() time.Duration
 }
 
@@ -38,3 +39,19 @@ type Tx interface {
 	Commit(ctx context.Context) error
 	Rollback(ctx context.Context) error
 }
+
+type Batch interface {
+	Queue(sql string, args ...any)
+}
+
+type BatchResults interface {
+	Exec() (CommandTag, error)
+	Query() (Rows, error)
+	QueryRow() Row
+	Close() error
+}
+
+type BatchFactory interface {
+	NewBatch() Batch
+}
+

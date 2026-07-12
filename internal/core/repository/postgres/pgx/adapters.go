@@ -38,6 +38,42 @@ type pgxCommandTag struct {
 	pgconn.CommandTag
 }
 
+type pgxBatch struct {
+	batch *pgx.Batch
+}
+
+func (b *pgxBatch) Queue(sql string, args ...any) {
+	b.batch.Queue(sql, args...)
+}
+
+type pgxBatchResults struct {
+	results pgx.BatchResults
+}
+
+func (br pgxBatchResults) Exec() (postgres.CommandTag, error) {
+	tag, err := br.results.Exec()
+	if err != nil {
+		return nil, mapErrors(err)
+	}
+	return pgxCommandTag{tag}, nil
+}
+
+func (br pgxBatchResults) Query() (postgres.Rows, error) {
+	rows, err := br.results.Query()
+	if err != nil {
+		return nil, mapErrors(err)
+	}
+	return pgxRows{rows}, nil
+}
+
+func (br pgxBatchResults) QueryRow() postgres.Row {
+	return pgxRow{br.results.QueryRow()}
+}
+
+func (br pgxBatchResults) Close() error {
+	return mapErrors(br.results.Close())
+}
+
 var violationErrs = map[string]error{
 	"23503": postgres.ErrViolatesForeignKey,
 	"23505": postgres.ErrViolatesUnique,
@@ -56,8 +92,7 @@ func mapErrors(err error) error {
 	mappedErr := postgres.ErrUnknown
 	var constraintName string
 
-	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) {
+	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok {
 		violationErr, ok := violationErrs[pgErr.Code]
 		if ok {
 			mappedErr = violationErr

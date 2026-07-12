@@ -21,8 +21,8 @@ CREATE TABLE chats (
     created_at        TIMESTAMPTZ  NOT NULL,
 
     CHECK(
-        (type='group' AND name IS NOT NULL)
-     OR (type='direct' AND name IS NULL)
+        (type='group' AND title IS NOT NULL)
+     OR (type='direct' AND title IS NULL)
     )
 );
 
