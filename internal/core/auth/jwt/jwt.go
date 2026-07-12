@@ -10,13 +10,14 @@ import (
 )
 
 type accessClaims struct {
-	UserID uuid.UUID `json:"user_id"`
+	Type   auth.TokenType `json:"type"`
+	UserID uuid.UUID      `json:"user_id"`
 	jwt.RegisteredClaims
 }
 
 type refreshClaims struct {
-	UserID  uuid.UUID `json:"user_id"`
-	TokenID uuid.UUID `json:"token_id"`
+	Type      auth.TokenType `json:"type"`
+	SessionID uuid.UUID      `json:"token_id"`
 	jwt.RegisteredClaims
 }
 
@@ -32,6 +33,7 @@ func NewTokenProvider(config Config) *TokenProvider {
 
 func (s *TokenProvider) GenerateTokenPair(userID, tokenID uuid.UUID) (auth.TokenPair, error) {
 	aClaims := accessClaims{
+		Type:   auth.TokenTypeAccess,
 		UserID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.config.AccessTokenTTL)),
@@ -44,8 +46,8 @@ func (s *TokenProvider) GenerateTokenPair(userID, tokenID uuid.UUID) (auth.Token
 	}
 
 	rClaims := refreshClaims{
-		UserID:  userID,
-		TokenID: tokenID,
+		Type:      auth.TokenTypeRefresh,
+		SessionID: tokenID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.config.RefreshTokenTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -64,6 +66,9 @@ func (s *TokenProvider) GenerateTokenPair(userID, tokenID uuid.UUID) (auth.Token
 
 func (s *TokenProvider) ParseAccessToken(tokenStr string) (uuid.UUID, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &accessClaims{}, func(token *jwt.Token) (any, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, auth.ErrInvalidToken
+		}
 		return s.config.Secret, nil
 	})
 	if err != nil || !token.Valid {
@@ -71,25 +76,36 @@ func (s *TokenProvider) ParseAccessToken(tokenStr string) (uuid.UUID, error) {
 	}
 
 	claims, ok := token.Claims.(*accessClaims)
-	if !ok {
+	if !ok ||
+		claims.Type != auth.TokenTypeAccess ||
+		claims.ExpiresAt == nil ||
+		claims.ExpiresAt.Time.Before(time.Now()) ||
+		claims.UserID == uuid.Nil {
 		return uuid.UUID{}, auth.ErrInvalidToken
 	}
 
 	return claims.UserID, nil
 }
 
-func (s *TokenProvider) ParseRefreshToken(tokenStr string) (uuid.UUID, uuid.UUID, error) {
+func (s *TokenProvider) ParseRefreshToken(tokenStr string) (uuid.UUID, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &refreshClaims{}, func(token *jwt.Token) (any, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, auth.ErrInvalidToken
+		}
 		return s.config.Secret, nil
 	})
 	if err != nil || !token.Valid {
-		return uuid.UUID{}, uuid.UUID{}, auth.ErrInvalidToken
+		return uuid.UUID{}, auth.ErrInvalidToken
 	}
 
 	claims, ok := token.Claims.(*refreshClaims)
-	if !ok {
-		return uuid.UUID{}, uuid.UUID{}, auth.ErrInvalidToken
+	if !ok ||
+		claims.Type != auth.TokenTypeRefresh ||
+		claims.ExpiresAt == nil ||
+		claims.ExpiresAt.Time.Before(time.Now()) ||
+		claims.SessionID == uuid.Nil {
+		return uuid.UUID{}, auth.ErrInvalidToken
 	}
 
-	return claims.UserID, claims.TokenID, nil
+	return claims.SessionID, nil
 }
