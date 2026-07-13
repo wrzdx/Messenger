@@ -7,10 +7,13 @@ import (
 	"github.com/google/uuid"
 )
 
-var ErrInvalidToken = errors.New("invalid token")
-var ErrPasswordMismatch = errors.New("passwords do not match")
-var ErrInvalidClaims = errors.New("invalid claims")
-var ErrInvalidTokenLifetime = errors.New("invalid token lifetime")
+var (
+	ErrInvalidToken         = errors.New("invalid token")
+	ErrPasswordMismatch     = errors.New("passwords do not match")
+	ErrInvalidClaims        = errors.New("invalid claims")
+	ErrInvalidTokenLifetime = errors.New("invalid token lifetime")
+	ErrInvalidCredentials   = errors.New("invalid credentials")
+)
 
 type TokenPair struct {
 	Access  string

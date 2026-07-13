@@ -1,71 +1,24 @@
-CREATE TYPE user_role AS ENUM ('member', 'admin', 'owner');
-CREATE TYPE chat_type AS ENUM ('direct', 'group');
-
 CREATE TABLE users (
     id            UUID         PRIMARY KEY,
-    username      VARCHAR(32)  NOT NULL UNIQUE CHECK (char_length(username) BETWEEN 5 AND 32),
+    username      VARCHAR(32)  NOT NULL,
     first_name    VARCHAR(64)  NOT NULL CHECK (char_length(first_name) BETWEEN 1 AND 64),
     last_name     VARCHAR(64),
     created_at    TIMESTAMPTZ  NOT NULL,
     deleted_at    TIMESTAMPTZ,
     bio           VARCHAR(70),
-    password_hash TEXT         NOT NULL
+    password_hash TEXT         NOT NULL,
+
+    CONSTRAINT users_username_check 
+        CHECK (username ~ '^[a-zA-Z0-9_]{5,32}$'),
+    CONSTRAINT users_deleted_at_after_created_at_check
+        CHECK (deleted_at IS NULL OR deleted_at >= created_at),
+    CONSTRAINT users_password_hash_not_empty_check
+        CHECK (password_hash <> ''),
+    CONSTRAINT users_last_name_not_blank_check
+        CHECK (last_name IS NULL OR btrim(last_name) <> ''),
+    CONSTRAINT users_bio_not_blank_check
+        CHECK (bio IS NULL OR btrim(bio) <> '')
 );
 
-CREATE TABLE chats (
-    id                UUID         PRIMARY KEY,
-    type              chat_type    NOT NULL,
-    title             VARCHAR(128),
-    last_message_id   UUID,
-    last_activity_at  TIMESTAMPTZ  NOT NULL,
-    created_at        TIMESTAMPTZ  NOT NULL,
-
-    CHECK(
-        (type='group' AND title IS NOT NULL)
-     OR (type='direct' AND title IS NULL)
-    )
-);
-
-CREATE TABLE messages (
-    id         UUID        PRIMARY KEY,
-    chat_id    UUID        NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
-    sender_id  UUID        NOT NULL REFERENCES users(id),
-    content    TEXT        NOT NULL CHECK (char_length(content) <= 4096),
-    created_at TIMESTAMPTZ NOT NULL,
-    updated_at TIMESTAMPTZ
-);
-
-CREATE TABLE chat_participants (
-    chat_id              UUID        NOT NULL REFERENCES chats(id),
-    user_id              UUID        NOT NULL REFERENCES users(id),
-    role                 user_role   NOT NULL,
-    last_read_message_id UUID        REFERENCES messages(id),
-    joined_at            TIMESTAMPTZ NOT NULL,
-
-    PRIMARY KEY(chat_id, user_id)
-);
-
-CREATE TABLE directs (
-    chat_id  UUID PRIMARY KEY REFERENCES chats(id) ON DELETE CASCADE,
-    user1_id UUID NOT NULL REFERENCES users(id), 
-    user2_id UUID NOT NULL REFERENCES users(id),
-
-    UNIQUE(user1_id, user2_id),
-    CHECK (user1_id < user2_id)
-);
-
-ALTER TABLE chats
-ADD CONSTRAINT fk_last_message
-FOREIGN KEY (last_message_id)
-REFERENCES messages(id);
-
-CREATE INDEX idx_messages_chat_created
-ON messages(chat_id, created_at DESC);
-
-CREATE INDEX idx_chat_participants_user
-ON chat_participants(user_id);
-
-CREATE INDEX idx_chats_activity
-ON chats(last_activity_at DESC);
-
-CREATE INDEX idx_chat_type ON chats(type);
+CREATE UNIQUE INDEX users_username_lower_uidx
+    ON users (lower(username));

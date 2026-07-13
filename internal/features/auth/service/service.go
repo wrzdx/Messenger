@@ -31,15 +31,24 @@ type UsersRepository interface {
 	) (domain.User, error)
 }
 
+type 
+
 type Hasher interface {
 	Hash(password string) (string, error)
 	Compare(hash, password string) error
 }
 
 type TokenProvider interface {
-	GenerateTokenPair(userID, tokenID uuid.UUID) (auth.TokenPair, error)
-	ParseAccessToken(token string) (uuid.UUID, error)
-	ParseRefreshToken(token string) (uuid.UUID, uuid.UUID, error)
+	GenerateAccessToken(
+		accessTokenClaims auth.AccessTokenClaims,
+		tokenLifetime auth.TokenLifetime,
+	) (string, error)
+	GenerateRefreshToken(
+		refreshTokenClaims auth.RefreshTokenClaims,
+		tokenLifetime auth.TokenLifetime,
+	) (string, error)
+	ParseAccessToken(tokenStr string) (auth.AccessTokenClaims, error)
+	ParseRefreshToken(tokenStr string) (auth.RefreshTokenClaims, error)
 }
 
 func NewAuthService(

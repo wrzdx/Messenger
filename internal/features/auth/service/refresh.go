@@ -12,11 +12,11 @@ func (s *AuthService) Refresh(
 	ctx context.Context,
 	token string,
 ) (auth.TokenPair, error) {
-	userID, tokenID, err := s.tokenProvider.ParseRefreshToken(token)
+	rClaims, err := s.tokenProvider.ParseRefreshToken(token)
 	if err != nil {
 		return auth.TokenPair{}, fmt.Errorf("parse refresh: %w", err)
 	}
-	user, err := s.usersRepository.GetUser(ctx, userID)
+	user, err := s.usersRepository.GetUser(ctx, r)
 	if err != nil {
 		return auth.TokenPair{}, fmt.Errorf("get user: %w", err)
 	}

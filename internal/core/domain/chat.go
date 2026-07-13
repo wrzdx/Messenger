@@ -2,69 +2,56 @@ package domain
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 )
 
-const (
-	MinChatTitleLength int = 1
-	MaxChatTitleLength int = 128
-)
-
 var (
-	ErrInvalidChatType = errors.New("chat type can be either 'direct' or 'group'")
-)
-
-type ChatType string
-
-const (
-	ChatTypeDirect ChatType = "direct"
-	ChatTypeGroup  ChatType = "group"
+	ErrInvalidChat = errors.New("invalid chat")
 )
 
 type Chat struct {
 	ID             uuid.UUID
-	Type           ChatType
-	Title          *string // direct has no name
 	LastMessageID  *uuid.UUID
 	LastActivityAt time.Time
 	CreatedAt      time.Time
 }
 
-func NewChat(
+func newChat(
 	id uuid.UUID,
-	chatType ChatType,
-	title *string,
-	lastMessageID *uuid.UUID,
-	lastActivityAt time.Time,
 	createdAt time.Time,
-) Chat {
-	return Chat{
+) (Chat, error) {
+	chat := Chat{
 		ID:             id,
-		Type:           chatType,
-		Title:          title,
-		LastMessageID:  lastMessageID,
-		LastActivityAt: lastActivityAt,
+		LastMessageID:  nil,
+		LastActivityAt: createdAt,
 		CreatedAt:      createdAt,
 	}
-}
 
-func ValidateChatTitle(chatTitle string) error {
-	return validateLength(
-		"title",
-		chatTitle,
-		new(MinChatTitleLength),
-		new(MaxChatTitleLength),
-	)
-}
-
-func ValidateChatType(chatType string) error {
-	switch ChatType(chatType) {
-	case ChatTypeDirect,
-		ChatTypeGroup:
-		return nil
-	default:
-		return ErrInvalidChatType
+	if err := chat.validate(); err != nil {
+		return Chat{}, err
 	}
+
+	return chat, nil
+}
+
+func (c Chat) validate() error {
+	if c.ID == uuid.Nil {
+		return fmt.Errorf("id is nil: %w", ErrInvalidChat)
+	}
+	if c.CreatedAt.IsZero() {
+		return fmt.Errorf("created_at is zero value: %w", ErrInvalidChat)
+	}
+	if c.LastActivityAt.IsZero() {
+		return fmt.Errorf("last_activity_at is zero value: %w", ErrInvalidChat)
+	}
+	if c.LastActivityAt.Before(c.CreatedAt) {
+		return fmt.Errorf("last_activity_at cannot be before created_at: %w", ErrInvalidChat)
+	}
+	if c.LastMessageID != nil && *c.LastMessageID == uuid.Nil {
+		return fmt.Errorf("last_message_id is nil: %w", ErrInvalidChat)
+	}
+	return nil
 }
