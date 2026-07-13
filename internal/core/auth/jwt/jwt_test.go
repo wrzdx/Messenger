@@ -1,320 +1,302 @@
 package auth_jwt
 
 import (
-	"messenger/internal/core/auth"
 	"testing"
 	"time"
+
+	"messenger/internal/core/auth"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
-func TestParseAccessToken(t *testing.T) {
+func TestGenerateAndParseAccessToken(t *testing.T) {
+	provider := NewTokenProvider(Config{Secret: []byte("secret")})
+	now := time.Now()
+	want := auth.AccessTokenClaims{UserID: uuid.New()}
+
+	token, err := provider.GenerateAccessToken(want, auth.TokenLifetime{
+		IssuedAt:  now,
+		ExpiresAt: now.Add(time.Hour),
+	})
+	require.NoError(t, err)
+
+	got, err := provider.ParseAccessToken(token)
+	require.NoError(t, err)
+	require.Equal(t, want, got)
+}
+
+func TestGenerateAndParseRefreshToken(t *testing.T) {
+	provider := NewTokenProvider(Config{Secret: []byte("secret")})
+	now := time.Now()
+	want := auth.RefreshTokenClaims{
+		SessionID: uuid.New(),
+		TokenID:   uuid.New(),
+	}
+
+	token, err := provider.GenerateRefreshToken(want, auth.TokenLifetime{
+		IssuedAt:  now,
+		ExpiresAt: now.Add(time.Hour),
+	})
+	require.NoError(t, err)
+
+	got, err := provider.ParseRefreshToken(token)
+	require.NoError(t, err)
+	require.Equal(t, want, got)
+}
+
+func TestGenerateTokenValidation(t *testing.T) {
+	provider := NewTokenProvider(Config{Secret: []byte("secret")})
+	now := time.Now()
+	validLifetime := auth.TokenLifetime{IssuedAt: now, ExpiresAt: now.Add(time.Hour)}
+
+	tests := []struct {
+		name string
+		run  func() error
+		want error
+	}{
+		{
+			name: "access claims",
+			run: func() error {
+				_, err := provider.GenerateAccessToken(auth.AccessTokenClaims{}, validLifetime)
+				return err
+			},
+			want: auth.ErrInvalidClaims,
+		},
+		{
+			name: "refresh session id",
+			run: func() error {
+				_, err := provider.GenerateRefreshToken(auth.RefreshTokenClaims{TokenID: uuid.New()}, validLifetime)
+				return err
+			},
+			want: auth.ErrInvalidClaims,
+		},
+		{
+			name: "refresh token id",
+			run: func() error {
+				_, err := provider.GenerateRefreshToken(auth.RefreshTokenClaims{SessionID: uuid.New()}, validLifetime)
+				return err
+			},
+			want: auth.ErrInvalidClaims,
+		},
+		{
+			name: "zero issued at",
+			run: func() error {
+				_, err := provider.GenerateAccessToken(
+					auth.AccessTokenClaims{UserID: uuid.New()},
+					auth.TokenLifetime{ExpiresAt: now.Add(time.Hour)},
+				)
+				return err
+			},
+			want: auth.ErrInvalidTokenLifetime,
+		},
+		{
+			name: "zero expires at",
+			run: func() error {
+				_, err := provider.GenerateAccessToken(
+					auth.AccessTokenClaims{UserID: uuid.New()},
+					auth.TokenLifetime{IssuedAt: now},
+				)
+				return err
+			},
+			want: auth.ErrInvalidTokenLifetime,
+		},
+		{
+			name: "expires at equals issued at",
+			run: func() error {
+				_, err := provider.GenerateAccessToken(
+					auth.AccessTokenClaims{UserID: uuid.New()},
+					auth.TokenLifetime{IssuedAt: now, ExpiresAt: now},
+				)
+				return err
+			},
+			want: auth.ErrInvalidTokenLifetime,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.ErrorIs(t, tt.run(), tt.want)
+		})
+	}
+}
+
+func TestParseAccessTokenRejectsInvalidTokens(t *testing.T) {
 	secret := []byte("secret")
+	provider := NewTokenProvider(Config{Secret: secret})
+	now := time.Now()
 
 	tests := []struct {
 		name   string
 		claims accessClaims
-
-		wantError error
+		method jwt.SigningMethod
+		secret []byte
 	}{
 		{
-			name: "correct_token",
-			claims: accessClaims{
-				auth.TokenTypeAccess,
-				uuid.New(),
-				jwt.RegisteredClaims{
-					ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
-					IssuedAt:  jwt.NewNumericDate(time.Now())},
-			},
+			name: "wrong token type",
+			claims: validAccessJWTClaims(now, func(c *accessClaims) {
+				c.Type = tokenTypeRefresh
+			}),
+			method: jwt.SigningMethodHS256,
+			secret: secret,
 		},
 		{
-			name: "invalid type",
-			claims: accessClaims{
-				"invalid type",
-				uuid.New(),
-				jwt.RegisteredClaims{
-					ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
-					IssuedAt:  jwt.NewNumericDate(time.Now())},
-			},
-			wantError: auth.ErrInvalidToken,
-		},
-		{
-			name: "nil uuid",
-			claims: accessClaims{
-				auth.TokenTypeAccess,
-				uuid.Nil,
-				jwt.RegisteredClaims{
-					ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
-					IssuedAt:  jwt.NewNumericDate(time.Now())},
-			},
-			wantError: auth.ErrInvalidToken,
+			name: "nil user id",
+			claims: validAccessJWTClaims(now, func(c *accessClaims) {
+				c.UserID = uuid.Nil
+			}),
+			method: jwt.SigningMethodHS256,
+			secret: secret,
 		},
 		{
 			name: "expired",
-			claims: accessClaims{
-				auth.TokenTypeAccess,
-				uuid.New(),
-				jwt.RegisteredClaims{
-					ExpiresAt: jwt.NewNumericDate(time.Now().Add(-time.Hour)),
-					IssuedAt:  jwt.NewNumericDate(time.Now())},
-			},
-			wantError: auth.ErrInvalidToken,
+			claims: validAccessJWTClaims(now, func(c *accessClaims) {
+				c.ExpiresAt = jwt.NewNumericDate(now.Add(-time.Hour))
+			}),
+			method: jwt.SigningMethodHS256,
+			secret: secret,
 		},
 		{
-			name: "nil expires at",
-			claims: accessClaims{
-				auth.TokenTypeAccess,
-				uuid.New(),
-				jwt.RegisteredClaims{
-					ExpiresAt: nil,
-					IssuedAt:  jwt.NewNumericDate(time.Now())},
-			},
-			wantError: auth.ErrInvalidToken,
+			name: "missing expiration",
+			claims: validAccessJWTClaims(now, func(c *accessClaims) {
+				c.ExpiresAt = nil
+			}),
+			method: jwt.SigningMethodHS256,
+			secret: secret,
+		},
+		{
+			name:   "wrong algorithm",
+			claims: validAccessJWTClaims(now),
+			method: jwt.SigningMethodHS512,
+			secret: secret,
+		},
+		{
+			name:   "wrong signature",
+			claims: validAccessJWTClaims(now),
+			method: jwt.SigningMethodHS256,
+			secret: []byte("other-secret"),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, tt.claims).SignedString(secret)
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			tokenProvider := NewTokenProvider(Config{Secret: secret})
-			userID, err := tokenProvider.ParseAccessToken(accessToken)
-			require.ErrorIs(t, tt.wantError, err)
-			if tt.wantError == nil {
-				require.Equal(t, tt.claims.UserID, userID)
-			}
-		},
-		)
+			token := signedToken(t, tt.method, tt.claims, tt.secret)
+			_, err := provider.ParseAccessToken(token)
+			require.ErrorIs(t, err, auth.ErrInvalidToken)
+		})
 	}
-
-	t.Run("invalid claims type", func(t *testing.T) {
-		claims := jwt.RegisteredClaims{
-			ExpiresAt: nil,
-			IssuedAt:  jwt.NewNumericDate(time.Now())}
-
-		accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(secret)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
-		tokenProvider := NewTokenProvider(Config{Secret: secret})
-		_, err = tokenProvider.ParseAccessToken(accessToken)
-		require.ErrorIs(t, auth.ErrInvalidToken, err)
-	})
-
-	t.Run("invalid token", func(t *testing.T) {
-		claims := accessClaims{
-			auth.TokenTypeAccess,
-			uuid.New(),
-			jwt.RegisteredClaims{
-				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
-				IssuedAt:  jwt.NewNumericDate(time.Now())},
-		}
-
-		accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(secret)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		accessToken += "err"
-		tokenProvider := NewTokenProvider(Config{Secret: secret})
-		_, err = tokenProvider.ParseAccessToken(accessToken)
-		require.ErrorIs(t, auth.ErrInvalidToken, err)
-	})
 }
 
-func TestParseRefreshToken(t *testing.T) {
+func TestParseRefreshTokenRejectsInvalidTokens(t *testing.T) {
 	secret := []byte("secret")
+	provider := NewTokenProvider(Config{Secret: secret})
+	now := time.Now()
 
 	tests := []struct {
 		name   string
 		claims refreshClaims
-
-		wantError error
 	}{
 		{
-			name: "correct_token",
-			claims: refreshClaims{
-				auth.TokenTypeRefresh,
-				uuid.New(),
-				jwt.RegisteredClaims{
-					ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
-					IssuedAt:  jwt.NewNumericDate(time.Now())},
-			},
+			name: "wrong token type",
+			claims: validRefreshJWTClaims(now, func(c *refreshClaims) {
+				c.Type = tokenTypeAccess
+			}),
 		},
 		{
-			name: "invalid type",
-			claims: refreshClaims{
-				"invalid type",
-				uuid.New(),
-				jwt.RegisteredClaims{
-					ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
-					IssuedAt:  jwt.NewNumericDate(time.Now())},
-			},
-			wantError: auth.ErrInvalidToken,
+			name: "nil session id",
+			claims: validRefreshJWTClaims(now, func(c *refreshClaims) {
+				c.SessionID = uuid.Nil
+			}),
 		},
 		{
-			name: "nil uuid",
-			claims: refreshClaims{
-				auth.TokenTypeRefresh,
-				uuid.Nil,
-				jwt.RegisteredClaims{
-					ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
-					IssuedAt:  jwt.NewNumericDate(time.Now())},
-			},
-			wantError: auth.ErrInvalidToken,
+			name: "nil token id",
+			claims: validRefreshJWTClaims(now, func(c *refreshClaims) {
+				c.TokenID = uuid.Nil
+			}),
 		},
 		{
 			name: "expired",
-			claims: refreshClaims{
-				auth.TokenTypeRefresh,
-				uuid.New(),
-				jwt.RegisteredClaims{
-					ExpiresAt: jwt.NewNumericDate(time.Now().Add(-time.Hour)),
-					IssuedAt:  jwt.NewNumericDate(time.Now())},
-			},
-			wantError: auth.ErrInvalidToken,
+			claims: validRefreshJWTClaims(now, func(c *refreshClaims) {
+				c.ExpiresAt = jwt.NewNumericDate(now.Add(-time.Hour))
+			}),
 		},
 		{
-			name: "nil expires at",
-			claims: refreshClaims{
-				auth.TokenTypeRefresh,
-				uuid.New(),
-				jwt.RegisteredClaims{
-					ExpiresAt: nil,
-					IssuedAt:  jwt.NewNumericDate(time.Now())},
-			},
-			wantError: auth.ErrInvalidToken,
+			name: "missing expiration",
+			claims: validRefreshJWTClaims(now, func(c *refreshClaims) {
+				c.ExpiresAt = nil
+			}),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			refresh, err := jwt.NewWithClaims(jwt.SigningMethodHS256, tt.claims).SignedString(secret)
-			require.NoError(t, err)
-
-			tokenProvider := NewTokenProvider(Config{Secret: secret})
-			tokenID, err := tokenProvider.ParseRefreshToken(refresh)
-			require.ErrorIs(t, tt.wantError, err)
-			if tt.wantError == nil {
-				require.Equal(t, tt.claims.SessionID, tokenID)
-			}
-		},
-		)
+			token := signedToken(t, jwt.SigningMethodHS256, tt.claims, secret)
+			_, err := provider.ParseRefreshToken(token)
+			require.ErrorIs(t, err, auth.ErrInvalidToken)
+		})
 	}
-
-	t.Run("invalid claims type", func(t *testing.T) {
-		claims := jwt.RegisteredClaims{
-			ExpiresAt: nil,
-			IssuedAt:  jwt.NewNumericDate(time.Now())}
-
-		refresh, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(secret)
-		require.NoError(t, err)
-
-		tokenProvider := NewTokenProvider(Config{Secret: secret})
-		_, err = tokenProvider.ParseRefreshToken(refresh)
-		require.ErrorIs(t, auth.ErrInvalidToken, err)
-	})
-
-	t.Run("invalid token", func(t *testing.T) {
-		claims := refreshClaims{
-			auth.TokenTypeRefresh,
-			uuid.New(),
-			jwt.RegisteredClaims{
-				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
-				IssuedAt:  jwt.NewNumericDate(time.Now())},
-		}
-
-		refresh, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(secret)
-		require.NoError(t, err)
-		refresh += "err"
-		tokenProvider := NewTokenProvider(Config{Secret: secret})
-		_, err = tokenProvider.ParseRefreshToken(refresh)
-		require.ErrorIs(t, auth.ErrInvalidToken, err)
-	})
-
-	t.Run("access token cannot be used as refresh token", func(t *testing.T) {
-		tokenProvider := NewTokenProvider(Config{
-			Secret:          secret,
-			AccessTokenTTL:  time.Hour,
-			RefreshTokenTTL: time.Hour,
-		})
-
-		claims := accessClaims{
-			auth.TokenTypeAccess,
-			uuid.New(),
-			jwt.RegisteredClaims{
-				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
-				IssuedAt:  jwt.NewNumericDate(time.Now())},
-		}
-		access, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(secret)
-		require.NoError(t, err)
-		_, err = tokenProvider.ParseRefreshToken(access)
-		require.ErrorIs(t, err, auth.ErrInvalidToken)
-	})
-	t.Run("refresh token cannot be used as access token", func(t *testing.T) {
-		tokenProvider := NewTokenProvider(Config{
-			Secret:          secret,
-			AccessTokenTTL:  time.Hour,
-			RefreshTokenTTL: time.Hour,
-		})
-
-		claims := refreshClaims{
-			auth.TokenTypeRefresh,
-			uuid.New(),
-			jwt.RegisteredClaims{
-				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
-				IssuedAt:  jwt.NewNumericDate(time.Now())},
-		}
-
-		refresh, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(secret)
-		require.NoError(t, err)
-
-		_, err = tokenProvider.ParseAccessToken(refresh)
-		require.ErrorIs(t, err, auth.ErrInvalidToken)
-	})
 }
 
-func TestGenerateTokenPair(t *testing.T) {
-	userID := uuid.New()
-	tokenID := uuid.New()
-	t.Run("correct", func(t *testing.T) {
-		tokenProvider := NewTokenProvider(Config{
-			Secret:          []byte("secret"),
-			AccessTokenTTL:  time.Hour,
-			RefreshTokenTTL: time.Hour,
-		})
-		tokenPair, err := tokenProvider.GenerateTokenPair(userID, tokenID)
-		require.NoError(t, err)
-		gotUserID, err := tokenProvider.ParseAccessToken(tokenPair.Access)
-		require.NoError(t, err)
-		gotTokenID, err := tokenProvider.ParseRefreshToken(tokenPair.Refresh)
-		require.NoError(t, err)
-		require.Equal(t, userID, gotUserID)
-		require.Equal(t, tokenID, gotTokenID)
-	})
-	t.Run("invalid access ttl", func(t *testing.T) {
-		tokenProvider := NewTokenProvider(Config{
-			Secret:         []byte("secret"),
-			AccessTokenTTL: -time.Hour,
-		})
-		tokenPair, err := tokenProvider.GenerateTokenPair(userID, tokenID)
-		require.NoError(t, err)
-		_, err = tokenProvider.ParseAccessToken(tokenPair.Access)
-		require.ErrorIs(t, auth.ErrInvalidToken, err)
-	})
-	t.Run("invalid refresh ttl", func(t *testing.T) {
-		tokenProvider := NewTokenProvider(Config{
-			Secret:          []byte("secret"),
-			RefreshTokenTTL: -time.Hour,
-		})
-		tokenPair, err := tokenProvider.GenerateTokenPair(userID, tokenID)
-		require.NoError(t, err)
-		_, err = tokenProvider.ParseRefreshToken(tokenPair.Refresh)
-		require.ErrorIs(t, auth.ErrInvalidToken, err)
-	})
+func TestTokenTypesCannotBeInterchanged(t *testing.T) {
+	provider := NewTokenProvider(Config{Secret: []byte("secret")})
+	now := time.Now()
+	lifetime := auth.TokenLifetime{IssuedAt: now, ExpiresAt: now.Add(time.Hour)}
+
+	access, err := provider.GenerateAccessToken(auth.AccessTokenClaims{UserID: uuid.New()}, lifetime)
+	require.NoError(t, err)
+
+	refresh, err := provider.GenerateRefreshToken(auth.RefreshTokenClaims{
+		SessionID: uuid.New(),
+		TokenID:   uuid.New(),
+	}, lifetime)
+	require.NoError(t, err)
+
+	_, err = provider.ParseRefreshToken(access)
+	require.ErrorIs(t, err, auth.ErrInvalidToken)
+
+	_, err = provider.ParseAccessToken(refresh)
+	require.ErrorIs(t, err, auth.ErrInvalidToken)
+}
+
+func validAccessJWTClaims(now time.Time, mutate ...func(*accessClaims)) accessClaims {
+	claims := accessClaims{
+		Type: tokenTypeAccess,
+		AccessTokenClaims: auth.AccessTokenClaims{
+			UserID: uuid.New(),
+		},
+		RegisteredClaims: jwt.RegisteredClaims{
+			IssuedAt:  jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Hour)),
+		},
+	}
+	for _, fn := range mutate {
+		fn(&claims)
+	}
+	return claims
+}
+
+func validRefreshJWTClaims(now time.Time, mutate ...func(*refreshClaims)) refreshClaims {
+	claims := refreshClaims{
+		Type: tokenTypeRefresh,
+		RefreshTokenClaims: auth.RefreshTokenClaims{
+			SessionID: uuid.New(),
+			TokenID:   uuid.New(),
+		},
+		RegisteredClaims: jwt.RegisteredClaims{
+			IssuedAt:  jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Hour)),
+		},
+	}
+	for _, fn := range mutate {
+		fn(&claims)
+	}
+	return claims
+}
+
+func signedToken(t *testing.T, method jwt.SigningMethod, claims jwt.Claims, secret []byte) string {
+	t.Helper()
+	token, err := jwt.NewWithClaims(method, claims).SignedString(secret)
+	require.NoError(t, err)
+	return token
 }

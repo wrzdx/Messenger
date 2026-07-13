@@ -1,18 +1,54 @@
 package auth
 
-import "errors"
+import (
+	"errors"
+	"time"
 
-type TokenType string
-
-const (
-	TokenTypeAccess  TokenType = "access"
-	TokenTypeRefresh TokenType = "refresh"
+	"github.com/google/uuid"
 )
 
 var ErrInvalidToken = errors.New("invalid token")
 var ErrPasswordMismatch = errors.New("passwords do not match")
+var ErrInvalidClaims = errors.New("invalid claims")
+var ErrInvalidTokenLifetime = errors.New("invalid token lifetime")
 
 type TokenPair struct {
 	Access  string
 	Refresh string
+}
+
+type RefreshTokenClaims struct {
+	SessionID uuid.UUID `json:"session_id"`
+	TokenID   uuid.UUID `json:"token_id"`
+}
+
+type AccessTokenClaims struct {
+	UserID uuid.UUID `json:"user_id"`
+}
+
+func (c RefreshTokenClaims) Validate() error {
+	if c.SessionID == uuid.Nil ||
+		c.TokenID == uuid.Nil {
+		return ErrInvalidClaims
+	}
+	return nil
+}
+
+func (c AccessTokenClaims) Validate() error {
+	if c.UserID == uuid.Nil {
+		return ErrInvalidClaims
+	}
+	return nil
+}
+
+type TokenLifetime struct {
+	IssuedAt  time.Time
+	ExpiresAt time.Time
+}
+
+func (l TokenLifetime) Validate() error {
+	if l.ExpiresAt.IsZero() || l.IssuedAt.IsZero() || !l.ExpiresAt.After(l.IssuedAt) {
+		return ErrInvalidTokenLifetime
+	}
+	return nil
 }

@@ -3,24 +3,28 @@ package auth_jwt
 import (
 	"fmt"
 	"messenger/internal/core/auth"
-	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
+)
+
+type tokenType string
+
+const (
+	tokenTypeAccess  tokenType = "access"
+	tokenTypeRefresh tokenType = "refresh"
 )
 
 type accessClaims struct {
-	Type   auth.TokenType `json:"type"`
-	UserID uuid.UUID      `json:"user_id"`
+	Type tokenType `json:"type"`
+	auth.AccessTokenClaims
 	jwt.RegisteredClaims
 }
 
 type refreshClaims struct {
-	Type      auth.TokenType `json:"type"`
-	SessionID uuid.UUID      `json:"token_id"`
+	Type tokenType `json:"type"`
+	auth.RefreshTokenClaims
 	jwt.RegisteredClaims
 }
-
 type TokenProvider struct {
 	config Config
 }
@@ -31,81 +35,86 @@ func NewTokenProvider(config Config) *TokenProvider {
 	}
 }
 
-func (s *TokenProvider) GenerateTokenPair(userID, tokenID uuid.UUID) (auth.TokenPair, error) {
+func (s *TokenProvider) GenerateAccessToken(
+	accessTokenClaims auth.AccessTokenClaims,
+	tokenLifetime auth.TokenLifetime,
+) (string, error) {
+	if err := accessTokenClaims.Validate(); err != nil {
+		return "", fmt.Errorf("validate access claims: %w", err)
+	}
+	if err := tokenLifetime.Validate(); err != nil {
+		return "", fmt.Errorf("validate token lifetime: %w", err)
+	}
 	aClaims := accessClaims{
-		Type:   auth.TokenTypeAccess,
-		UserID: userID,
+		Type:              tokenTypeAccess,
+		AccessTokenClaims: accessTokenClaims,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.config.AccessTokenTTL)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(tokenLifetime.ExpiresAt),
+			IssuedAt:  jwt.NewNumericDate(tokenLifetime.IssuedAt),
 		},
 	}
 	accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, aClaims).SignedString(s.config.Secret)
 	if err != nil {
-		return auth.TokenPair{}, fmt.Errorf("access: %w", err)
+		return "", fmt.Errorf("access: %w", err)
+	}
+	return accessToken, nil
+}
+
+func (s *TokenProvider) GenerateRefreshToken(
+	refreshTokenClaims auth.RefreshTokenClaims,
+	tokenLifetime auth.TokenLifetime,
+) (string, error) {
+	if err := refreshTokenClaims.Validate(); err != nil {
+		return "", fmt.Errorf("validate refresh claims: %w", err)
+	}
+	if err := tokenLifetime.Validate(); err != nil {
+		return "", fmt.Errorf("validate token lifetime: %w", err)
 	}
 
 	rClaims := refreshClaims{
-		Type:      auth.TokenTypeRefresh,
-		SessionID: tokenID,
+		Type:               tokenTypeRefresh,
+		RefreshTokenClaims: refreshTokenClaims,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.config.RefreshTokenTTL)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(tokenLifetime.ExpiresAt),
+			IssuedAt:  jwt.NewNumericDate(tokenLifetime.IssuedAt),
 		},
 	}
 	refreshToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, rClaims).SignedString(s.config.Secret)
 	if err != nil {
-		return auth.TokenPair{}, fmt.Errorf("refresh: %w", err)
+		return "", fmt.Errorf("refresh: %w", err)
 	}
 
-	return auth.TokenPair{
-		Access:  accessToken,
-		Refresh: refreshToken,
-	}, nil
+	return refreshToken, nil
 }
 
-func (s *TokenProvider) ParseAccessToken(tokenStr string) (uuid.UUID, error) {
+func (s *TokenProvider) ParseAccessToken(tokenStr string) (auth.AccessTokenClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &accessClaims{}, func(token *jwt.Token) (any, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, auth.ErrInvalidToken
-		}
 		return s.config.Secret, nil
-	})
+	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}), jwt.WithExpirationRequired())
 	if err != nil || !token.Valid {
-		return uuid.UUID{}, auth.ErrInvalidToken
+		return auth.AccessTokenClaims{}, auth.ErrInvalidToken
 	}
 
 	claims, ok := token.Claims.(*accessClaims)
-	if !ok ||
-		claims.Type != auth.TokenTypeAccess ||
-		claims.ExpiresAt == nil ||
-		claims.ExpiresAt.Time.Before(time.Now()) ||
-		claims.UserID == uuid.Nil {
-		return uuid.UUID{}, auth.ErrInvalidToken
+	if !ok || claims.Type != tokenTypeAccess || claims.Validate() != nil {
+		return auth.AccessTokenClaims{}, auth.ErrInvalidToken
 	}
 
-	return claims.UserID, nil
+	return claims.AccessTokenClaims, nil
 }
 
-func (s *TokenProvider) ParseRefreshToken(tokenStr string) (uuid.UUID, error) {
+func (s *TokenProvider) ParseRefreshToken(tokenStr string) (auth.RefreshTokenClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &refreshClaims{}, func(token *jwt.Token) (any, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, auth.ErrInvalidToken
-		}
 		return s.config.Secret, nil
-	})
+	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}), jwt.WithExpirationRequired())
 	if err != nil || !token.Valid {
-		return uuid.UUID{}, auth.ErrInvalidToken
+		return auth.RefreshTokenClaims{}, auth.ErrInvalidToken
 	}
 
 	claims, ok := token.Claims.(*refreshClaims)
-	if !ok ||
-		claims.Type != auth.TokenTypeRefresh ||
-		claims.ExpiresAt == nil ||
-		claims.ExpiresAt.Time.Before(time.Now()) ||
-		claims.SessionID == uuid.Nil {
-		return uuid.UUID{}, auth.ErrInvalidToken
+	if !ok || claims.Type != tokenTypeRefresh || claims.Validate() != nil {
+		return auth.RefreshTokenClaims{}, auth.ErrInvalidToken
 	}
 
-	return claims.SessionID, nil
+	return claims.RefreshTokenClaims, nil
 }
