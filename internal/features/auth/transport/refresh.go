@@ -8,15 +8,15 @@ import (
 )
 
 type RefreshResponse struct {
-	Access string `json:"access"`
+	Access string `json:"access_token"`
 }
 
 func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := logger.FromContext(ctx)
-	sender := http_response.NewHTTPSender(log, w)
+	sender := http_response.NewHTTPSender(log, w, errorMapper)
 
-	token, err := h.cookieManger.GetRefreshToken(r)
+	token, err := h.cookieManager.GetRefreshToken(r)
 	if err != nil {
 		sender.Error(fmt.Errorf("get refresh token: %w", err))
 		return
@@ -31,6 +31,6 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		Access: tokens.Access,
 	}
 
-	h.cookieManger.SetRefreshToken(w, tokens.Refresh)
-	sender.OK(http.StatusCreated, response)
+	h.cookieManager.SetRefreshToken(w, tokens.Refresh)
+	sender.OK(http.StatusOK, response)
 }

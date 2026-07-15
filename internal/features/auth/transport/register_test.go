@@ -1,160 +1,162 @@
 package auth_transport_http
 
 import (
-	"bytes"
-	"encoding/json"
-	"messenger/internal/core/auth"
-	"messenger/internal/core/domain"
-	http_response "messenger/internal/core/transport/http/response"
-	test_utils "messenger/internal/core/utils/test"
-	auth_service "messenger/internal/features/auth/service"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
-	"github.com/stretchr/testify/assert"
+	"messenger/internal/core/auth"
+	"messenger/internal/core/domain"
+	http_response "messenger/internal/core/transport/http/response"
+	auth_service "messenger/internal/features/auth/service"
+
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-func TestRegister_Success(t *testing.T) {
-	service := NewMockAuthService(t)
-	mockUser := test_utils.MockUser
-	tokens := auth.TokenPair{Access: "access", Refresh: "refresh"}
-	service.EXPECT().
-		Register(mock.Anything, auth_service.NewRegisterPayload(
-			mockUser.Username,
-			mockUser.FirstName,
-			mockUser.LastName,
-			mockUser.Bio,
-			"fsociety",
-		)).
-		Return(mockUser, tokens, nil).
-		Once()
+func TestRegister(t *testing.T) {
+	t.Run("returns created user and access token", func(t *testing.T) {
+		service := NewMockAuthService(t)
+		cookieManager := NewMockCookieManager(t)
+		user := newAuthTransportUser(t)
+		tokens := auth.TokenPair{
+			Access:  "access-token",
+			Refresh: "refresh-token",
+		}
+		payload := auth_service.RegisterPayload{
+			Username:  "Username_1",
+			FirstName: "First Name",
+			LastName:  new("Last Name"),
+			Bio:       new("Bio"),
+			Password:  "valid password value",
+		}
+		service.EXPECT().
+			Register(mock.Anything, payload).
+			Return(user, tokens, nil)
+		cookieManager.EXPECT().
+			SetRefreshToken(mock.Anything, tokens.Refresh).
+			Return()
+		handler := NewAuthHTTPHandler(service, cookieManager)
+		req := newAuthTransportRequest(
+			t,
+			http.MethodPost,
+			"/auth/register",
+			map[string]any{
+				"username":   payload.Username,
+				"first_name": payload.FirstName,
+				"last_name":  *payload.LastName,
+				"bio":        *payload.Bio,
+				"password":   payload.Password,
+			},
+		)
+		recorder := httptest.NewRecorder()
 
-	cookie := NewMockCookieManager(t)
-	cookie.EXPECT().SetRefreshToken(mock.Anything, "refresh").Once()
-	handler := NewAuthHTTPHandler(service, cookie)
+		handler.Register(recorder, req)
 
-	requestBody := map[string]string{
-		"username":   mockUser.Username,
-		"first_name": mockUser.FirstName,
-		"last_name":  *mockUser.LastName,
-		"bio":        *mockUser.Bio,
-		"password":   "fsociety",
-	}
-	bodyBytes, err := json.Marshal(requestBody)
-	require.NoError(t, err)
+		require.Equal(t, http.StatusCreated, recorder.Code)
+		var body struct {
+			Data RegisterResponse `json:"data"`
+		}
+		require.NoError(t, decodeAuthTransportResponse(recorder, &body))
+		require.Equal(t, tokens.Access, body.Data.Access)
+		require.Equal(t, user.ID, body.Data.User.ID)
+		require.Equal(t, user.Profile.Username(), body.Data.User.Username)
+		require.Equal(t, user.Profile.FirstName(), body.Data.User.FirstName)
+		require.Equal(t, user.Profile.LastName(), body.Data.User.LastName)
+		require.Equal(t, user.Profile.Bio(), body.Data.User.Bio)
+		require.True(t, user.CreatedAt.Equal(body.Data.User.CreatedAt))
+		require.NotContains(t, recorder.Body.String(), `"success"`)
+	})
 
-	req := httptest.NewRequest(http.MethodPost, "/auth/register", bytes.NewReader(bodyBytes))
-	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
+	t.Run("returns conflict fields without setting refresh cookie", func(t *testing.T) {
+		service := NewMockAuthService(t)
+		cookieManager := NewMockCookieManager(t)
+		payload := auth_service.RegisterPayload{
+			Username:  "Username_1",
+			FirstName: "First Name",
+			Password:  "valid password value",
+		}
+		createErr := fmt.Errorf("transaction: %w", domain.DetailedError{
+			Err: fmt.Errorf("user: %w", domain.ErrAlreadyExists),
+			Details: map[string]string{
+				"username": "username already taken",
+			},
+		})
+		service.EXPECT().
+			Register(mock.Anything, payload).
+			Return(domain.User{}, auth.TokenPair{}, createErr)
+		handler := NewAuthHTTPHandler(service, cookieManager)
+		req := newAuthTransportRequest(
+			t,
+			http.MethodPost,
+			"/auth/register",
+			map[string]any{
+				"username":   payload.Username,
+				"first_name": payload.FirstName,
+				"password":   payload.Password,
+			},
+		)
+		recorder := httptest.NewRecorder()
 
-	rr := httptest.NewRecorder()
+		handler.Register(recorder, req)
 
-	handler.Register(rr, req)
+		require.Equal(t, http.StatusConflict, recorder.Code)
+		require.Equal(t, http_response.APIErrorDetail{
+			Code:    "user_already_exists",
+			Message: "user already exists",
+			Fields: map[string]string{
+				"username": "username already taken",
+			},
+		}, decodeAuthTransportError(t, recorder))
+	})
 
-	require.Equal(t, http.StatusCreated, rr.Code)
+	t.Run("returns validation fields without calling service", func(t *testing.T) {
+		service := NewMockAuthService(t)
+		cookieManager := NewMockCookieManager(t)
+		handler := NewAuthHTTPHandler(service, cookieManager)
+		req := newAuthTransportRequest(
+			t,
+			http.MethodPost,
+			"/auth/register",
+			map[string]any{},
+		)
+		recorder := httptest.NewRecorder()
 
-	var responseBody struct {
-		Success bool             `json:"success"`
-		Data    RegisterResponse `json:"data"`
-	}
-	err = json.Unmarshal(rr.Body.Bytes(), &responseBody)
-	require.NoError(t, err)
-	assert.Equal(t, responseBody.Success, true)
-	assert.Equal(t, tokens.Access, responseBody.Data.Access)
-	assert.Equal(t, mockUser.ID, responseBody.Data.User.ID)
-	assert.Equal(t, mockUser.FirstName, responseBody.Data.User.FirstName)
-	assert.Equal(t, mockUser.LastName, responseBody.Data.User.LastName)
-	assert.Equal(t, mockUser.Bio, responseBody.Data.User.Bio)
-}
+		handler.Register(recorder, req)
 
-func TestRegister_Fail(t *testing.T) {
-	service := NewMockAuthService(t)
-	mockUser := test_utils.MockUser
-	service.EXPECT().
-		Register(mock.Anything, auth_service.NewRegisterPayload(
-			mockUser.Username,
-			mockUser.FirstName,
-			mockUser.LastName,
-			mockUser.Bio,
-			"fsociety",
-		)).
-		Return(domain.User{}, auth.TokenPair{},
-			domain.AlreadyExistsErr(domain.UserEntity, nil),
-		).
-		Once()
-
-	cookie := NewMockCookieManager(t)
-	handler := NewAuthHTTPHandler(service, cookie)
-
-	requestBody := map[string]string{
-		"username":   mockUser.Username,
-		"first_name": mockUser.FirstName,
-		"last_name":  *mockUser.LastName,
-		"bio":        *mockUser.Bio,
-		"password":   "fsociety",
-	}
-	bodyBytes, err := json.Marshal(requestBody)
-	require.NoError(t, err)
-
-	req := httptest.NewRequest(http.MethodPost, "/auth/register", bytes.NewReader(bodyBytes))
-	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
-
-	rr := httptest.NewRecorder()
-
-	handler.Register(rr, req)
-
-	require.Equal(t, http.StatusConflict, rr.Code)
-
-	var responseBody struct {
-		Success bool                         `json:"success"`
-		Error   http_response.APIErrorDetail `json:"error"`
-	}
-	err = json.Unmarshal(rr.Body.Bytes(), &responseBody)
-	require.NoError(t, err)
-	assert.Equal(t, responseBody.Success, false)
-	assert.Equal(t,
-		"user already exists",
-		responseBody.Error.Message,
-	)
-}
-
-func TestRegister_Validation(t *testing.T) {
-	service := NewMockAuthService(t)
-	cookie := NewMockCookieManager(t)
-	handler := NewAuthHTTPHandler(service, cookie)
-
-	req := httptest.NewRequest(http.MethodPost, "/auth/register", bytes.NewReader(nil))
-	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
-
-	rr := httptest.NewRecorder()
-
-	handler.Register(rr, req)
-
-	require.Equal(t, http.StatusBadRequest, rr.Code)
-
-	var responseBody struct {
-		Success bool                         `json:"success"`
-		Error   http_response.APIErrorDetail `json:"error"`
-	}
-
-	want := struct {
-		Success bool                         `json:"success"`
-		Error   http_response.APIErrorDetail `json:"error"`
-	}{
-		Success: false,
-		Error: http_response.APIErrorDetail{
-			Message: domain.ErrValidation.Error() + " request",
+		require.Equal(t, http.StatusBadRequest, recorder.Code)
+		require.Equal(t, http_response.APIErrorDetail{
+			Code:    "invalid_request",
+			Message: "invalid request",
 			Fields: map[string]string{
 				"username":   "username is required",
 				"first_name": "first_name is required",
 				"password":   "password is required",
 			},
-		},
-	}
+		}, decodeAuthTransportError(t, recorder))
+	})
+}
 
-	err := json.Unmarshal(rr.Body.Bytes(), &responseBody)
+func newAuthTransportUser(t *testing.T) domain.User {
+	t.Helper()
+
+	profile, err := domain.NewUserProfile(
+		"Username_1",
+		"First Name",
+		new("Last Name"),
+		new("Bio"),
+	)
 	require.NoError(t, err)
-	assert.Equal(t, want, responseBody)
+	user, err := domain.NewUser(
+		uuid.New(),
+		profile,
+		time.Date(2026, time.July, 15, 12, 0, 0, 0, time.UTC),
+		nil,
+		"password-hash",
+	)
+	require.NoError(t, err)
+	return user
 }

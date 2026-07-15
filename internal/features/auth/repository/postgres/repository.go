@@ -10,8 +10,8 @@ type AuthRepository struct {
 	timeout time.Duration
 }
 
-func NewAuthRepository(db postgres.DBTX, timeout time.Duration) AuthRepository {
-	return AuthRepository{
+func NewAuthRepository(db postgres.DBTX, timeout time.Duration) *AuthRepository {
+	return &AuthRepository{
 		db:      db,
 		timeout: timeout,
 	}

@@ -2,7 +2,6 @@ package auth
 
 import (
 	"errors"
-	"fmt"
 	"time"
 	"unicode/utf8"
 
@@ -59,12 +58,28 @@ func (l TokenLifetime) Validate() error {
 	return nil
 }
 
+type passwordValidationError struct {
+	message string
+}
+
+func (e passwordValidationError) Error() string {
+	return e.message
+}
+
+func (e passwordValidationError) Unwrap() error {
+	return ErrInvalidPassword
+}
+
 func ValidatePassword(password string) error {
 	if l := utf8.RuneCountInString(password); l < 15 {
-		return fmt.Errorf("password must be at least 15 character: %w", ErrInvalidPassword)
+		return passwordValidationError{
+			message: "password must be at least 15 characters",
+		}
 	}
 	if len(password) > 72 {
-		return fmt.Errorf("password must be at most 72 bytes: %w", ErrInvalidPassword)
+		return passwordValidationError{
+			message: "password must be at most 72 bytes",
+		}
 	}
 
 	return nil

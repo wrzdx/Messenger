@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"messenger/internal/core/domain"
 	"net/http"
 	"unicode"
 
@@ -64,11 +63,11 @@ func formatField(err validator.FieldError) (string, string) {
 func DecodeAndValidateRequest(r *http.Request, dest any) error {
 	err := json.NewDecoder(r.Body).Decode(dest)
 	if err != nil && !errors.Is(err, io.EOF) {
-		return fmt.Errorf("decode json: %w", err)
+		return fmt.Errorf("%w: decode json: %w", ErrInvalidRequest, err)
 	}
 
 	if fields := Validate(dest); len(fields) != 0 {
-		return domain.ValidationErr("request", fields)
+		return newFieldError(fields)
 	}
 	return nil
 }

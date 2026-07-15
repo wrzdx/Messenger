@@ -1,94 +1,131 @@
 package auth_transport_http
 
 import (
-	"encoding/json"
-	"messenger/internal/core/auth"
-	http_response "messenger/internal/core/transport/http/response"
-	test_utils "messenger/internal/core/utils/test"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"messenger/internal/core/auth"
+	http_response "messenger/internal/core/transport/http/response"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-func TestRefreshHandler_Success(t *testing.T) {
-	service := NewMockAuthService(t)
+func TestRefresh(t *testing.T) {
+	t.Run("returns new access token and rotates refresh cookie", func(t *testing.T) {
+		service := NewMockAuthService(t)
+		cookieManager := NewMockCookieManager(t)
+		tokens := auth.TokenPair{
+			Access:  "new-access-token",
+			Refresh: "new-refresh-token",
+		}
+		cookieManager.EXPECT().
+			GetRefreshToken(mock.Anything).
+			Return("old-refresh-token", nil)
+		service.EXPECT().
+			Refresh(mock.Anything, "old-refresh-token").
+			Return(tokens, nil)
+		cookieManager.EXPECT().
+			SetRefreshToken(mock.Anything, tokens.Refresh).
+			Return()
+		handler := NewAuthHTTPHandler(service, cookieManager)
+		req := newAuthTransportRequest(
+			t,
+			http.MethodPost,
+			"/auth/refresh",
+			nil,
+		)
+		recorder := httptest.NewRecorder()
 
-	expectedTokens := auth.TokenPair{
-		Access:  "new-access",
-		Refresh: "new-refresh",
-	}
+		handler.Refresh(recorder, req)
 
-	cookie := NewMockCookieManager(t)
+		require.Equal(t, http.StatusOK, recorder.Code)
+		var body struct {
+			Data struct {
+				AccessToken string `json:"access_token"`
+			} `json:"data"`
+		}
+		require.NoError(t, decodeAuthTransportResponse(recorder, &body))
+		require.Equal(t, tokens.Access, body.Data.AccessToken)
+		require.NotContains(t, recorder.Body.String(), `"success"`)
+	})
 
-	cookie.EXPECT().
-		GetRefreshToken(mock.Anything).
-		Return("old-refresh", nil).
-		Once()
+	t.Run("returns invalid token when refresh cookie is missing", func(t *testing.T) {
+		service := NewMockAuthService(t)
+		cookieManager := NewMockCookieManager(t)
+		cookieManager.EXPECT().
+			GetRefreshToken(mock.Anything).
+			Return("", auth.ErrInvalidToken)
+		handler := NewAuthHTTPHandler(service, cookieManager)
+		req := newAuthTransportRequest(
+			t,
+			http.MethodPost,
+			"/auth/refresh",
+			nil,
+		)
+		recorder := httptest.NewRecorder()
 
-	service.EXPECT().
-		Refresh(mock.Anything, "old-refresh").
-		Return(expectedTokens, nil).
-		Once()
+		handler.Refresh(recorder, req)
 
-	cookie.EXPECT().
-		SetRefreshToken(mock.Anything, "new-refresh").
-		Once()
+		require.Equal(t, http.StatusUnauthorized, recorder.Code)
+		require.Equal(t, http_response.APIErrorDetail{
+			Code:    "invalid_token",
+			Message: "invalid token",
+		}, decodeAuthTransportError(t, recorder))
+	})
 
-	handler := NewAuthHTTPHandler(service, cookie)
+	t.Run("does not rotate cookie when service rejects token", func(t *testing.T) {
+		service := NewMockAuthService(t)
+		cookieManager := NewMockCookieManager(t)
+		cookieManager.EXPECT().
+			GetRefreshToken(mock.Anything).
+			Return("refresh-token", nil)
+		service.EXPECT().
+			Refresh(mock.Anything, "refresh-token").
+			Return(auth.TokenPair{}, auth.ErrInvalidToken)
+		handler := NewAuthHTTPHandler(service, cookieManager)
+		req := newAuthTransportRequest(
+			t,
+			http.MethodPost,
+			"/auth/refresh",
+			nil,
+		)
+		recorder := httptest.NewRecorder()
 
-	req := httptest.NewRequest(http.MethodPost, "/auth/refresh", nil)
-	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
+		handler.Refresh(recorder, req)
 
-	rr := httptest.NewRecorder()
+		require.Equal(t, http.StatusUnauthorized, recorder.Code)
+		require.Equal(t, "invalid_token", decodeAuthTransportError(t, recorder).Code)
+	})
 
-	handler.Refresh(rr, req)
+	t.Run("does not expose unexpected service error", func(t *testing.T) {
+		service := NewMockAuthService(t)
+		cookieManager := NewMockCookieManager(t)
+		serviceErr := errors.New("database unavailable")
+		cookieManager.EXPECT().
+			GetRefreshToken(mock.Anything).
+			Return("refresh-token", nil)
+		service.EXPECT().
+			Refresh(mock.Anything, "refresh-token").
+			Return(auth.TokenPair{}, serviceErr)
+		handler := NewAuthHTTPHandler(service, cookieManager)
+		req := newAuthTransportRequest(
+			t,
+			http.MethodPost,
+			"/auth/refresh",
+			nil,
+		)
+		recorder := httptest.NewRecorder()
 
-	require.Equal(t, http.StatusCreated, rr.Code)
+		handler.Refresh(recorder, req)
 
-	var response struct {
-		Success bool            `json:"success"`
-		Data    RefreshResponse `json:"data"`
-	}
-
-	err := json.Unmarshal(rr.Body.Bytes(), &response)
-	require.NoError(t, err)
-
-	assert.True(t, response.Success)
-	assert.Equal(t, "new-access", response.Data.Access)
-}
-
-func TestRefreshHandler_NoCookie(t *testing.T) {
-	service := NewMockAuthService(t)
-
-	cookie := NewMockCookieManager(t)
-
-	cookie.EXPECT().
-		GetRefreshToken(mock.Anything).
-		Return("", auth.ErrInvalidToken).
-		Once()
-
-	handler := NewAuthHTTPHandler(service, cookie)
-
-	req := httptest.NewRequest(http.MethodPost, "/auth/refresh", nil)
-	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
-
-	rr := httptest.NewRecorder()
-
-	handler.Refresh(rr, req)
-
-	require.Equal(t, http.StatusUnauthorized, rr.Code)
-
-	var response struct {
-		Success bool                         `json:"success"`
-		Error   http_response.APIErrorDetail `json:"error"`
-	}
-
-	err := json.Unmarshal(rr.Body.Bytes(), &response)
-	require.NoError(t, err)
-
-	assert.Equal(t, "get refresh token: invalid token", response.Error.Message)
+		require.Equal(t, http.StatusInternalServerError, recorder.Code)
+		require.Equal(t, http_response.APIErrorDetail{
+			Code:    "internal_error",
+			Message: "internal server error",
+		}, decodeAuthTransportError(t, recorder))
+		require.NotContains(t, recorder.Body.String(), serviceErr.Error())
+	})
 }

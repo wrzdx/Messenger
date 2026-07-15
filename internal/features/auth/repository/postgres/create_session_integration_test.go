@@ -121,7 +121,7 @@ func newSessionTestRepository(
 	})
 
 	repository := NewAuthRepository(tx, timeout)
-	return tx, &repository
+	return tx, repository
 }
 
 func insertSessionTestUser(

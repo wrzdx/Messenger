@@ -2,6 +2,6 @@ all: false
 recursive: false
 
 packages:
-  messenger/internal/features/auth/service:
+  messenger/internal/features/auth/transport/:
     config:
       all: true

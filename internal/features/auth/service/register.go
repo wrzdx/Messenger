@@ -28,7 +28,10 @@ func (s *AuthService) Register(
 		return domain.User{}, auth.TokenPair{}, fmt.Errorf("new user profile: %w", err)
 	}
 	if err := auth.ValidatePassword(payload.Password); err != nil {
-		return domain.User{}, auth.TokenPair{}, fmt.Errorf("validate password: %w", err)
+		return domain.User{}, auth.TokenPair{}, domain.DetailedError{
+			Err:     err,
+			Details: map[string]string{"password": err.Error()},
+		}
 	}
 	passwordHash, err := s.hasher.Hash(payload.Password)
 	if err != nil {

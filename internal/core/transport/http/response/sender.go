@@ -2,7 +2,6 @@ package http_response
 
 import (
 	"encoding/json"
-	core_errors "messenger/internal/core/errors"
 	logger "messenger/internal/core/logger"
 	"net/http"
 
@@ -10,64 +9,68 @@ import (
 )
 
 type HTTPSender struct {
-	log *logger.Logger
-	rw  http.ResponseWriter
+	log         *logger.Logger
+	rw          http.ResponseWriter
+	errorMapper ErrorMapper
 }
 
-func NewHTTPSender(log *logger.Logger, rw http.ResponseWriter) *HTTPSender {
+func NewHTTPSender(
+	log *logger.Logger,
+	rw http.ResponseWriter,
+	errorMapper ErrorMapper,
+) *HTTPSender {
 	return &HTTPSender{
-		log: log,
-		rw:  rw,
+		log:         log,
+		rw:          rw,
+		errorMapper: errorMapper,
 	}
 }
 
 type APIResponse struct {
-	Success bool            `json:"success"`
-	Data    any             `json:"data,omitempty"`
-	Error   *APIErrorDetail `json:"error,omitempty"`
+	Data  any             `json:"data,omitempty"`
+	Error *APIErrorDetail `json:"error,omitempty"`
 }
 
 type APIErrorDetail struct {
+	Code    string            `json:"code"`
 	Message string            `json:"message"`
 	Fields  map[string]string `json:"fields,omitempty"`
 }
 
 func (s *HTTPSender) Error(err error) {
-	errResp := core_errors.MapError(err)
-	s.json(false, errResp.Code, nil, errResp)
+	errResp := s.errorMapper(err)
+	if errResp.StatusCode >= 500 {
+		s.log.Error("CRITICAL_SERVER_ERROR", zap.Error(err))
+	} else {
+		s.log.Warn(err.Error())
+	}
+
+	response := APIResponse{
+		Error: &APIErrorDetail{
+			Code:    errResp.Code,
+			Message: errResp.Message,
+			Fields:  errResp.Fields,
+		},
+	}
+	s.write(errResp.StatusCode, response)
 }
 
 func (s *HTTPSender) OK(statusCode int, data any) {
-	s.json(true, statusCode, data, core_errors.Error{})
+	response := APIResponse{
+		Data: data,
+	}
+	s.write(statusCode, response)
 }
 
-func (s *HTTPSender) json(success bool, statusCode int, data any, err core_errors.Error) {
-	s.rw.Header().Set("Content-Type", "application/json")
-	s.rw.WriteHeader(statusCode)
+func (s *HTTPSender) write(statusCode int, response APIResponse) {
 	if statusCode == http.StatusNoContent {
+		s.rw.WriteHeader(http.StatusNoContent)
 		return
 	}
 
-	var resp APIResponse
-	resp.Success = success
-	if success {
-		resp.Data = data
-	} else {
-		if statusCode >= 500 {
-			s.log.Error(
-				"CRITICAL_SERVER_ERROR",
-				zap.Error(err),
-			)
-		} else {
-			s.log.Warn(err.Error())
-		}
-		resp.Error = &APIErrorDetail{
-			Message: err.Message,
-			Fields:  err.Details,
-		}
-	}
-
-	if err := json.NewEncoder(s.rw).Encode(resp); err != nil {
+	s.rw.Header().Set("Content-Type", "application/json")
+	s.rw.WriteHeader(statusCode)
+	if err := json.NewEncoder(s.rw).Encode(response); err != nil {
 		s.log.Error("write HTTP response", zap.Error(err))
 	}
 }

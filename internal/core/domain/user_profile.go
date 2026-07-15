@@ -81,7 +81,7 @@ func (p UserProfile) normalize() UserProfile {
 func (p UserProfile) validate() error {
 	fields := make(map[string]string)
 	if !UsernamePattern.MatchString(p.username) {
-		fields["username"] = "must contain between 1 and 64 characters, and only ASCII letters, digits, and underscores"
+		fields["username"] = "must contain between 5 and 32 characters, and only ASCII letters, digits, and underscores"
 	}
 	if l := utf8.RuneCountInString(p.firstName); l < 1 || l > 64 {
 		fields["first_name"] = "fists_name contain between 1 and 64 characters"
