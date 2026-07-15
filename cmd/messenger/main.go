@@ -8,15 +8,14 @@ import (
 	auth_jwt "messenger/internal/core/auth/jwt"
 	config "messenger/internal/core/config"
 	logger "messenger/internal/core/logger"
-	pgx_pool "messenger/internal/core/repository/postgres/pgx"
+	"messenger/internal/core/postgres"
 	http_middleware "messenger/internal/core/transport/http/middleware"
 	http_server "messenger/internal/core/transport/http/server"
 
+	auth_postgres_repository "messenger/internal/features/auth/repository/postgres"
 	auth_service "messenger/internal/features/auth/service"
 	auth_transport_http "messenger/internal/features/auth/transport"
 	users_postgres_repository "messenger/internal/features/users/repository/postgres"
-	users_service "messenger/internal/features/users/service"
-	users_transport_http "messenger/internal/features/users/transport/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -48,9 +47,10 @@ func main() {
 
 	logger.Debug("application time zone", zap.Any("zone", time.Local))
 	logger.Debug("initializing postgres connection pool")
-	pool, err := pgx_pool.NewPool(
+	postgresConfig := postgres.NewConfigMust()
+	pool, err := postgres.NewPool(
 		ctx,
-		pgx_pool.NewConfigMust(),
+		postgresConfig,
 	)
 	if err != nil {
 		logger.Fatal("failed to init postgres connection pool", zap.Error(err))
@@ -58,23 +58,39 @@ func main() {
 
 	defer pool.Close()
 
+	logger.Debug("initializing feature", zap.String("feature", "auth"))
+	usersRepository := users_postgres_repository.NewUsersRepository(pool, postgresConfig.Timeout)
+	sessionsRepository := auth_postgres_repository.NewAuthRepository(pool, postgresConfig.Timeout)
 	hasher := auth_bcrypt.NewBcryptHasher()
-	jwtConfig := auth_jwt.NewConfigMust()
-	jwtProvider := auth_jwt.NewTokenProvider(jwtConfig)
-	cookieManager := auth_cookie.NewCookieManager(
-		jwtConfig.RefreshTokenTTL,
-		cfg.Environment.IsProduction(),
-		"/api/v1/auth/refresh",
+	jwtProvider := auth_jwt.NewTokenProvider(auth_jwt.NewConfigMust())
+	txManager := postgres.NewTransactionManager(pool)
+	authConfig := auth_service.AuthConfig{
+		AccessTokenTTL: cfg.AccessTokenTTL,
+		SessionTTL:     cfg.SessionTTL,
+	}
+	authService, err := auth_service.NewAuthService(
+		usersRepository,
+		sessionsRepository,
+		hasher,
+		jwtProvider,
+		txManager,
+		authConfig,
 	)
 
-	logger.Debug("initializing feature", zap.String("feature", "auth"))
-	usersRepository := users_postgres_repository.NewUsersRepository(pool)
-	authService := auth_service.NewAuthService(usersRepository, hasher, jwtProvider)
+	if err != nil {
+		logger.Fatal("failed create auth service", zap.Error(err))
+	}
+
+	cookieManager := auth_cookie.NewCookieManager(
+		authConfig.SessionTTL,
+		cfg.Environment.IsProduction(),
+		"/api/v1/auth",
+	)
 	authTransportHTTP := auth_transport_http.NewAuthHTTPHandler(authService, cookieManager)
 
 	logger.Debug("initializing feature", zap.String("feature", "users"))
-	usersService := users_service.NewUsersService(usersRepository, hasher)
-	usersTranposrtHTTP := users_transport_http.NewUsersHTTPHandler(usersService)
+	// usersService := users_service.NewUsersService(usersRepository, hasher)
+	// usersTranposrtHTTP := users_transport_http.NewUsersHandler(usersService)
 
 	logger.Debug("initializing HTTP server")
 	httpConfig := http_server.NewConfigMust()
@@ -87,11 +103,11 @@ func main() {
 		http_middleware.Recovery(),
 	)
 
-	authMW := http_middleware.Auth(jwtProvider)
+	// authMW := http_middleware.Auth(jwtProvider)
 
 	routerV1 := chi.NewRouter()
 	routerV1.Mount("/auth", authTransportHTTP.Router())
-	routerV1.Mount("/users", usersTranposrtHTTP.Router(authMW))
+	// routerV1.Mount("/users", usersTranposrtHTTP.Router(authMW))
 
 	router.Mount("/api/v1", routerV1)
 	httpServer := http_server.NewHTTPServer(

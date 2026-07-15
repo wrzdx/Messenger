@@ -3,17 +3,17 @@ package users_transport_http
 import (
 	"fmt"
 	core_context "messenger/internal/core/context"
-	"messenger/internal/core/domain"
 	logger "messenger/internal/core/logger"
 	http_request "messenger/internal/core/transport/http/request"
 	http_response "messenger/internal/core/transport/http/response"
 	http_types "messenger/internal/core/transport/http/types"
+	users_service "messenger/internal/features/users/service"
 	"net/http"
 )
 
 type PatchUserResponse UserDTOResponse
 
-func (h *UsersHTTPHandler) PatchMe(w http.ResponseWriter, r *http.Request) {
+func (h *UsersHandler) PatchMe(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := logger.FromContext(ctx)
 	claims := core_context.ClaimsRequired(ctx)
@@ -26,7 +26,7 @@ func (h *UsersHTTPHandler) PatchMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userPatch := UserPatchFromRequest(request)
+	userPatch := request.Convert()
 
 	userDomain, err := h.usersService.PatchUser(ctx, claims.UserID, userPatch)
 	if err != nil {
@@ -39,50 +39,17 @@ func (h *UsersHTTPHandler) PatchMe(w http.ResponseWriter, r *http.Request) {
 }
 
 type PatchUserRequest struct {
-	Username  http_types.Nullable[string] `json:"username" swaggertype:"string" example:"ivanov"`
-	FirstName http_types.Nullable[string] `json:"first_name" swaggertype:"string" example:"Sidor"`
+	Username  *string                     `json:"username" swaggertype:"string" example:"ivanov"`
+	FirstName *string                     `json:"first_name" swaggertype:"string" example:"Sidor"`
 	LastName  http_types.Nullable[string] `json:"last_name" swaggertype:"string" example:"Ivanov"`
 	Bio       http_types.Nullable[string] `json:"bio" swaggertype:"string" example:"I'like pizza!"`
 }
 
-func (p *PatchUserRequest) Validate() map[string]string {
-	fields := make(map[string]string)
-	if p.Username.Set {
-		if p.Username.Value == nil {
-			fields["username"] = domain.ErrNullUsername.Error()
-		} else if err := domain.ValidateUsername(*p.Username.Value); err != nil {
-			fields["username"] = err.Error()
-		}
+func (r PatchUserRequest) Convert() users_service.UserPatch {
+	return users_service.UserPatch{
+		Username:  r.Username,
+		FirstName: r.FirstName,
+		LastName:  r.LastName.ToCore(),
+		Bio:       r.Bio.ToCore(),
 	}
-
-	if p.FirstName.Set {
-		if p.FirstName.Value == nil {
-			fields["first_name"] = domain.ErrNullFirstname.Error()
-
-		} else if err := domain.ValidateFirstName(*p.FirstName.Value); err != nil {
-			fields["first_name"] = err.Error()
-		}
-	}
-	if p.LastName.Set && p.LastName.Value != nil {
-		if err := domain.ValidateLastName(*p.LastName.Value); err != nil {
-			fields["last_name"] = err.Error()
-		}
-	}
-
-	if p.Bio.Set && p.Bio.Value != nil {
-		if err := domain.ValidateBio(*p.Bio.Value); err != nil {
-			fields["bio"] = err.Error()
-		}
-	}
-
-	return fields
-}
-
-func UserPatchFromRequest(request PatchUserRequest) domain.UserPatch {
-	return domain.NewUserPatch(
-		request.Username.ToDomain(),
-		request.FirstName.ToDomain(),
-		request.LastName.ToDomain(),
-		request.Bio.ToDomain(),
-	)
 }

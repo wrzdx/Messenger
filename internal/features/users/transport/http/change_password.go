@@ -2,7 +2,6 @@ package users_transport_http
 
 import (
 	core_context "messenger/internal/core/context"
-	"messenger/internal/core/domain"
 	logger "messenger/internal/core/logger"
 	http_request "messenger/internal/core/transport/http/request"
 	http_response "messenger/internal/core/transport/http/response"
@@ -14,17 +13,7 @@ type ChangePasswordRequest struct {
 	NewPassword string `json:"new_password" validate:"required" example:"password"`
 }
 
-func (r *ChangePasswordRequest) Validate() map[string]string {
-	fields := make(map[string]string)
-
-	if err := domain.ValidatePassword(r.NewPassword); err != nil {
-		fields["new_password"] = err.Error()
-	}
-
-	return fields
-}
-
-func (h *UsersHTTPHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
+func (h *UsersHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := logger.FromContext(ctx)
 	sender := http_response.NewHTTPSender(log, w)

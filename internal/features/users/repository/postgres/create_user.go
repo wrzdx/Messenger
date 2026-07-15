@@ -2,56 +2,50 @@ package users_postgres_repository
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"messenger/internal/core/domain"
-	postgres "messenger/internal/core/repository/postgres"
+	"messenger/internal/core/postgres"
 )
 
 func (r *UsersRepository) CreateUser(
 	ctx context.Context,
 	user domain.User,
-) (domain.User, error) {
-	ctx, cancel := context.WithTimeout(ctx, r.db.OptTimeout())
+) error {
+	ctx, cancel := context.WithTimeout(ctx, r.timeout)
 	defer cancel()
 
+	db := postgres.GetExecutor(ctx, r.db)
+
 	query := `
-	INSERT INTO users (id, username, first_name, last_name, created_at, bio, password_hash)
-	VALUES ($1, $2,$3,$4,$5,$6, $7) 
-	RETURNING id, username, first_name, last_name, created_at, bio, password_hash;
+	INSERT INTO users (id, username, first_name, last_name, created_at, deleted_at, bio, password_hash)
+	VALUES ($1, $2,$3,$4,$5,$6, $7,$8);
 	`
-	var userModel UserModel
-	err := r.db.QueryRow(
+
+	_, err := db.Exec(
 		ctx,
 		query,
 		user.ID,
-		user.Username,
-		user.FirstName,
-		user.LastName,
+		user.Profile.Username(),
+		user.Profile.FirstName(),
+		user.Profile.LastName(),
 		user.CreatedAt,
-		user.Bio,
+		user.DeletedAt,
+		user.Profile.Bio(),
 		user.PasswordHash,
-	).Scan(
-		&userModel.ID,
-		&userModel.Username,
-		&userModel.FirstName,
-		&userModel.LastName,
-		&userModel.CreatedAt,
-		&userModel.Bio,
-		&userModel.PasswordHash,
 	)
 	if err != nil {
-		if errors.Is(err, postgres.ErrViolatesUnique) {
-			failedField, failedValue := getConstraintValues(user, err)
-			return domain.User{}, domain.AlreadyExistsErr(
-				domain.UserEntity,
-				failedField,
-				failedValue,
-			)
+		details := make(map[string]string)
+		if postgres.IsConstraintViolation(err, postgres.UniqueViolation, usernameUK) {
+			details["username"] = "username already taken"
 		}
-		return domain.User{}, fmt.Errorf("scan error: %w", err)
+		if len(details) > 0 {
+			return domain.DetailedError{
+				Err:     fmt.Errorf("user %w", domain.ErrAlreadyExists),
+				Details: details,
+			}
+		}
+		return fmt.Errorf("scan error: %w", err)
 	}
 
-	userDomain := UserDomainFromModel(userModel)
-	return userDomain, nil
+	return nil
 }

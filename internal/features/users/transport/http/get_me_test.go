@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	core_context "messenger/internal/core/context"
 	"messenger/internal/core/domain"
-	core_errors "messenger/internal/core/errors"
 	http_response "messenger/internal/core/transport/http/response"
 	test_utils "messenger/internal/core/utils/test"
 	"net/http"
@@ -36,7 +35,7 @@ func TestGetMeHandler_Success(t *testing.T) {
 		Return(user, nil).
 		Once()
 
-	handler := NewUsersHTTPHandler(service)
+	handler := NewUsersHandler(service)
 
 	req := httptest.NewRequest(http.MethodGet, "/users/me", nil)
 
@@ -75,7 +74,7 @@ func TestGetMeHandler_NotFound(t *testing.T) {
 		Return(domain.User{}, domain.NotFoundErr(domain.UserEntity, "id", id.String())).
 		Once()
 
-	handler := NewUsersHTTPHandler(service)
+	handler := NewUsersHandler(service)
 
 	req := httptest.NewRequest(http.MethodGet, "/users/me", nil)
 
@@ -103,7 +102,6 @@ func TestGetMeHandler_NotFound(t *testing.T) {
 	}{
 		Success: false,
 		Error: http_response.APIErrorDetail{
-			Code:    core_errors.NOT_FOUND,
 			Message: domain.NotFoundErr(domain.UserEntity, "id", id.String()).Error(),
 		},
 	}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"messenger/internal/core/auth"
 	"messenger/internal/core/domain"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -20,26 +21,38 @@ func (s *AuthService) Login(
 		username,
 	)
 	if err != nil {
-		return auth.TokenPair{}, domain.ErrInvalidCredentials
+		if errors.Is(err, domain.ErrNotFound) {
+			s.hasher.DummyCompare()
+			return auth.TokenPair{}, auth.ErrInvalidCredentials
+		}
+		return auth.TokenPair{}, fmt.Errorf("get user: %w", err)
+	}
+	if user.DeletedAt != nil {
+		s.hasher.DummyCompare()
+		return auth.TokenPair{}, auth.ErrInvalidCredentials
 	}
 
 	if err := s.hasher.Compare(user.PasswordHash, password); err != nil {
 		if errors.Is(err, auth.ErrPasswordMismatch) {
-			return auth.TokenPair{}, domain.ErrInvalidCredentials
+			return auth.TokenPair{}, auth.ErrInvalidCredentials
 		}
 		return auth.TokenPair{}, fmt.Errorf(
 			"compare passwords: %w",
 			err,
 		)
 	}
-	tokenID := uuid.New()
-	tokens, err := s.tokenProvider.GenerateTokenPair(user.ID, tokenID)
+	now := time.Now()
+	session, err := domain.NewSession(uuid.New(), user.ID, uuid.New(), now, now.Add(s.config.SessionTTL))
 	if err != nil {
-		return auth.TokenPair{}, fmt.Errorf(
-			"generate tokens: %w",
-			err,
-		)
+		return auth.TokenPair{}, fmt.Errorf("new session: %w", err)
 	}
 
+	tokens, err := s.generateTokenPair(session, now)
+	if err != nil {
+		return auth.TokenPair{}, fmt.Errorf("generate token pair: %w", err)
+	}
+	if err := s.sessionsRepository.CreateSession(ctx, session); err != nil {
+		return auth.TokenPair{}, fmt.Errorf("create session: %w", err)
+	}
 	return tokens, nil
 }

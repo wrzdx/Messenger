@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func (h *UsersHTTPHandler) DeleteMe(w http.ResponseWriter, r *http.Request) {
+func (h *UsersHandler) DeleteMe(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := logger.FromContext(ctx)
 	claims := core_context.ClaimsRequired(ctx)

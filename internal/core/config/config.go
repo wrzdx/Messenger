@@ -8,10 +8,11 @@ import (
 )
 
 type Config struct {
-	TimeZoneName string      `envconfig:"TIME_ZONE" default:"UTC"`
-	Environment  Environment `envconfig:"ENVIRONMENT" default:"development"`
-
-	TimeZone *time.Location `ignored:"true"`
+	TimeZoneName   string         `envconfig:"TIME_ZONE" default:"UTC"`
+	Environment    Environment    `envconfig:"ENVIRONMENT" default:"development"`
+	AccessTokenTTL time.Duration  `envconfig:"AUTH_ACCESS_TOKEN_TTL" default:"15m"`
+	SessionTTL     time.Duration  `envconfig:"AUTH_SESSION_TTL" default:"24h"`
+	TimeZone       *time.Location `ignored:"true"`
 }
 
 func NewConfig() (*Config, error) {

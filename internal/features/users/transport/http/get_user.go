@@ -1,8 +1,7 @@
 package users_transport_http
 
 import (
-	"fmt"
-	core_errors "messenger/internal/core/errors"
+	"messenger/internal/core/domain"
 	logger "messenger/internal/core/logger"
 	http_response "messenger/internal/core/transport/http/response"
 	"net/http"
@@ -13,7 +12,7 @@ import (
 
 type GetUserResponse UserDTOResponse
 
-func (h *UsersHTTPHandler) GetUser(w http.ResponseWriter, r *http.Request) {
+func (h *UsersHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := logger.FromContext(ctx)
 	sender := http_response.NewHTTPSender(log, w)
@@ -22,7 +21,7 @@ func (h *UsersHTTPHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := uuid.Parse(idStr)
 	if err != nil {
-		sender.Error(fmt.Errorf("invalid user id: %w", core_errors.ErrValidation))
+		sender.Error(domain.ValidationErr("user_id", nil))
 		return
 	}
 	user, err := h.usersService.GetUser(ctx, userID)

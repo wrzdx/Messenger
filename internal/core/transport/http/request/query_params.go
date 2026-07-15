@@ -2,7 +2,6 @@ package http_request
 
 import (
 	"fmt"
-	core_errors "messenger/internal/core/errors"
 	"net/http"
 	"strconv"
 
@@ -21,7 +20,7 @@ func GetQueryParam[T any](r *http.Request, key string) (*T, error) {
 	case *int:
 		val, err := strconv.Atoi(param)
 		if err != nil {
-			return nil, fmt.Errorf("param='%s' by key='%s' not a valid integer: %w", param, key, core_errors.ErrValidation)
+			return nil, fmt.Errorf("param='%s' by key='%s' not a valid integer", param, key)
 		}
 		res := any(val).(T)
 		return &res, nil
@@ -29,7 +28,7 @@ func GetQueryParam[T any](r *http.Request, key string) (*T, error) {
 	case *uuid.UUID:
 		id, err := uuid.Parse(param)
 		if err != nil {
-			return nil, fmt.Errorf("param='%s' by key='%s' not a valid uuid: %w", param, key, core_errors.ErrValidation)
+			return nil, fmt.Errorf("param='%s' by key='%s' not a valid uuid", param, key)
 		}
 		res := any(id).(T)
 		return &res, nil

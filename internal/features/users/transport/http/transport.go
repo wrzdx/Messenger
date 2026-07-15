@@ -4,12 +4,13 @@ import (
 	"context"
 	"messenger/internal/core/domain"
 	http_middleware "messenger/internal/core/transport/http/middleware"
+	users_service "messenger/internal/features/users/service"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
-type UsersHTTPHandler struct {
+type UsersHandler struct {
 	usersService UsersService
 }
 
@@ -32,7 +33,7 @@ type UsersService interface {
 	PatchUser(
 		ctx context.Context,
 		id uuid.UUID,
-		patch domain.UserPatch,
+		patch users_service.UserPatch,
 	) (domain.User, error)
 
 	ChangePassword(
@@ -43,13 +44,13 @@ type UsersService interface {
 	) error
 }
 
-func NewUsersHTTPHandler(usersService UsersService) *UsersHTTPHandler {
-	return &UsersHTTPHandler{
+func NewUsersHandler(usersService UsersService) *UsersHandler {
+	return &UsersHandler{
 		usersService: usersService,
 	}
 }
 
-func (h *UsersHTTPHandler) Router(authMW http_middleware.Middleware) chi.Router {
+func (h *UsersHandler) Router(authMW http_middleware.Middleware) chi.Router {
 	router := chi.NewRouter()
 	router.Get("/", h.GetUsers)
 	router.Get("/{id}", h.GetUser)

@@ -18,35 +18,67 @@ func (s *AuthService) Register(
 	auth.TokenPair,
 	error,
 ) {
-	if err := payload.Validate(); err != nil {
-		return domain.User{}, auth.TokenPair{}, fmt.Errorf("validate register payload: %w", err)
+	profile, err := domain.NewUserProfile(
+		payload.Username,
+		payload.FirstName,
+		payload.LastName,
+		payload.Bio,
+	)
+	if err != nil {
+		return domain.User{}, auth.TokenPair{}, fmt.Errorf("new user profile: %w", err)
+	}
+	if err := auth.ValidatePassword(payload.Password); err != nil {
+		return domain.User{}, auth.TokenPair{}, domain.DetailedError{
+			Err:     err,
+			Details: map[string]string{"password": err.Error()},
+		}
 	}
 	passwordHash, err := s.hasher.Hash(payload.Password)
 	if err != nil {
 		return domain.User{}, auth.TokenPair{}, fmt.Errorf("hash password: %w", err)
 	}
-
-	user := domain.NewUser(
+	now := time.Now()
+	user, err := domain.NewUser(
 		uuid.New(),
-		payload.Username,
-		payload.FirstName,
-		payload.LastName,
-		time.Now(),
-		payload.Bio,
+		profile,
+		now,
+		nil,
 		passwordHash,
 	)
-	tokenID := uuid.New()
-	tokens, err := s.tokenProvider.GenerateTokenPair(user.ID, tokenID)
+	if err != nil {
+		return domain.User{}, auth.TokenPair{}, fmt.Errorf("new user: %w", err)
+	}
+
+	session, err := domain.NewSession(
+		uuid.New(),
+		user.ID,
+		uuid.New(),
+		now,
+		now.Add(s.config.SessionTTL),
+	)
+	if err != nil {
+		return domain.User{}, auth.TokenPair{}, fmt.Errorf("new session: %w", err)
+	}
+	tokens, err := s.generateTokenPair(session, now)
 	if err != nil {
 		return domain.User{}, auth.TokenPair{}, fmt.Errorf(
-			"generate refresh token: %w",
+			"generate token pair: %w",
 			err,
 		)
 	}
+	err = s.txManager.WithinTransaction(ctx, func(ctx context.Context) error {
+		if err := s.usersRepository.CreateUser(ctx, user); err != nil {
+			return fmt.Errorf("create user: %w", err)
+		}
 
-	user, err = s.usersRepository.CreateUser(ctx, user)
+		if err := s.sessionsRepository.CreateSession(ctx, session); err != nil {
+			return fmt.Errorf("create session: %w", err)
+		}
+		return nil
+	})
+
 	if err != nil {
-		return domain.User{}, auth.TokenPair{}, err
+		return domain.User{}, auth.TokenPair{}, fmt.Errorf("transaction: %w", err)
 	}
 
 	return user, tokens, nil
@@ -58,48 +90,4 @@ type RegisterPayload struct {
 	LastName  *string
 	Bio       *string
 	Password  string
-}
-
-func NewRegisterPayload(
-	username string,
-	firstName string,
-	lastName *string,
-	bio *string,
-	password string,
-) RegisterPayload {
-	return RegisterPayload{
-		Username:  username,
-		FirstName: firstName,
-		LastName:  lastName,
-		Bio:       bio,
-		Password:  password,
-	}
-}
-
-func (p *RegisterPayload) Validate() error {
-	if err := domain.ValidateUsername(p.Username); err != nil {
-		return err
-	}
-
-	if err := domain.ValidateFirstName(p.FirstName); err != nil {
-		return err
-	}
-
-	if p.LastName != nil {
-		if err := domain.ValidateLastName(*p.LastName); err != nil {
-			return err
-		}
-	}
-
-	if p.Bio != nil {
-		if err := domain.ValidateBio(*p.Bio); err != nil {
-			return err
-		}
-	}
-
-	if err := domain.ValidatePassword(p.Password); err != nil {
-		return err
-	}
-
-	return nil
 }

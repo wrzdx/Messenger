@@ -31,7 +31,7 @@ func TestChangePasswordHandler_Success(t *testing.T) {
 		Return(nil).
 		Once()
 
-	handler := NewUsersHTTPHandler(service)
+	handler := NewUsersHandler(service)
 
 	body := map[string]string{
 		"old_password": "old-password",
@@ -76,7 +76,7 @@ func TestChangePasswordHandler_Fail(t *testing.T) {
 		).
 		Return(domain.ErrWrongPassword)
 
-	handler := NewUsersHTTPHandler(service)
+	handler := NewUsersHandler(service)
 
 	body := map[string]string{
 		"old_password": "old-password",

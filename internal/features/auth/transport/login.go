@@ -13,13 +13,13 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	Access string `json:"access"`
+	Access string `json:"access_token"`
 }
 
-func (h *AuthHTTPHandler) Login(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := logger.FromContext(ctx)
-	sender := http_response.NewHTTPSender(log, w)
+	sender := http_response.NewHTTPSender(log, w, errorMapper)
 	var request LoginRequest
 	if err := http_request.DecodeAndValidateRequest(r, &request); err != nil {
 		sender.Error(err)
@@ -38,6 +38,6 @@ func (h *AuthHTTPHandler) Login(w http.ResponseWriter, r *http.Request) {
 	response := LoginResponse{
 		Access: tokens.Access,
 	}
-	h.cookieManger.SetRefreshToken(w, tokens.Refresh)
+	h.cookieManager.SetRefreshToken(w, tokens.Refresh)
 	sender.OK(http.StatusOK, response)
 }

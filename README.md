@@ -1,4 +1,5 @@
 # Messenger
+![db](db.png)
 
 A modern messenger backend written in Go.
 
@@ -13,19 +14,15 @@ A modern messenger backend written in Go.
 
 ## Features
 
+
 - Authentication
 - Chats
 - Messages
 - User management
 
-## Getting Started
-
-```bash
-make up
-```
 
 ## API
-
+```
 /auth
     POST /register
     POST /login
@@ -38,10 +35,14 @@ make up
     GET    /{id}
     PATCH  /me
     DELETE /me
+    PUT    /me/password
 
 /avatars
     POST   /
     DELETE /
 
 /chats
+    GET /
+    GET /{id}
 /messages
+```

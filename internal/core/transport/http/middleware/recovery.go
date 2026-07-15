@@ -3,6 +3,7 @@ package http_middleware
 import (
 	"fmt"
 	logger "messenger/internal/core/logger"
+	http_errmap "messenger/internal/core/transport/http/errmap"
 	http_response "messenger/internal/core/transport/http/response"
 	"net/http"
 )
@@ -12,7 +13,7 @@ func Recovery() Middleware {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			log := logger.FromContext(ctx)
-			sender := http_response.NewHTTPSender(log, w)
+			sender := http_response.NewHTTPSender(log, w, http_errmap.Map)
 			defer func() {
 				if p := recover(); p != nil {
 					sender.Error(fmt.Errorf("during handle HTTP request got unexpected panic: %v", p))

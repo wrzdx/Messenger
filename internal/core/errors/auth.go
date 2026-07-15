@@ -3,6 +3,7 @@ package core_errors
 import (
 	"errors"
 	"messenger/internal/core/auth"
+	"net/http"
 )
 
 func authError(e error) (Error, bool) {
@@ -13,9 +14,9 @@ func authError(e error) (Error, bool) {
 
 	switch {
 	case errors.Is(e, auth.ErrInvalidToken):
-		err.Code = INVALID_TOKEN
+		err.Code = http.StatusUnauthorized
 	case errors.Is(e, auth.ErrPasswordMismatch):
-		err.Code = WRONG_PASSWORD
+		err.Code = http.StatusForbidden
 	default:
 		return Error{}, false
 	}

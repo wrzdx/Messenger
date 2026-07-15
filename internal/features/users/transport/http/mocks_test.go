@@ -7,6 +7,7 @@ package users_transport_http
 import (
 	"context"
 	"messenger/internal/core/domain"
+	"messenger/internal/features/users/service"
 
 	"github.com/google/uuid"
 	mock "github.com/stretchr/testify/mock"
@@ -300,7 +301,7 @@ func (_c *MockUsersService_GetUsers_Call) RunAndReturn(run func(ctx context.Cont
 }
 
 // PatchUser provides a mock function for the type MockUsersService
-func (_mock *MockUsersService) PatchUser(ctx context.Context, id uuid.UUID, patch domain.UserPatch) (domain.User, error) {
+func (_mock *MockUsersService) PatchUser(ctx context.Context, id uuid.UUID, patch users_service.UserPatch) (domain.User, error) {
 	ret := _mock.Called(ctx, id, patch)
 
 	if len(ret) == 0 {
@@ -309,15 +310,15 @@ func (_mock *MockUsersService) PatchUser(ctx context.Context, id uuid.UUID, patc
 
 	var r0 domain.User
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, domain.UserPatch) (domain.User, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, users_service.UserPatch) (domain.User, error)); ok {
 		return returnFunc(ctx, id, patch)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, domain.UserPatch) domain.User); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, users_service.UserPatch) domain.User); ok {
 		r0 = returnFunc(ctx, id, patch)
 	} else {
 		r0 = ret.Get(0).(domain.User)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, domain.UserPatch) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, users_service.UserPatch) error); ok {
 		r1 = returnFunc(ctx, id, patch)
 	} else {
 		r1 = ret.Error(1)
@@ -333,12 +334,12 @@ type MockUsersService_PatchUser_Call struct {
 // PatchUser is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id uuid.UUID
-//   - patch domain.UserPatch
+//   - patch users_service.UserPatch
 func (_e *MockUsersService_Expecter) PatchUser(ctx any, id any, patch any) *MockUsersService_PatchUser_Call {
 	return &MockUsersService_PatchUser_Call{Call: _e.mock.On("PatchUser", ctx, id, patch)}
 }
 
-func (_c *MockUsersService_PatchUser_Call) Run(run func(ctx context.Context, id uuid.UUID, patch domain.UserPatch)) *MockUsersService_PatchUser_Call {
+func (_c *MockUsersService_PatchUser_Call) Run(run func(ctx context.Context, id uuid.UUID, patch users_service.UserPatch)) *MockUsersService_PatchUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -348,9 +349,9 @@ func (_c *MockUsersService_PatchUser_Call) Run(run func(ctx context.Context, id 
 		if args[1] != nil {
 			arg1 = args[1].(uuid.UUID)
 		}
-		var arg2 domain.UserPatch
+		var arg2 users_service.UserPatch
 		if args[2] != nil {
-			arg2 = args[2].(domain.UserPatch)
+			arg2 = args[2].(users_service.UserPatch)
 		}
 		run(
 			arg0,
@@ -366,7 +367,7 @@ func (_c *MockUsersService_PatchUser_Call) Return(user domain.User, err error) *
 	return _c
 }
 
-func (_c *MockUsersService_PatchUser_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID, patch domain.UserPatch) (domain.User, error)) *MockUsersService_PatchUser_Call {
+func (_c *MockUsersService_PatchUser_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID, patch users_service.UserPatch) (domain.User, error)) *MockUsersService_PatchUser_Call {
 	_c.Call.Return(run)
 	return _c
 }

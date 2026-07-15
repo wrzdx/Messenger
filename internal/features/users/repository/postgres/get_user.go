@@ -5,24 +5,35 @@ import (
 	"errors"
 	"fmt"
 	"messenger/internal/core/domain"
-	postgres "messenger/internal/core/repository/postgres"
+	"messenger/internal/core/postgres"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 func (r *UsersRepository) GetUser(
 	ctx context.Context,
 	id uuid.UUID,
 ) (domain.User, error) {
-	ctx, cancel := context.WithTimeout(ctx, r.db.OptTimeout())
+	ctx, cancel := context.WithTimeout(ctx, r.timeout)
 	defer cancel()
+
+	db := postgres.GetExecutor(ctx, r.db)
+
 	query := `
-	SELECT id, username, first_name, last_name, created_at, bio, password_hash
+	SELECT id,
+		   username,
+		   first_name,
+		   last_name,
+		   created_at,
+		   deleted_at,
+		   bio,
+		   password_hash
 	FROM users
 	WHERE id=$1;
 	`
 
-	row := r.db.QueryRow(ctx, query, id)
+	row := db.QueryRow(ctx, query, id)
 
 	var userModel UserModel
 	err := row.Scan(
@@ -31,22 +42,21 @@ func (r *UsersRepository) GetUser(
 		&userModel.FirstName,
 		&userModel.LastName,
 		&userModel.CreatedAt,
+		&userModel.DeletedAt,
 		&userModel.Bio,
 		&userModel.PasswordHash,
 	)
 	if err != nil {
-		if errors.Is(err, postgres.ErrNoRows) {
-			return domain.User{}, domain.NotFoundErr(
-				domain.UserEntity,
-				"id",
-				id.String(),
-			)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.User{}, domain.ErrNotFound
 		}
 
-		return domain.User{}, fmt.Errorf("scan error: %w", err)
+		return domain.User{}, fmt.Errorf("scan user by id: %w", err)
 	}
 
-	userDomain := UserDomainFromModel(userModel)
-
+	userDomain, err := UserDomainFromModel(userModel)
+	if err != nil {
+		return domain.User{}, err
+	}
 	return userDomain, nil
 }

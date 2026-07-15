@@ -1,210 +1,122 @@
 package domain
 
 import (
-	"errors"
-	"strings"
 	"testing"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
 )
 
+func TestNewUser(t *testing.T) {
+	now := time.Now()
+	profile, err := NewUserProfile("Username_1", "First Name", nil, nil)
+	require.NoError(t, err)
+
+	t.Run("creates valid user", func(t *testing.T) {
+		id := uuid.New()
+
+		user, err := NewUser(id, profile, now, nil, "password_hash")
+
+		require.NoError(t, err)
+		require.Equal(t, User{
+			ID:           id,
+			Profile:      profile,
+			CreatedAt:    now,
+			PasswordHash: "password_hash",
+		}, user)
+	})
+
+	t.Run("returns zero user when invalid", func(t *testing.T) {
+		user, err := NewUser(uuid.Nil, profile, now, nil, "password_hash")
+
+		require.ErrorIs(t, err, ErrInvalidUser)
+		require.Zero(t, user)
+	})
+}
+
 func TestUserValidate(t *testing.T) {
-	lastName := "Smith"
-	longLastName := strings.Repeat("a", 65)
+	now := time.Now()
+	profile, err := NewUserProfile("Username_1", "First Name", nil, nil)
+	require.NoError(t, err)
 
-	bio := "Hello!"
-	longBio := strings.Repeat("a", 71)
+	validUser := func() User {
+		return User{
+			ID:           uuid.New(),
+			Profile:      profile,
+			CreatedAt:    now,
+			PasswordHash: "password_hash",
+		}
+	}
 
 	tests := []struct {
-		name string
-		user User
-		err  error
+		name      string
+		change    func(*User)
+		wantError error
 	}{
+		{name: "valid active user", change: func(*User) {}},
 		{
-			name: "valid",
-			user: User{
-				Username:  "username",
-				FirstName: "Andrew",
-				LastName:  &lastName,
-				Bio:       &bio,
+			name: "valid user deleted after creation",
+			change: func(user *User) {
+				user.DeletedAt = new(now.Add(time.Hour))
 			},
 		},
 		{
-			name: "short username",
-			user: User{
-				Username:  "usr",
-				FirstName: "Andrew",
+			name: "deleted_at equal to created_at",
+			change: func(user *User) {
+				user.DeletedAt = new(now)
 			},
-			err: ErrInvalidUsername,
 		},
 		{
-			name: "missing first name",
-			user: User{
-				Username:  "username",
-				FirstName: "",
+			name: "nil id",
+			change: func(user *User) {
+				user.ID = uuid.Nil
 			},
-			err: ErrInvalidFirstName,
+			wantError: ErrInvalidUser,
 		},
 		{
-			name: "last name too long",
-			user: User{
-				Username:  "username",
-				FirstName: "Andrew",
-				LastName:  &longLastName,
+			name: "zero created_at",
+			change: func(user *User) {
+				user.CreatedAt = time.Time{}
 			},
-			err: ErrInvalidLastName,
+			wantError: ErrInvalidUser,
 		},
 		{
-			name: "bio too long",
-			user: User{
-				Username:  "username",
-				FirstName: "Andrew",
-				Bio:       &longBio,
+			name: "zero deleted_at",
+			change: func(user *User) {
+				user.DeletedAt = new(time.Time{})
 			},
-			err: ErrInvalidBio,
+			wantError: ErrInvalidUser,
+		},
+		{
+			name: "deleted_at before created_at",
+			change: func(user *User) {
+				user.DeletedAt = new(now.Add(-time.Hour))
+			},
+			wantError: ErrInvalidUser,
+		},
+		{
+			name: "empty password hash",
+			change: func(user *User) {
+				user.PasswordHash = ""
+			},
+			wantError: ErrInvalidUser,
+		},
+		{
+			name: "empty profile",
+			change: func(user *User) {
+				user.Profile = UserProfile{}
+			},
+			wantError: ErrInvalidUser,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.user.Validate()
+			user := validUser()
+			tt.change(&user)
 
-			if tt.name == "valid" {
-				if err != nil {
-					t.Fatalf("unexpected error: %v", err)
-				}
-				return
-			}
-
-			if err == nil {
-				t.Fatal("expected validation error")
-			}
-
-			if !errors.Is(err, tt.err) {
-				t.Fatalf("expected ErrInvalidArgument, got %v", err)
-			}
+			require.ErrorIs(t, user.Validate(), tt.wantError)
 		})
 	}
-}
-
-func TestUserPatchValidate(t *testing.T) {
-	username := "new_username"
-
-	tests := []struct {
-		name  string
-		patch UserPatch
-		err   error
-	}{
-		{
-			name: "valid",
-			patch: UserPatch{
-				Username: Nullable[string]{
-					Set:   true,
-					Value: &username,
-				},
-			},
-		},
-		{
-			name: "username to null",
-			patch: UserPatch{
-				Username: Nullable[string]{
-					Set: true,
-				},
-			},
-			err: ErrNullUsername,
-		},
-		{
-			name: "first name to null",
-			patch: UserPatch{
-				FirstName: Nullable[string]{
-					Set: true,
-				},
-			},
-			err: ErrNullFirstname,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.patch.Validate()
-
-			if !errors.Is(err, tt.err) {
-				t.Fatalf("want: %v, got %v", tt.err, err)
-			}
-		})
-	}
-}
-
-func TestUserApplyPatch(t *testing.T) {
-	user := User{
-		Username:  "username",
-		FirstName: "Andrew",
-	}
-
-	newUsername := "new_username"
-	newBio := "Hello"
-
-	t.Run("success", func(t *testing.T) {
-		u := user
-
-		err := u.ApplyPatch(UserPatch{
-			Username: Nullable[string]{
-				Set:   true,
-				Value: &newUsername,
-			},
-			Bio: Nullable[string]{
-				Set:   true,
-				Value: &newBio,
-			},
-		})
-
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
-		if u.Username != newUsername {
-			t.Fatalf("username wasn't updated")
-		}
-
-		if u.Bio == nil || *u.Bio != newBio {
-			t.Fatalf("bio wasn't updated")
-		}
-	})
-
-	t.Run("invalid patch", func(t *testing.T) {
-		u := user
-
-		err := u.ApplyPatch(UserPatch{
-			Username: Nullable[string]{
-				Set: true,
-			},
-		})
-
-		if err == nil {
-			t.Fatal("expected error")
-		}
-
-		if u.Username != user.Username {
-			t.Fatal("user should not be modified")
-		}
-	})
-
-	t.Run("patched user invalid", func(t *testing.T) {
-		u := user
-
-		short := "abc"
-
-		err := u.ApplyPatch(UserPatch{
-			Username: Nullable[string]{
-				Set:   true,
-				Value: &short,
-			},
-		})
-
-		if err == nil {
-			t.Fatal("expected error")
-		}
-
-		if u.Username != user.Username {
-			t.Fatal("user should not be modified")
-		}
-	})
 }

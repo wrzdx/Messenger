@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	core_errors "messenger/internal/core/errors"
+	"io"
 	"net/http"
 	"unicode"
 
@@ -29,18 +29,6 @@ func Validate(dest any) map[string]string {
 			}
 		}
 	}
-	v, ok := dest.(validatable)
-
-	if ok {
-		customFields := v.Validate()
-		for k, v := range customFields {
-			if _, ok := fields[k]; ok {
-				fields[k] += " and "
-			}
-			fields[k] += v
-		}
-	}
-
 	return fields
 }
 
@@ -73,14 +61,13 @@ func formatField(err validator.FieldError) (string, string) {
 }
 
 func DecodeAndValidateRequest(r *http.Request, dest any) error {
-	if err := json.NewDecoder(r.Body).Decode(dest); err != nil {
-		return fmt.Errorf(
-			"decode json: %w",
-			err,
-		)
+	err := json.NewDecoder(r.Body).Decode(dest)
+	if err != nil && !errors.Is(err, io.EOF) {
+		return fmt.Errorf("%w: decode json: %w", ErrInvalidRequest, err)
 	}
+
 	if fields := Validate(dest); len(fields) != 0 {
-		return core_errors.ValidationError(fields)
+		return newFieldError(fields)
 	}
 	return nil
 }

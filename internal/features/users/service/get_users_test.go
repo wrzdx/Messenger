@@ -57,7 +57,7 @@ func TestUsersService_GetUsers(t *testing.T) {
 				new(-1),
 				&offset,
 			),
-			wantErr: domain.ErrNegativeLimit,
+			wantErr: domain.ErrValidation,
 		},
 		{
 			name: "negative offset",
@@ -65,7 +65,7 @@ func TestUsersService_GetUsers(t *testing.T) {
 				&limit,
 				new(-1),
 			),
-			wantErr: domain.ErrNegativeOffset,
+			wantErr: domain.ErrValidation,
 		},
 		{
 			name: "repository error",
