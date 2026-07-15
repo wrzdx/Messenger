@@ -1,6 +1,7 @@
-package pgx_pool
+package postgres
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -20,6 +21,10 @@ func NewConfig() (Config, error) {
 	var config Config
 	if err := envconfig.Process("POSTGRES", &config); err != nil {
 		return Config{}, fmt.Errorf("process envconfig: %w", err)
+	}
+
+	if config.Timeout <= 0 {
+		return Config{}, errors.New("invalid postgres timeout")
 	}
 
 	return config, nil

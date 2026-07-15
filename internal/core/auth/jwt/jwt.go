@@ -55,7 +55,7 @@ func (s *TokenProvider) GenerateAccessToken(
 	}
 	accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, aClaims).SignedString(s.config.Secret)
 	if err != nil {
-		return "", fmt.Errorf("access: %w", err)
+		return "", fmt.Errorf("sign: %w", err)
 	}
 	return accessToken, nil
 }
@@ -81,7 +81,7 @@ func (s *TokenProvider) GenerateRefreshToken(
 	}
 	refreshToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, rClaims).SignedString(s.config.Secret)
 	if err != nil {
-		return "", fmt.Errorf("refresh: %w", err)
+		return "", fmt.Errorf("sign: %w", err)
 	}
 
 	return refreshToken, nil

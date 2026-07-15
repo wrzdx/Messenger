@@ -80,7 +80,7 @@ func (s *ChatsService) createDirect(
 	)
 	other := participantIDs[0]
 	user1, user2 := normalizeUsers(userID, other)
-	
+
 	chat, err := s.chatsRepo.CreateDirect(ctx, chat, user1, user2)
 	if err != nil {
 		return domain.Chat{}, fmt.Errorf("create chat: %w", err)

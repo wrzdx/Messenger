@@ -5,9 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"messenger/internal/core/domain"
-	postgres "messenger/internal/core/repository/postgres"
+	"messenger/internal/core/postgres"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 func (r *UsersRepository) GetUser(
@@ -16,6 +17,7 @@ func (r *UsersRepository) GetUser(
 ) (domain.User, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.db.OptTimeout())
 	defer cancel()
+	db := postgres.GetExecutor(ctx, r.db)
 	query := `
 	SELECT id,
 		   username,
@@ -29,7 +31,7 @@ func (r *UsersRepository) GetUser(
 	WHERE id=$1;
 	`
 
-	row := r.db.QueryRow(ctx, query, id)
+	row := db.QueryRow(ctx, query, id)
 
 	var userModel UserModel
 	err := row.Scan(
@@ -43,11 +45,10 @@ func (r *UsersRepository) GetUser(
 		&userModel.PasswordHash,
 	)
 	if err != nil {
-		if errors.Is(err, postgres.ErrNoRows) {
-			return domain.User{}, domain.NotFoundErr(
-				domain.UserEntity,
-				"id",
-				id.String(),
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.User{}, fmt.Errorf(
+				"matching user: %w",
+				domain.ErrNotFound,
 			)
 		}
 

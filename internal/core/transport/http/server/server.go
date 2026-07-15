@@ -30,8 +30,8 @@ func (s *HTTPServer) Run(ctx context.Context) error {
 		Handler: s.router,
 	}
 	s.log.Warn(
-		"start HTTP server", 
-		zap.String("addr", s.config.Addr), 
+		"start HTTP server",
+		zap.String("addr", s.config.Addr),
 		zap.Strings("allowed_origins", s.config.AllowedOrigins),
 	)
 	ch := make(chan error, 1)

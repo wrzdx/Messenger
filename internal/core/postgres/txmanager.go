@@ -3,15 +3,18 @@ package postgres
 import (
 	"context"
 	"fmt"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type txKey struct{}
 
 type TransactionManager struct {
-	pool Pool
+	pool *pgxpool.Pool
 }
 
-func NewTransactionManager(pool Pool) *TransactionManager {
+func NewTransactionManager(pool *pgxpool.Pool) *TransactionManager {
 	return &TransactionManager{pool: pool}
 }
 
@@ -31,8 +34,8 @@ func (tm *TransactionManager) WithinTransaction(ctx context.Context, fn func(ctx
 	return tx.Commit(ctx)
 }
 
-func GetExecutor(ctx context.Context, defaultPool DB) DB {
-	if tx, ok := ctx.Value(txKey{}).(Tx); ok {
+func GetExecutor(ctx context.Context, defaultPool DBTX) DBTX {
+	if tx, ok := ctx.Value(txKey{}).(pgx.Tx); ok {
 		return tx
 	}
 	return defaultPool

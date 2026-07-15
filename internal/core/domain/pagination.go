@@ -3,8 +3,7 @@ package domain
 import "errors"
 
 var (
-	ErrNegativeLimit  = errors.New("limit must be non-negative")
-	ErrNegativeOffset = errors.New("offset must be non-negative")
+	ErrInvalidPagination = errors.New("invalid pagination options")
 )
 
 type Pagination struct {
@@ -21,36 +20,19 @@ func NewPagination(limit, offset *int) Pagination {
 
 func (p Pagination) Validate() error {
 	fields := make(map[string]string)
-	if p.Limit != nil {
-		if err := ValidateLimit(*p.Limit); err != nil {
-			fields["limit"] = err.Error()
-		}
+	if p.Limit != nil && *p.Limit < 0 {
+		fields["limit"] = "limit must be non-negative"
 	}
 
-	if p.Offset != nil {
-		if err := ValidateOffset(*p.Offset); err != nil {
-			fields["offset"] = err.Error()
-		}
+	if p.Offset != nil && *p.Offset < 0 {
+		fields["offset"] = "offset must be non-negative"
 	}
 
 	if len(fields) > 0 {
-		return ValidationErr(string(PaginationEntity), fields)
-	}
-
-	return nil
-}
-
-func ValidateLimit(limit int) error {
-	if limit < 0 {
-		return ErrNegativeLimit
-	}
-
-	return nil
-}
-
-func ValidateOffset(offset int) error {
-	if offset < 0 {
-		return ErrNegativeOffset
+		return DetailedError{
+			Err:     ErrInvalidPagination,
+			Details: fields,
+		}
 	}
 
 	return nil
