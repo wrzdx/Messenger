@@ -1,6 +1,7 @@
 package users_postgres_repository
 
 import (
+	"fmt"
 	"messenger/internal/core/domain"
 	"time"
 
@@ -18,34 +19,33 @@ type UserModel struct {
 	PasswordHash string
 }
 
-func UserDomainFromModel(user UserModel) domain.User {
-	domainUser := domain.NewUser(
+func UserDomainFromModel(user UserModel) (domain.User, error) {
+	profile, err := domain.NewUserProfile(user.Username, user.FirstName, user.LastName, user.Bio)
+	if err != nil {
+		return domain.User{}, fmt.Errorf("new profile from model: %w", err)
+	}
+	domainUser, err := domain.NewUser(
 		user.ID,
-		user.Username,
-		user.FirstName,
-		user.LastName,
+		profile,
 		user.CreatedAt,
 		user.DeletedAt,
-		user.Bio,
 		user.PasswordHash,
 	)
-	return domainUser
+	if err != nil {
+		return domain.User{}, fmt.Errorf("new user from model: %w", err)
+	}
+	return domainUser, nil
 }
 
-func userDomainsFromModels(users []UserModel) []domain.User {
+func userDomainsFromModels(users []UserModel) ([]domain.User, error) {
 	userDomains := make([]domain.User, len(users))
 	for i, user := range users {
-		userDomains[i] = domain.NewUser(
-			user.ID,
-			user.Username,
-			user.FirstName,
-			user.LastName,
-			user.CreatedAt,
-			user.DeletedAt,
-			user.Bio,
-			user.PasswordHash,
-		)
+		userDomain, err := UserDomainFromModel(user)
+		if err != nil {
+			return nil, err
+		}
+		userDomains[i] = userDomain
 	}
 
-	return userDomains
+	return userDomains, nil
 }

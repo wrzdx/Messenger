@@ -3,6 +3,7 @@
 package auth_postgres_repository
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -10,7 +11,6 @@ import (
 	"messenger/internal/core/postgres"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 )
 
@@ -67,7 +67,7 @@ func TestRotateSession(t *testing.T) {
 			createdAt.Add(time.Hour),
 		)
 
-		require.ErrorIs(t, err, pgx.ErrNoRows)
+		require.ErrorIs(t, err, domain.ErrNotFound)
 		requireSessionEqual(t, session, loadSessionForTest(t, tx, session.ID))
 	})
 
@@ -97,7 +97,7 @@ func TestRotateSession(t *testing.T) {
 			createdAt.Add(2*time.Hour),
 		)
 
-		require.ErrorIs(t, err, pgx.ErrNoRows)
+		require.ErrorIs(t, err, domain.ErrNotFound)
 		saved := loadSessionForTest(t, tx, session.ID)
 		require.Equal(t, firstNewTokenID, saved.CurrentTokenID)
 		require.True(t, firstUsedAt.Equal(saved.LastUsedAt))
@@ -120,7 +120,7 @@ func TestRotateSession(t *testing.T) {
 			expiresAt,
 		)
 
-		require.ErrorIs(t, err, pgx.ErrNoRows)
+		require.ErrorIs(t, err, domain.ErrNotFound)
 		requireSessionEqual(t, session, loadSessionForTest(t, tx, session.ID))
 	})
 
@@ -177,6 +177,66 @@ func TestRotateSession(t *testing.T) {
 			postgres.UniqueViolation,
 			sessionsCurrentTokenIDUK,
 		))
+	})
+
+	t.Run("allows only one concurrent rotation of the same token", func(t *testing.T) {
+		repository := NewAuthRepository(pool, config.Timeout)
+		createdAt := sessionTestTime()
+		usedAt := createdAt.Add(time.Hour)
+		userID := uuid.New()
+		insertSessionTestUser(t, pool, userID, createdAt)
+		t.Cleanup(func() {
+			ctx, cancel := context.WithTimeout(context.Background(), config.Timeout)
+			defer cancel()
+			_, err := pool.Exec(ctx, `DELETE FROM users WHERE id = $1`, userID)
+			require.NoError(t, err)
+		})
+		session := newSessionForTest(t, userID, uuid.New(), createdAt)
+		require.NoError(t, repository.CreateSession(t.Context(), session))
+
+		type rotationResult struct {
+			session domain.Session
+			err     error
+		}
+
+		start := make(chan struct{})
+		results := make(chan rotationResult, 2)
+		newTokenIDs := [2]uuid.UUID{uuid.New(), uuid.New()}
+		for _, newTokenID := range newTokenIDs {
+			go func() {
+				<-start
+				rotated, err := repository.RotateSession(
+					t.Context(),
+					session.ID,
+					session.CurrentTokenID,
+					newTokenID,
+					usedAt,
+				)
+				results <- rotationResult{session: rotated, err: err}
+			}()
+		}
+		close(start)
+
+		var successful domain.Session
+		successCount := 0
+		notFoundCount := 0
+		for range newTokenIDs {
+			result := <-results
+			if result.err == nil {
+				successCount++
+				successful = result.session
+				continue
+			}
+			require.ErrorIs(t, result.err, domain.ErrNotFound)
+			notFoundCount++
+		}
+
+		require.Equal(t, 1, successCount)
+		require.Equal(t, 1, notFoundCount)
+		require.NotEqual(t, session.CurrentTokenID, successful.CurrentTokenID)
+		saved := loadSessionForTest(t, pool, session.ID)
+		require.Equal(t, successful.CurrentTokenID, saved.CurrentTokenID)
+		require.True(t, usedAt.Equal(saved.LastUsedAt))
 	})
 }
 

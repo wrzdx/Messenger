@@ -5,22 +5,26 @@ import (
 	"errors"
 	"fmt"
 	"messenger/internal/core/domain"
-	postgres "messenger/internal/core/repository/postgres"
+	"messenger/internal/core/postgres"
+
+	"github.com/jackc/pgx/v5"
 )
 
 func (r *UsersRepository) GetUserByUsername(
 	ctx context.Context,
 	username string,
 ) (domain.User, error) {
-	ctx, cancel := context.WithTimeout(ctx, r.db.OptTimeout())
+	ctx, cancel := context.WithTimeout(ctx, r.timeout)
 	defer cancel()
+
+	db := postgres.GetExecutor(ctx, r.db)
 	query := `
 	SELECT *
 	FROM users
-	WHERE username=$1;
+	WHERE lower(username)=lower($1);
 	`
 
-	row := r.db.QueryRow(ctx, query, username)
+	row := db.QueryRow(ctx, query, username)
 
 	var userModel UserModel
 	err := row.Scan(
@@ -34,14 +38,9 @@ func (r *UsersRepository) GetUserByUsername(
 		&userModel.PasswordHash,
 	)
 	if err != nil {
-		if errors.Is(err, postgres.ErrNoRows) {
-			return domain.User{}, domain.NotFoundErr(
-				domain.UserEntity,
-				"username",
-				username,
-			)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.User{}, domain.ErrNotFound
 		}
-
 		return domain.User{}, fmt.Errorf(
 			"scan user by username %q: %w",
 			username,
@@ -49,7 +48,9 @@ func (r *UsersRepository) GetUserByUsername(
 		)
 	}
 
-	userDomain := UserDomainFromModel(userModel)
-
+	userDomain, err := UserDomainFromModel(userModel)
+	if err != nil {
+		return domain.User{}, err
+	}
 	return userDomain, nil
 }

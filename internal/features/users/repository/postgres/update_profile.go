@@ -2,14 +2,19 @@ package users_postgres_repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"messenger/internal/core/domain"
 	"messenger/internal/core/postgres"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
-func (r *UsersRepository) CreateUser(
+func (r *UsersRepository) UpdateUserProfile(
 	ctx context.Context,
-	user domain.User,
+	id uuid.UUID,
+	profile domain.UserProfile,
 ) error {
 	ctx, cancel := context.WithTimeout(ctx, r.timeout)
 	defer cancel()
@@ -17,23 +22,29 @@ func (r *UsersRepository) CreateUser(
 	db := postgres.GetExecutor(ctx, r.db)
 
 	query := `
-	INSERT INTO users (id, username, first_name, last_name, created_at, deleted_at, bio, password_hash)
-	VALUES ($1, $2,$3,$4,$5,$6, $7,$8);
-	`
+	UPDATE users
+	SET 
+		username=$1,
+		first_name=$2,
+		last_name=$3,
+		bio=$4
+	WHERE id=$5
+	RETURNING id;`
 
-	_, err := db.Exec(
+	err := db.QueryRow(
 		ctx,
 		query,
-		user.ID,
-		user.Profile.Username(),
-		user.Profile.FirstName(),
-		user.Profile.LastName(),
-		user.CreatedAt,
-		user.DeletedAt,
-		user.Profile.Bio(),
-		user.PasswordHash,
-	)
+		profile.Username(),
+		profile.FirstName(),
+		profile.LastName(),
+		profile.Bio(),
+		id,
+	).Scan(&id)
+
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.ErrNotFound
+		}
 		details := make(map[string]string)
 		if postgres.IsConstraintViolation(err, postgres.UniqueViolation, usernameUK) {
 			details["username"] = "username already taken"

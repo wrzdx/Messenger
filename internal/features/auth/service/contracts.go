@@ -41,12 +41,13 @@ type UsersRepository interface {
 	CreateUser(
 		ctx context.Context,
 		user domain.User,
-	) (domain.User, error)
+	) error
 }
 
 type Hasher interface {
 	Hash(password string) (string, error)
 	Compare(hash, password string) error
+	DummyCompare()
 }
 
 type TokenProvider interface {

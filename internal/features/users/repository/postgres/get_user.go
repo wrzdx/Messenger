@@ -15,9 +15,11 @@ func (r *UsersRepository) GetUser(
 	ctx context.Context,
 	id uuid.UUID,
 ) (domain.User, error) {
-	ctx, cancel := context.WithTimeout(ctx, r.db.OptTimeout())
+	ctx, cancel := context.WithTimeout(ctx, r.timeout)
 	defer cancel()
+
 	db := postgres.GetExecutor(ctx, r.db)
+
 	query := `
 	SELECT id,
 		   username,
@@ -46,15 +48,15 @@ func (r *UsersRepository) GetUser(
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return domain.User{}, fmt.Errorf(
-				"matching user: %w",
-				domain.ErrNotFound,
-			)
+			return domain.User{}, domain.ErrNotFound
 		}
 
-		return domain.User{}, fmt.Errorf("scan error: %w", err)
+		return domain.User{}, fmt.Errorf("scan user by id: %w", err)
 	}
 
-	userDomain := UserDomainFromModel(userModel)
+	userDomain, err := UserDomainFromModel(userModel)
+	if err != nil {
+		return domain.User{}, err
+	}
 	return userDomain, nil
 }

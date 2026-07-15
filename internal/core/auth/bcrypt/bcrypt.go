@@ -37,3 +37,11 @@ func (h BcryptHasher) Compare(hash, password string) error {
 	}
 	return err
 }
+
+func (h BcryptHasher) DummyCompare() {
+	var dummyHash = "$2a$10$0KTvLBKNwRmaVw2rSXSC/uKr4iugRZ1bGOC7HdCpsEqG5z3yaeUIS"
+	bcrypt.CompareHashAndPassword(
+		[]byte(dummyHash),
+		[]byte("dummypassword"),
+	)
+}

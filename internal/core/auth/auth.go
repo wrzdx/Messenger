@@ -2,7 +2,9 @@ package auth
 
 import (
 	"errors"
+	"fmt"
 	"time"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 )
@@ -13,6 +15,7 @@ var (
 	ErrInvalidClaims        = errors.New("invalid claims")
 	ErrInvalidTokenLifetime = errors.New("invalid token lifetime")
 	ErrInvalidCredentials   = errors.New("invalid credentials")
+	ErrInvalidPassword      = errors.New("invalid password")
 )
 
 type TokenPair struct {
@@ -53,5 +56,16 @@ func (l TokenLifetime) Validate() error {
 	if l.ExpiresAt.IsZero() || l.IssuedAt.IsZero() || !l.ExpiresAt.After(l.IssuedAt) {
 		return ErrInvalidTokenLifetime
 	}
+	return nil
+}
+
+func ValidatePassword(password string) error {
+	if l := utf8.RuneCountInString(password); l < 15 {
+		return fmt.Errorf("password must be at least 15 character: %w", ErrInvalidPassword)
+	}
+	if len(password) > 72 {
+		return fmt.Errorf("password must be at most 72 bytes: %w", ErrInvalidPassword)
+	}
+
 	return nil
 }

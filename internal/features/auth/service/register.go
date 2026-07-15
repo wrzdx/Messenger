@@ -2,7 +2,6 @@ package auth_service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"messenger/internal/core/auth"
 	"messenger/internal/core/domain"
@@ -19,36 +18,64 @@ func (s *AuthService) Register(
 	auth.TokenPair,
 	error,
 ) {
-	if err := payload.Validate(); err != nil {
-		return domain.User{}, auth.TokenPair{}, fmt.Errorf("validate register payload: %w", err)
+	profile, err := domain.NewUserProfile(
+		payload.Username,
+		payload.FirstName,
+		payload.LastName,
+		payload.Bio,
+	)
+	if err != nil {
+		return domain.User{}, auth.TokenPair{}, fmt.Errorf("new user profile: %w", err)
+	}
+	if err := auth.ValidatePassword(payload.Password); err != nil {
+		return domain.User{}, auth.TokenPair{}, fmt.Errorf("validate password: %w", err)
 	}
 	passwordHash, err := s.hasher.Hash(payload.Password)
 	if err != nil {
 		return domain.User{}, auth.TokenPair{}, fmt.Errorf("hash password: %w", err)
 	}
-
-	user := domain.NewUser(
+	now := time.Now()
+	user, err := domain.NewUser(
 		uuid.New(),
-		payload.Username,
-		payload.FirstName,
-		payload.LastName,
-		time.Now(),
+		profile,
+		now,
 		nil,
-		payload.Bio,
 		passwordHash,
 	)
-	tokenID := uuid.New()
-	tokens, err := s.tokenProvider.GenerateTokenPair(user.ID, tokenID)
+	if err != nil {
+		return domain.User{}, auth.TokenPair{}, fmt.Errorf("new user: %w", err)
+	}
+
+	session, err := domain.NewSession(
+		uuid.New(),
+		user.ID,
+		uuid.New(),
+		now,
+		now.Add(s.config.SessionTTL),
+	)
+	if err != nil {
+		return domain.User{}, auth.TokenPair{}, fmt.Errorf("new session: %w", err)
+	}
+	tokens, err := s.generateTokenPair(session, now)
 	if err != nil {
 		return domain.User{}, auth.TokenPair{}, fmt.Errorf(
-			"generate refresh token: %w",
+			"generate token pair: %w",
 			err,
 		)
 	}
+	err = s.txManager.WithinTransaction(ctx, func(ctx context.Context) error {
+		if err := s.usersRepository.CreateUser(ctx, user); err != nil {
+			return fmt.Errorf("create user: %w", err)
+		}
 
-	user, err = s.usersRepository.CreateUser(ctx, user)
+		if err := s.sessionsRepository.CreateSession(ctx, session); err != nil {
+			return fmt.Errorf("create session: %w", err)
+		}
+		return nil
+	})
+
 	if err != nil {
-		return domain.User{}, auth.TokenPair{}, err
+		return domain.User{}, auth.TokenPair{}, fmt.Errorf("transaction: %w", err)
 	}
 
 	return user, tokens, nil
@@ -60,53 +87,4 @@ type RegisterPayload struct {
 	LastName  *string
 	Bio       *string
 	Password  string
-}
-
-func NewRegisterPayload(
-	username string,
-	firstName string,
-	lastName *string,
-	bio *string,
-	password string,
-) RegisterPayload {
-	return RegisterPayload{
-		Username:  username,
-		FirstName: firstName,
-		LastName:  lastName,
-		Bio:       bio,
-		Password:  password,
-	}
-}
-
-func (p *RegisterPayload) Validate() error {
-	tmpUser := domain.NewUser(
-		uuid.New(),
-		p.Username,
-		p.FirstName,
-		p.LastName,
-		time.Now(),
-		nil,
-		p.Bio,
-		"",
-	)
-	userErr := tmpUser.Validate()
-	passwordErr := domain.ValidatePassword(p.Password)
-	if userErr == nil {
-		if passwordErr != nil {
-			return domain.ValidationErr("password", map[string]string{
-				"password": passwordErr.Error(),
-			})
-		}
-		return nil
-
-	} else {
-		de, ok := userErr.(domain.DetailedError)
-		if !ok {
-			return errors.New("validate user return unexpected type")
-		}
-		if passwordErr != nil {
-			de.Details["password"] = passwordErr.Error()
-		}
-		return de
-	}
 }

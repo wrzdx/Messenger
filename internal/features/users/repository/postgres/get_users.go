@@ -4,14 +4,17 @@ import (
 	"context"
 	"fmt"
 	"messenger/internal/core/domain"
+	"messenger/internal/core/postgres"
 )
 
 func (r *UsersRepository) GetUsers(
 	ctx context.Context,
 	pagination domain.Pagination,
 ) ([]domain.User, error) {
-	ctx, cancel := context.WithTimeout(ctx, r.db.OptTimeout())
+	ctx, cancel := context.WithTimeout(ctx, r.timeout)
 	defer cancel()
+
+	db := postgres.GetExecutor(ctx, r.db)
 
 	query := `
 	SELECT *
@@ -20,7 +23,7 @@ func (r *UsersRepository) GetUsers(
 	OFFSET $2;
 	`
 
-	rows, err := r.db.Query(ctx, query, pagination.Limit, pagination.Offset)
+	rows, err := db.Query(ctx, query, pagination.Limit, pagination.Offset)
 	if err != nil {
 		return nil, fmt.Errorf("select users: %w", err)
 	}
@@ -49,7 +52,9 @@ func (r *UsersRepository) GetUsers(
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("next rows: %w", err)
 	}
-	userDomains := userDomainsFromModels(userModels)
-
+	userDomains, err := userDomainsFromModels(userModels)
+	if err != nil {
+		return nil, err
+	}
 	return userDomains, nil
 }

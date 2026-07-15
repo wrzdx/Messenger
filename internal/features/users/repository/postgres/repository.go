@@ -1,19 +1,22 @@
 package users_postgres_repository
 
 import (
-	postgres "messenger/internal/core/repository/postgres"
+	"messenger/internal/core/postgres"
+	"time"
 )
 
 type UsersRepository struct {
-	db postgres.DB
+	db      postgres.DBTX
+	timeout time.Duration
 }
 
-func NewUsersRepository(db postgres.DB) *UsersRepository {
+func NewUsersRepository(db postgres.DBTX, timeout time.Duration) *UsersRepository {
 	return &UsersRepository{
-		db: db,
+		db:      db,
+		timeout: timeout,
 	}
 }
 
 var (
-	usernameUK = "users_username_key"
+	usernameUK = "users_username_lower_uidx"
 )

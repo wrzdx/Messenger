@@ -73,8 +73,8 @@ func main() {
 	authTransportHTTP := auth_transport_http.NewAuthHTTPHandler(authService, cookieManager)
 
 	logger.Debug("initializing feature", zap.String("feature", "users"))
-	usersService := users_service.NewUsersService(usersRepository, hasher)
-	usersTranposrtHTTP := users_transport_http.NewUsersHandler(usersService)
+	// usersService := users_service.NewUsersService(usersRepository, hasher)
+	// usersTranposrtHTTP := users_transport_http.NewUsersHandler(usersService)
 
 	logger.Debug("initializing HTTP server")
 	httpConfig := http_server.NewConfigMust()
@@ -87,11 +87,11 @@ func main() {
 		http_middleware.Recovery(),
 	)
 
-	authMW := http_middleware.Auth(jwtProvider)
+	// authMW := http_middleware.Auth(jwtProvider)
 
 	routerV1 := chi.NewRouter()
 	routerV1.Mount("/auth", authTransportHTTP.Router())
-	routerV1.Mount("/users", usersTranposrtHTTP.Router(authMW))
+	// routerV1.Mount("/users", usersTranposrtHTTP.Router(authMW))
 
 	router.Mount("/api/v1", routerV1)
 	httpServer := http_server.NewHTTPServer(

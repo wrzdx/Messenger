@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"messenger/internal/core/domain"
 	"messenger/internal/core/postgres"
 
 	"github.com/google/uuid"
@@ -53,7 +54,7 @@ func TestDeleteSession(t *testing.T) {
 
 		err := repository.DeleteSession(t.Context(), session.ID, uuid.New())
 
-		require.ErrorIs(t, err, pgx.ErrNoRows)
+		require.ErrorIs(t, err, domain.ErrNotFound)
 		requireSessionEqual(t, session, loadSessionForTest(t, tx, session.ID))
 	})
 
@@ -81,7 +82,7 @@ func TestDeleteSession(t *testing.T) {
 			session.CurrentTokenID,
 		)
 
-		require.ErrorIs(t, err, pgx.ErrNoRows)
+		require.ErrorIs(t, err, domain.ErrNotFound)
 		requireSessionEqual(t, rotated, loadSessionForTest(t, tx, session.ID))
 	})
 
@@ -90,7 +91,7 @@ func TestDeleteSession(t *testing.T) {
 
 		err := repository.DeleteSession(t.Context(), uuid.New(), uuid.New())
 
-		require.ErrorIs(t, err, pgx.ErrNoRows)
+		require.ErrorIs(t, err, domain.ErrNotFound)
 	})
 
 	t.Run("deletes an expired session", func(t *testing.T) {
