@@ -25,7 +25,7 @@ func (s *AuthService) Login(
 			s.hasher.DummyCompare()
 			return auth.TokenPair{}, auth.ErrInvalidCredentials
 		}
-		return auth.TokenPair{}, fmt.Errorf("get user: %w", err)
+		return auth.TokenPair{}, fmt.Errorf("get user by username from repo: %w", err)
 	}
 	if user.DeletedAt != nil {
 		s.hasher.DummyCompare()

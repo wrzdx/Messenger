@@ -111,7 +111,7 @@ func newSessionTestRepository(
 	t *testing.T,
 	pool *pgxpool.Pool,
 	timeout time.Duration,
-) (pgx.Tx, *AuthRepository) {
+) (pgx.Tx, *SessionsRepository) {
 	t.Helper()
 
 	tx, err := pool.Begin(t.Context())
@@ -120,7 +120,7 @@ func newSessionTestRepository(
 		_ = tx.Rollback(context.Background())
 	})
 
-	repository := NewAuthRepository(tx, timeout)
+	repository := NewSessionsRepository(tx, timeout)
 	return tx, repository
 }
 

@@ -6,6 +6,8 @@ import (
 	"messenger/internal/core/domain"
 	auth_service "messenger/internal/features/auth/service"
 	"net/http"
+
+	"github.com/google/uuid"
 )
 
 type AuthService interface {
@@ -26,6 +28,13 @@ type AuthService interface {
 	) (auth.TokenPair, error)
 
 	Logout(ctx context.Context, refreshToken string) error
+
+	ChangePassword(
+		ctx context.Context,
+		userID uuid.UUID,
+		currentPassword string,
+		newPassword string,
+	) error
 }
 
 type CookieManager interface {

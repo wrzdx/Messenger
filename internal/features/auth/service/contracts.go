@@ -25,6 +25,11 @@ type SessionsRepository interface {
 		ctx context.Context,
 		sessionID, currentTokenID uuid.UUID,
 	) error
+
+	DeleteAllSessions(
+		ctx context.Context,
+		userID uuid.UUID,
+	) error
 }
 
 type UsersRepository interface {
@@ -41,6 +46,13 @@ type UsersRepository interface {
 	CreateUser(
 		ctx context.Context,
 		user domain.User,
+	) error
+
+	ChangePassword(
+		ctx context.Context,
+		id uuid.UUID,
+		newPasswordHash string,
+		currentPasswordHash string,
 	) error
 }
 

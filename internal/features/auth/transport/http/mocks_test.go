@@ -11,6 +11,7 @@ import (
 	"messenger/internal/features/auth/service"
 	"net/http"
 
+	"github.com/google/uuid"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -39,6 +40,75 @@ type MockAuthService_Expecter struct {
 
 func (_m *MockAuthService) EXPECT() *MockAuthService_Expecter {
 	return &MockAuthService_Expecter{mock: &_m.Mock}
+}
+
+// ChangePassword provides a mock function for the type MockAuthService
+func (_mock *MockAuthService) ChangePassword(ctx context.Context, userID uuid.UUID, currentPassword string, newPassword string) error {
+	ret := _mock.Called(ctx, userID, currentPassword, newPassword)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ChangePassword")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, string) error); ok {
+		r0 = returnFunc(ctx, userID, currentPassword, newPassword)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockAuthService_ChangePassword_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ChangePassword'
+type MockAuthService_ChangePassword_Call struct {
+	*mock.Call
+}
+
+// ChangePassword is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uuid.UUID
+//   - currentPassword string
+//   - newPassword string
+func (_e *MockAuthService_Expecter) ChangePassword(ctx any, userID any, currentPassword any, newPassword any) *MockAuthService_ChangePassword_Call {
+	return &MockAuthService_ChangePassword_Call{Call: _e.mock.On("ChangePassword", ctx, userID, currentPassword, newPassword)}
+}
+
+func (_c *MockAuthService_ChangePassword_Call) Run(run func(ctx context.Context, userID uuid.UUID, currentPassword string, newPassword string)) *MockAuthService_ChangePassword_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAuthService_ChangePassword_Call) Return(err error) *MockAuthService_ChangePassword_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockAuthService_ChangePassword_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID, currentPassword string, newPassword string) error) *MockAuthService_ChangePassword_Call {
+	_c.Call.Return(run)
+	return _c
 }
 
 // Login provides a mock function for the type MockAuthService
