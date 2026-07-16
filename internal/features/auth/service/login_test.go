@@ -20,7 +20,11 @@ func TestLogin(t *testing.T) {
 		sessionsRepository := NewMockSessionsRepository(t)
 		hasher := NewMockHasher(t)
 		tokenProvider := NewMockTokenProvider(t)
+		txManager := NewMockTXManager(t)
 		user := newLoginTestUser(t, false)
+		outerCtx := t.Context()
+		txCtx, cancel := context.WithCancel(outerCtx)
+		defer cancel()
 		config := AuthConfig{
 			AccessTokenTTL: 15 * time.Minute,
 			SessionTTL:     24 * time.Hour,
@@ -32,8 +36,9 @@ func TestLogin(t *testing.T) {
 		var savedSession domain.Session
 
 		usersRepository.EXPECT().
-			GetUserByUsername(mock.Anything, "Username_1").
+			GetUserByUsername(outerCtx, "Username_1").
 			Return(user, nil)
+		usersRepository.EXPECT().GetUserForUpdate(txCtx, user.ID).Return(user, nil)
 		hasher.EXPECT().
 			Compare(user.PasswordHash, "valid password value").
 			Return(nil)
@@ -52,20 +57,27 @@ func TestLogin(t *testing.T) {
 			}).
 			Return("refresh-token", nil)
 		sessionsRepository.EXPECT().
-			CreateSession(mock.Anything, mock.Anything).
+			CreateSession(txCtx, mock.Anything).
 			Run(func(_ context.Context, session domain.Session) {
 				savedSession = session
 			}).
 			Return(nil)
+		txManager.EXPECT().
+			WithinTransaction(outerCtx, mock.Anything).
+			RunAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+				require.Equal(t, outerCtx, ctx)
+				return fn(txCtx)
+			})
 		service := &AuthService{
 			usersRepository:    usersRepository,
 			sessionsRepository: sessionsRepository,
 			hasher:             hasher,
 			tokenProvider:      tokenProvider,
+			txManager:          txManager,
 			config:             config,
 		}
 
-		tokens, err := service.Login(t.Context(), "Username_1", "valid password value")
+		tokens, err := service.Login(outerCtx, "Username_1", "valid password value")
 
 		require.NoError(t, err)
 		require.Equal(t, auth.TokenPair{
@@ -238,11 +250,74 @@ func TestLogin(t *testing.T) {
 		require.ErrorIs(t, err, generateErr)
 	})
 
+	for _, tt := range []struct {
+		name       string
+		changeUser func(*domain.User)
+	}{
+		{
+			name: "returns invalid credentials when user is deleted before session creation",
+			changeUser: func(user *domain.User) {
+				deletedAt := user.CreatedAt.Add(time.Hour)
+				user.DeletedAt = &deletedAt
+			},
+		},
+		{
+			name: "returns invalid credentials when password changes before session creation",
+			changeUser: func(user *domain.User) {
+				user.PasswordHash = "changed-password-hash"
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			usersRepository := NewMockUsersRepository(t)
+			sessionsRepository := NewMockSessionsRepository(t)
+			hasher := NewMockHasher(t)
+			tokenProvider := NewMockTokenProvider(t)
+			txManager := NewMockTXManager(t)
+			user := newLoginTestUser(t, false)
+			lockedUser := user
+			tt.changeUser(&lockedUser)
+			usersRepository.EXPECT().
+				GetUserByUsername(mock.Anything, "Username_1").
+				Return(user, nil)
+			hasher.EXPECT().Compare(user.PasswordHash, "password").Return(nil)
+			tokenProvider.EXPECT().
+				GenerateAccessToken(mock.Anything, mock.Anything).
+				Return("access-token", nil)
+			tokenProvider.EXPECT().
+				GenerateRefreshToken(mock.Anything, mock.Anything).
+				Return("refresh-token", nil)
+			usersRepository.EXPECT().
+				GetUserForUpdate(mock.Anything, user.ID).
+				Return(lockedUser, nil)
+			txManager.EXPECT().
+				WithinTransaction(mock.Anything, mock.Anything).
+				RunAndReturn(runLoginTransaction)
+			service := &AuthService{
+				usersRepository:    usersRepository,
+				sessionsRepository: sessionsRepository,
+				hasher:             hasher,
+				tokenProvider:      tokenProvider,
+				txManager:          txManager,
+				config: AuthConfig{
+					AccessTokenTTL: 15 * time.Minute,
+					SessionTTL:     24 * time.Hour,
+				},
+			}
+
+			tokens, err := service.Login(t.Context(), "Username_1", "password")
+
+			require.ErrorIs(t, err, auth.ErrInvalidCredentials)
+			require.Empty(t, tokens)
+		})
+	}
+
 	t.Run("returns session persistence error", func(t *testing.T) {
 		usersRepository := NewMockUsersRepository(t)
 		sessionsRepository := NewMockSessionsRepository(t)
 		hasher := NewMockHasher(t)
 		tokenProvider := NewMockTokenProvider(t)
+		txManager := NewMockTXManager(t)
 		user := newLoginTestUser(t, false)
 		createErr := errors.New("create session")
 		usersRepository.EXPECT().
@@ -255,14 +330,19 @@ func TestLogin(t *testing.T) {
 		tokenProvider.EXPECT().
 			GenerateRefreshToken(mock.Anything, mock.Anything).
 			Return("refresh-token", nil)
+		usersRepository.EXPECT().GetUserForUpdate(mock.Anything, user.ID).Return(user, nil)
 		sessionsRepository.EXPECT().
 			CreateSession(mock.Anything, mock.Anything).
 			Return(createErr)
+		txManager.EXPECT().
+			WithinTransaction(mock.Anything, mock.Anything).
+			RunAndReturn(runLoginTransaction)
 		service := &AuthService{
 			usersRepository:    usersRepository,
 			sessionsRepository: sessionsRepository,
 			hasher:             hasher,
 			tokenProvider:      tokenProvider,
+			txManager:          txManager,
 			config: AuthConfig{
 				AccessTokenTTL: 15 * time.Minute,
 				SessionTTL:     24 * time.Hour,
@@ -273,6 +353,10 @@ func TestLogin(t *testing.T) {
 
 		require.ErrorIs(t, err, createErr)
 	})
+}
+
+func runLoginTransaction(ctx context.Context, fn func(context.Context) error) error {
+	return fn(ctx)
 }
 
 func newLoginTestUser(t *testing.T, deleted bool) domain.User {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"messenger/internal/core/domain"
 	"messenger/internal/core/postgres"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -14,6 +15,8 @@ import (
 func (r *UsersRepository) DeleteUser(
 	ctx context.Context,
 	id uuid.UUID,
+	profile domain.UserProfile,
+	deletedAt time.Time,
 ) error {
 	ctx, cancel := context.WithTimeout(ctx, r.timeout)
 	defer cancel()
@@ -22,16 +25,25 @@ func (r *UsersRepository) DeleteUser(
 	query := `
 	UPDATE users
 	SET 
-		username='deleted_' || substr(md5(id::text), 1, 16),
-		first_name='Deleted Account',
-		last_name=NULL,
-		deleted_at=NOW(),
-		bio=NULL
-	WHERE id=$1 AND deleted_at IS NULL
+		username=$1,
+		first_name=$2,
+		last_name=$3,
+		deleted_at=$4,
+		bio=$5
+	WHERE id=$6 AND deleted_at IS NULL
 	RETURNING id;
 	`
 
-	err := db.QueryRow(ctx, query, id).Scan(&id)
+	err := db.QueryRow(
+		ctx,
+		query,
+		profile.Username(),
+		profile.FirstName(),
+		profile.LastName(),
+		deletedAt,
+		profile.Bio(),
+		id,
+	).Scan(&id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.ErrNotFound

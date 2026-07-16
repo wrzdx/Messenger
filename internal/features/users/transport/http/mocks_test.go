@@ -8,6 +8,7 @@ import (
 	"context"
 	"messenger/internal/core/domain"
 	"messenger/internal/features/users/service"
+	"net/http"
 
 	"github.com/google/uuid"
 	mock "github.com/stretchr/testify/mock"
@@ -40,105 +41,36 @@ func (_m *MockUsersService) EXPECT() *MockUsersService_Expecter {
 	return &MockUsersService_Expecter{mock: &_m.Mock}
 }
 
-// ChangePassword provides a mock function for the type MockUsersService
-func (_mock *MockUsersService) ChangePassword(ctx context.Context, id uuid.UUID, old_password string, new_password string) error {
-	ret := _mock.Called(ctx, id, old_password, new_password)
+// DeleteAccount provides a mock function for the type MockUsersService
+func (_mock *MockUsersService) DeleteAccount(ctx context.Context, userID uuid.UUID) error {
+	ret := _mock.Called(ctx, userID)
 
 	if len(ret) == 0 {
-		panic("no return value specified for ChangePassword")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, string) error); ok {
-		r0 = returnFunc(ctx, id, old_password, new_password)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// MockUsersService_ChangePassword_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ChangePassword'
-type MockUsersService_ChangePassword_Call struct {
-	*mock.Call
-}
-
-// ChangePassword is a helper method to define mock.On call
-//   - ctx context.Context
-//   - id uuid.UUID
-//   - old_password string
-//   - new_password string
-func (_e *MockUsersService_Expecter) ChangePassword(ctx any, id any, old_password any, new_password any) *MockUsersService_ChangePassword_Call {
-	return &MockUsersService_ChangePassword_Call{Call: _e.mock.On("ChangePassword", ctx, id, old_password, new_password)}
-}
-
-func (_c *MockUsersService_ChangePassword_Call) Run(run func(ctx context.Context, id uuid.UUID, old_password string, new_password string)) *MockUsersService_ChangePassword_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 uuid.UUID
-		if args[1] != nil {
-			arg1 = args[1].(uuid.UUID)
-		}
-		var arg2 string
-		if args[2] != nil {
-			arg2 = args[2].(string)
-		}
-		var arg3 string
-		if args[3] != nil {
-			arg3 = args[3].(string)
-		}
-		run(
-			arg0,
-			arg1,
-			arg2,
-			arg3,
-		)
-	})
-	return _c
-}
-
-func (_c *MockUsersService_ChangePassword_Call) Return(err error) *MockUsersService_ChangePassword_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *MockUsersService_ChangePassword_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID, old_password string, new_password string) error) *MockUsersService_ChangePassword_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// DeleteUser provides a mock function for the type MockUsersService
-func (_mock *MockUsersService) DeleteUser(ctx context.Context, id uuid.UUID) error {
-	ret := _mock.Called(ctx, id)
-
-	if len(ret) == 0 {
-		panic("no return value specified for DeleteUser")
+		panic("no return value specified for DeleteAccount")
 	}
 
 	var r0 error
 	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
-		r0 = returnFunc(ctx, id)
+		r0 = returnFunc(ctx, userID)
 	} else {
 		r0 = ret.Error(0)
 	}
 	return r0
 }
 
-// MockUsersService_DeleteUser_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteUser'
-type MockUsersService_DeleteUser_Call struct {
+// MockUsersService_DeleteAccount_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteAccount'
+type MockUsersService_DeleteAccount_Call struct {
 	*mock.Call
 }
 
-// DeleteUser is a helper method to define mock.On call
+// DeleteAccount is a helper method to define mock.On call
 //   - ctx context.Context
-//   - id uuid.UUID
-func (_e *MockUsersService_Expecter) DeleteUser(ctx any, id any) *MockUsersService_DeleteUser_Call {
-	return &MockUsersService_DeleteUser_Call{Call: _e.mock.On("DeleteUser", ctx, id)}
+//   - userID uuid.UUID
+func (_e *MockUsersService_Expecter) DeleteAccount(ctx any, userID any) *MockUsersService_DeleteAccount_Call {
+	return &MockUsersService_DeleteAccount_Call{Call: _e.mock.On("DeleteAccount", ctx, userID)}
 }
 
-func (_c *MockUsersService_DeleteUser_Call) Run(run func(ctx context.Context, id uuid.UUID)) *MockUsersService_DeleteUser_Call {
+func (_c *MockUsersService_DeleteAccount_Call) Run(run func(ctx context.Context, userID uuid.UUID)) *MockUsersService_DeleteAccount_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -156,12 +88,12 @@ func (_c *MockUsersService_DeleteUser_Call) Run(run func(ctx context.Context, id
 	return _c
 }
 
-func (_c *MockUsersService_DeleteUser_Call) Return(err error) *MockUsersService_DeleteUser_Call {
+func (_c *MockUsersService_DeleteAccount_Call) Return(err error) *MockUsersService_DeleteAccount_Call {
 	_c.Call.Return(err)
 	return _c
 }
 
-func (_c *MockUsersService_DeleteUser_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID) error) *MockUsersService_DeleteUser_Call {
+func (_c *MockUsersService_DeleteAccount_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID) error) *MockUsersService_DeleteAccount_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -232,114 +164,46 @@ func (_c *MockUsersService_GetUser_Call) RunAndReturn(run func(ctx context.Conte
 	return _c
 }
 
-// GetUsers provides a mock function for the type MockUsersService
-func (_mock *MockUsersService) GetUsers(ctx context.Context, pagination domain.Pagination) ([]domain.User, error) {
-	ret := _mock.Called(ctx, pagination)
+// UpdateProfile provides a mock function for the type MockUsersService
+func (_mock *MockUsersService) UpdateProfile(ctx context.Context, userID uuid.UUID, command users_service.UpdateProfileCommand) (domain.User, error) {
+	ret := _mock.Called(ctx, userID, command)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetUsers")
-	}
-
-	var r0 []domain.User
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.Pagination) ([]domain.User, error)); ok {
-		return returnFunc(ctx, pagination)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.Pagination) []domain.User); ok {
-		r0 = returnFunc(ctx, pagination)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]domain.User)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, domain.Pagination) error); ok {
-		r1 = returnFunc(ctx, pagination)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockUsersService_GetUsers_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUsers'
-type MockUsersService_GetUsers_Call struct {
-	*mock.Call
-}
-
-// GetUsers is a helper method to define mock.On call
-//   - ctx context.Context
-//   - pagination domain.Pagination
-func (_e *MockUsersService_Expecter) GetUsers(ctx any, pagination any) *MockUsersService_GetUsers_Call {
-	return &MockUsersService_GetUsers_Call{Call: _e.mock.On("GetUsers", ctx, pagination)}
-}
-
-func (_c *MockUsersService_GetUsers_Call) Run(run func(ctx context.Context, pagination domain.Pagination)) *MockUsersService_GetUsers_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 domain.Pagination
-		if args[1] != nil {
-			arg1 = args[1].(domain.Pagination)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *MockUsersService_GetUsers_Call) Return(users []domain.User, err error) *MockUsersService_GetUsers_Call {
-	_c.Call.Return(users, err)
-	return _c
-}
-
-func (_c *MockUsersService_GetUsers_Call) RunAndReturn(run func(ctx context.Context, pagination domain.Pagination) ([]domain.User, error)) *MockUsersService_GetUsers_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// PatchUser provides a mock function for the type MockUsersService
-func (_mock *MockUsersService) PatchUser(ctx context.Context, id uuid.UUID, patch users_service.UserPatch) (domain.User, error) {
-	ret := _mock.Called(ctx, id, patch)
-
-	if len(ret) == 0 {
-		panic("no return value specified for PatchUser")
+		panic("no return value specified for UpdateProfile")
 	}
 
 	var r0 domain.User
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, users_service.UserPatch) (domain.User, error)); ok {
-		return returnFunc(ctx, id, patch)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, users_service.UpdateProfileCommand) (domain.User, error)); ok {
+		return returnFunc(ctx, userID, command)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, users_service.UserPatch) domain.User); ok {
-		r0 = returnFunc(ctx, id, patch)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, users_service.UpdateProfileCommand) domain.User); ok {
+		r0 = returnFunc(ctx, userID, command)
 	} else {
 		r0 = ret.Get(0).(domain.User)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, users_service.UserPatch) error); ok {
-		r1 = returnFunc(ctx, id, patch)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, users_service.UpdateProfileCommand) error); ok {
+		r1 = returnFunc(ctx, userID, command)
 	} else {
 		r1 = ret.Error(1)
 	}
 	return r0, r1
 }
 
-// MockUsersService_PatchUser_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'PatchUser'
-type MockUsersService_PatchUser_Call struct {
+// MockUsersService_UpdateProfile_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateProfile'
+type MockUsersService_UpdateProfile_Call struct {
 	*mock.Call
 }
 
-// PatchUser is a helper method to define mock.On call
+// UpdateProfile is a helper method to define mock.On call
 //   - ctx context.Context
-//   - id uuid.UUID
-//   - patch users_service.UserPatch
-func (_e *MockUsersService_Expecter) PatchUser(ctx any, id any, patch any) *MockUsersService_PatchUser_Call {
-	return &MockUsersService_PatchUser_Call{Call: _e.mock.On("PatchUser", ctx, id, patch)}
+//   - userID uuid.UUID
+//   - command users_service.UpdateProfileCommand
+func (_e *MockUsersService_Expecter) UpdateProfile(ctx any, userID any, command any) *MockUsersService_UpdateProfile_Call {
+	return &MockUsersService_UpdateProfile_Call{Call: _e.mock.On("UpdateProfile", ctx, userID, command)}
 }
 
-func (_c *MockUsersService_PatchUser_Call) Run(run func(ctx context.Context, id uuid.UUID, patch users_service.UserPatch)) *MockUsersService_PatchUser_Call {
+func (_c *MockUsersService_UpdateProfile_Call) Run(run func(ctx context.Context, userID uuid.UUID, command users_service.UpdateProfileCommand)) *MockUsersService_UpdateProfile_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -349,9 +213,9 @@ func (_c *MockUsersService_PatchUser_Call) Run(run func(ctx context.Context, id 
 		if args[1] != nil {
 			arg1 = args[1].(uuid.UUID)
 		}
-		var arg2 users_service.UserPatch
+		var arg2 users_service.UpdateProfileCommand
 		if args[2] != nil {
-			arg2 = args[2].(users_service.UserPatch)
+			arg2 = args[2].(users_service.UpdateProfileCommand)
 		}
 		run(
 			arg0,
@@ -362,12 +226,79 @@ func (_c *MockUsersService_PatchUser_Call) Run(run func(ctx context.Context, id 
 	return _c
 }
 
-func (_c *MockUsersService_PatchUser_Call) Return(user domain.User, err error) *MockUsersService_PatchUser_Call {
+func (_c *MockUsersService_UpdateProfile_Call) Return(user domain.User, err error) *MockUsersService_UpdateProfile_Call {
 	_c.Call.Return(user, err)
 	return _c
 }
 
-func (_c *MockUsersService_PatchUser_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID, patch users_service.UserPatch) (domain.User, error)) *MockUsersService_PatchUser_Call {
+func (_c *MockUsersService_UpdateProfile_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID, command users_service.UpdateProfileCommand) (domain.User, error)) *MockUsersService_UpdateProfile_Call {
 	_c.Call.Return(run)
+	return _c
+}
+
+// NewMockCookieManager creates a new instance of MockCookieManager. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewMockCookieManager(t interface {
+	mock.TestingT
+	Cleanup(func())
+}) *MockCookieManager {
+	mock := &MockCookieManager{}
+	mock.Mock.Test(t)
+
+	t.Cleanup(func() { mock.AssertExpectations(t) })
+
+	return mock
+}
+
+// MockCookieManager is an autogenerated mock type for the CookieManager type
+type MockCookieManager struct {
+	mock.Mock
+}
+
+type MockCookieManager_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *MockCookieManager) EXPECT() *MockCookieManager_Expecter {
+	return &MockCookieManager_Expecter{mock: &_m.Mock}
+}
+
+// ClearRefreshToken provides a mock function for the type MockCookieManager
+func (_mock *MockCookieManager) ClearRefreshToken(w http.ResponseWriter) {
+	_mock.Called(w)
+	return
+}
+
+// MockCookieManager_ClearRefreshToken_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ClearRefreshToken'
+type MockCookieManager_ClearRefreshToken_Call struct {
+	*mock.Call
+}
+
+// ClearRefreshToken is a helper method to define mock.On call
+//   - w http.ResponseWriter
+func (_e *MockCookieManager_Expecter) ClearRefreshToken(w any) *MockCookieManager_ClearRefreshToken_Call {
+	return &MockCookieManager_ClearRefreshToken_Call{Call: _e.mock.On("ClearRefreshToken", w)}
+}
+
+func (_c *MockCookieManager_ClearRefreshToken_Call) Run(run func(w http.ResponseWriter)) *MockCookieManager_ClearRefreshToken_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 http.ResponseWriter
+		if args[0] != nil {
+			arg0 = args[0].(http.ResponseWriter)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockCookieManager_ClearRefreshToken_Call) Return() *MockCookieManager_ClearRefreshToken_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockCookieManager_ClearRefreshToken_Call) RunAndReturn(run func(w http.ResponseWriter)) *MockCookieManager_ClearRefreshToken_Call {
+	_c.Run(run)
 	return _c
 }

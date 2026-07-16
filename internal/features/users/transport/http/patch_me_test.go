@@ -1,143 +1,114 @@
 package users_transport_http
 
 import (
-	"bytes"
-	"encoding/json"
-	core_context "messenger/internal/core/context"
-	"messenger/internal/core/domain"
-	http_response "messenger/internal/core/transport/http/response"
-	test_utils "messenger/internal/core/utils/test"
-	users_service "messenger/internal/features/users/service"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
-	"time"
 
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
+	core_context "messenger/internal/core/context"
+	"messenger/internal/core/domain"
+	"messenger/internal/core/logger"
+	core_types "messenger/internal/core/types"
+	users_service "messenger/internal/features/users/service"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-func TestPatchMeHandler_Success(t *testing.T) {
-	service := NewMockUsersService(t)
+func TestPatchMe(t *testing.T) {
+	t.Run("passes patch command to service and returns updated user", func(t *testing.T) {
+		user := newUsersTransportTestUser(t)
+		username := "Updated_user"
+		firstName := "Updated name"
+		bio := "Updated bio"
+		expectedCommand := users_service.UpdateProfileCommand{
+			Username:  &username,
+			FirstName: &firstName,
+			LastName: core_types.Nullable[string]{
+				Set:   true,
+				Value: nil,
+			},
+			Bio: core_types.Nullable[string]{
+				Set:   true,
+				Value: &bio,
+			},
+		}
+		service := NewMockUsersService(t)
+		service.EXPECT().
+			UpdateProfile(mock.Anything, user.ID, expectedCommand).
+			Return(user, nil)
+		cookieManger := NewMockCookieManager(t)
+		handler := NewUsersHandler(service, cookieManger)
+		request := newPatchMeRequest(t, user, `{
+			"username":"Updated_user",
+			"first_name":"Updated name",
+			"last_name":null,
+			"bio":"Updated bio"
+		}`)
+		recorder := httptest.NewRecorder()
 
-	id := uuid.New()
+		handler.PatchMe(recorder, request)
 
-	username := "fsociety"
-
-	request := map[string]string{
-		"username": username,
-	}
-	expectedPatch := users_service.UserPatch{
-		Username: &username,
-	}
-
-	user := domain.User{
-		ID:        id,
-		Username:  username,
-		FirstName: "Elliot",
-		CreatedAt: time.Now().Round(0),
-	}
-
-	service.EXPECT().
-		PatchUser(mock.Anything, id, expectedPatch).
-		Return(user, nil).
-		Once()
-
-	handler := NewUsersHandler(service)
-
-	body, err := json.Marshal(request)
-	require.NoError(t, err)
-
-	req := httptest.NewRequest(
-		http.MethodPatch,
-		"/users/me",
-		bytes.NewReader(body),
-	)
-
-	ctx := test_utils.GetLoggerContext(req.Context())
-	ctx = core_context.WithClaims(ctx, core_context.ContextClaims{
-		UserID: id,
+		require.Equal(t, http.StatusOK, recorder.Code)
+		require.Equal(t, userDTOFromDomain(user), decodeUsersTransportData(t, recorder))
+		require.NotContains(t, recorder.Body.String(), user.PasswordHash)
 	})
-	req = req.WithContext(ctx)
 
-	rr := httptest.NewRecorder()
+	t.Run("accepts empty patch as no-op command", func(t *testing.T) {
+		user := newUsersTransportTestUser(t)
+		service := NewMockUsersService(t)
+		service.EXPECT().
+			UpdateProfile(mock.Anything, user.ID, users_service.UpdateProfileCommand{}).
+			Return(user, nil)
+		cookieManger := NewMockCookieManager(t)
+		handler := NewUsersHandler(service, cookieManger)
+		request := newPatchMeRequest(t, user, `{}`)
+		recorder := httptest.NewRecorder()
 
-	handler.PatchMe(rr, req)
+		handler.PatchMe(recorder, request)
 
-	require.Equal(t, http.StatusOK, rr.Code)
+		require.Equal(t, http.StatusOK, recorder.Code)
+	})
 
-	var response struct {
-		Success bool              `json:"success"`
-		Data    PatchUserResponse `json:"data"`
-	}
+	t.Run("rejects malformed request before calling service", func(t *testing.T) {
+		user := newUsersTransportTestUser(t)
+		service := NewMockUsersService(t)
+		cookieManger := NewMockCookieManager(t)
+		handler := NewUsersHandler(service, cookieManger)
+		request := newPatchMeRequest(t, user, `{"bio":42}`)
+		recorder := httptest.NewRecorder()
 
-	err = json.Unmarshal(rr.Body.Bytes(), &response)
-	require.NoError(t, err)
+		handler.PatchMe(recorder, request)
 
-	assert.True(t, response.Success)
-	assert.Equal(
-		t,
-		PatchUserResponse(userDTOFromDomain(user)),
-		response.Data,
-	)
+		require.Equal(t, http.StatusBadRequest, recorder.Code)
+		require.Equal(t, "invalid_request", decodeUsersTransportError(t, recorder).Code)
+	})
+
+	t.Run("maps service error", func(t *testing.T) {
+		user := newUsersTransportTestUser(t)
+		service := NewMockUsersService(t)
+		service.EXPECT().
+			UpdateProfile(mock.Anything, user.ID, users_service.UpdateProfileCommand{}).
+			Return(domain.User{}, fmt.Errorf("update profile: %w", domain.ErrNotFound))
+		cookieManger := NewMockCookieManager(t)
+		handler := NewUsersHandler(service, cookieManger)
+		request := newPatchMeRequest(t, user, `{}`)
+		recorder := httptest.NewRecorder()
+
+		handler.PatchMe(recorder, request)
+
+		require.Equal(t, http.StatusNotFound, recorder.Code)
+		require.Equal(t, "user_not_found", decodeUsersTransportError(t, recorder).Code)
+	})
 }
 
-func TestPatchMeHandler_ServiceError(t *testing.T) {
-	service := NewMockUsersService(t)
+func newPatchMeRequest(t *testing.T, user domain.User, body string) *http.Request {
+	t.Helper()
 
-	id := uuid.New()
-
-	username := "fsociety"
-
-	request := map[string]string{
-		"username": username,
-	}
-	expectedPatch := users_service.UserPatch{
-		Username: &username,
-	}
-	service.EXPECT().
-		PatchUser(
-			mock.Anything,
-			id,
-			expectedPatch,
-		).
-		Return(
-			domain.User{},
-			domain.NotFoundErr(domain.UserEntity, "id", id.String()),
-		).
-		Once()
-
-	handler := NewUsersHandler(service)
-
-	body, err := json.Marshal(request)
-	require.NoError(t, err)
-
-	req := httptest.NewRequest(
-		http.MethodPatch,
-		"/users/me",
-		bytes.NewReader(body),
-	)
-
-	ctx := test_utils.GetLoggerContext(req.Context())
-	ctx = core_context.WithClaims(ctx, core_context.ContextClaims{
-		UserID: id,
-	})
-	req = req.WithContext(ctx)
-
-	rr := httptest.NewRecorder()
-
-	handler.PatchMe(rr, req)
-
-	require.Equal(t, http.StatusNotFound, rr.Code)
-
-	var response struct {
-		Success bool                         `json:"success"`
-		Error   http_response.APIErrorDetail `json:"error"`
-	}
-
-	err = json.Unmarshal(rr.Body.Bytes(), &response)
-	require.NoError(t, err)
-
+	request := httptest.NewRequest(http.MethodPatch, "/users/me", strings.NewReader(body))
+	ctx := logger.WithLogger(request.Context(), logger.NewTestLogger())
+	ctx = core_context.WithClaims(ctx, core_context.ContextClaims{UserID: user.ID})
+	return request.WithContext(ctx)
 }

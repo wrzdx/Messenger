@@ -15,7 +15,7 @@ func TestGenerateAndParseAccessToken(t *testing.T) {
 	provider := NewTokenProvider(Config{Secret: []byte("secret")})
 	now := time.Now()
 	want := auth.AccessTokenClaims{UserID: uuid.New()}
-
+	uuid.NewV7()
 	token, err := provider.GenerateAccessToken(want, auth.TokenLifetime{
 		IssuedAt:  now,
 		ExpiresAt: now.Add(time.Hour),

@@ -80,7 +80,7 @@ func TestLogout(t *testing.T) {
 		handler.Logout(recorder, req)
 
 		require.Equal(t, 1, service.calls)
-		require.Equal(t, http.StatusNoContent, recorder.Code)
+		require.Equal(t, http.StatusUnauthorized, recorder.Code)
 	})
 
 	t.Run("returns internal error without clearing cookie when logout fails", func(t *testing.T) {

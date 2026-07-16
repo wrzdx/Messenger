@@ -1,6 +1,7 @@
 all: true
-recursive: false
+recursive: true
+exclude-subpkg-regex:
+  - "/repository(?:/|$)"
 
 packages:
-  messenger/internal/features/auth/service:
-  messenger/internal/features/auth/transport/http:
+  messenger/internal/features:

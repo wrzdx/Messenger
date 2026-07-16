@@ -1,147 +1,112 @@
 package users_transport_http
 
 import (
-	"context"
-	"encoding/json"
-	"messenger/internal/core/domain"
-	http_response "messenger/internal/core/transport/http/response"
-	test_utils "messenger/internal/core/utils/test"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
-	"github.com/go-chi/chi/v5"
+	"messenger/internal/core/domain"
+	http_response "messenger/internal/core/transport/http/response"
+
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetUserHandler_Success(t *testing.T) {
-	service := NewMockUsersService(t)
+func TestGetUser(t *testing.T) {
+	t.Run("returns user", func(t *testing.T) {
+		user := newUsersTransportTestUser(t)
+		service := NewMockUsersService(t)
+		service.EXPECT().
+			GetUser(mock.Anything, user.ID).
+			Return(user, nil)
+		cookieManger := NewMockCookieManager(t)
+		handler := NewUsersHandler(service, cookieManger)
+		request := newGetUserRequest(t, user.ID.String())
+		recorder := httptest.NewRecorder()
 
-	id := uuid.New()
-	now := time.Now().Round(0)
+		handler.GetUser(recorder, request)
 
-	user := domain.User{
-		ID:        id,
-		Username:  "ecorp",
-		FirstName: "Elliot",
-		CreatedAt: now,
-	}
+		require.Equal(t, http.StatusOK, recorder.Code)
+		require.Equal(t, userDTOFromDomain(user), decodeUsersTransportData(t, recorder))
+		require.NotContains(t, recorder.Body.String(), user.PasswordHash)
+	})
 
-	service.EXPECT().
-		GetUser(mock.Anything, id).
-		Return(user, nil).
-		Once()
+	t.Run("rejects malformed id without calling service", func(t *testing.T) {
+		service := NewMockUsersService(t)
+		cookieManger := NewMockCookieManager(t)
+		handler := NewUsersHandler(service, cookieManger)
+		request := newGetUserRequest(t, "not-a-uuid")
+		recorder := httptest.NewRecorder()
 
-	handler := NewUsersHandler(service)
+		handler.GetUser(recorder, request)
 
-	req := httptest.NewRequest(http.MethodGet, "/users/"+id.String(), nil)
-	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
+		require.Equal(t, http.StatusBadRequest, recorder.Code)
+		require.Equal(t, http_response.APIErrorDetail{
+			Code:    "invalid_request",
+			Message: "invalid request",
+		}, decodeUsersTransportError(t, recorder))
+	})
 
-	rctx := chi.NewRouteContext()
-	rctx.URLParams.Add("id", id.String())
+	t.Run("treats nil uuid as an unknown user", func(t *testing.T) {
+		service := NewMockUsersService(t)
+		service.EXPECT().
+			GetUser(mock.Anything, uuid.Nil).
+			Return(domain.User{}, domain.ErrNotFound)
+		cookieManger := NewMockCookieManager(t)
+		handler := NewUsersHandler(service, cookieManger)
+		request := newGetUserRequest(t, uuid.Nil.String())
+		recorder := httptest.NewRecorder()
 
-	req = req.WithContext(
-		context.WithValue(req.Context(), chi.RouteCtxKey, rctx),
-	)
+		handler.GetUser(recorder, request)
 
-	rr := httptest.NewRecorder()
+		require.Equal(t, http.StatusNotFound, recorder.Code)
+		require.Equal(t, http_response.APIErrorDetail{
+			Code:    "user_not_found",
+			Message: "user not found",
+		}, decodeUsersTransportError(t, recorder))
+	})
 
-	handler.GetUser(rr, req)
+	t.Run("returns not found", func(t *testing.T) {
+		userID := uuid.New()
+		service := NewMockUsersService(t)
+		service.EXPECT().
+			GetUser(mock.Anything, userID).
+			Return(domain.User{}, domain.ErrNotFound)
+		cookieManger := NewMockCookieManager(t)
+		handler := NewUsersHandler(service, cookieManger)
+		request := newGetUserRequest(t, userID.String())
+		recorder := httptest.NewRecorder()
 
-	require.Equal(t, http.StatusOK, rr.Code)
+		handler.GetUser(recorder, request)
 
-	var response struct {
-		Success bool            `json:"success"`
-		Data    GetUserResponse `json:"data"`
-	}
+		require.Equal(t, http.StatusNotFound, recorder.Code)
+		require.Equal(t, http_response.APIErrorDetail{
+			Code:    "user_not_found",
+			Message: "user not found",
+		}, decodeUsersTransportError(t, recorder))
+	})
 
-	err := json.Unmarshal(rr.Body.Bytes(), &response)
-	require.NoError(t, err)
+	t.Run("does not expose unexpected service error", func(t *testing.T) {
+		userID := uuid.New()
+		serviceErr := errors.New("database unavailable")
+		service := NewMockUsersService(t)
+		service.EXPECT().
+			GetUser(mock.Anything, userID).
+			Return(domain.User{}, serviceErr)
+		cookieManger := NewMockCookieManager(t)
+		handler := NewUsersHandler(service, cookieManger)
+		request := newGetUserRequest(t, userID.String())
+		recorder := httptest.NewRecorder()
 
-	assert.True(t, response.Success)
-	assert.Equal(t, GetUserResponse(userDTOFromDomain(user)), response.Data)
-}
+		handler.GetUser(recorder, request)
 
-func TestGetUserHandler_InvalidID(t *testing.T) {
-	service := NewMockUsersService(t)
-
-	handler := NewUsersHandler(service)
-
-	req := httptest.NewRequest(http.MethodGet, "/users/invalid", nil)
-	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
-
-	rctx := chi.NewRouteContext()
-	rctx.URLParams.Add("id", "invalid")
-
-	req = req.WithContext(
-		context.WithValue(req.Context(), chi.RouteCtxKey, rctx),
-	)
-
-	rr := httptest.NewRecorder()
-
-	handler.GetUser(rr, req)
-
-	require.Equal(t, http.StatusBadRequest, rr.Code)
-
-	var response struct {
-		Success bool                         `json:"success"`
-		Error   http_response.APIErrorDetail `json:"error"`
-	}
-
-	err := json.Unmarshal(rr.Body.Bytes(), &response)
-	require.NoError(t, err)
-
-}
-
-func TestGetUserHandler_NotFound(t *testing.T) {
-	service := NewMockUsersService(t)
-
-	id := uuid.New()
-
-	service.EXPECT().
-		GetUser(mock.Anything, id).
-		Return(domain.User{}, domain.NotFoundErr(domain.UserEntity, "id", id.String())).
-		Once()
-
-	handler := NewUsersHandler(service)
-
-	req := httptest.NewRequest(http.MethodGet, "/users/"+id.String(), nil)
-	req = req.WithContext(test_utils.GetLoggerContext(req.Context()))
-
-	rctx := chi.NewRouteContext()
-	rctx.URLParams.Add("id", id.String())
-
-	req = req.WithContext(
-		context.WithValue(req.Context(), chi.RouteCtxKey, rctx),
-	)
-
-	rr := httptest.NewRecorder()
-
-	handler.GetUser(rr, req)
-
-	require.Equal(t, http.StatusNotFound, rr.Code)
-
-	var response struct {
-		Success bool                         `json:"success"`
-		Error   http_response.APIErrorDetail `json:"error"`
-	}
-
-	want := struct {
-		Success bool                         `json:"success"`
-		Error   http_response.APIErrorDetail `json:"error"`
-	}{
-		Success: false,
-		Error: http_response.APIErrorDetail{
-			Message: domain.NotFoundErr(domain.UserEntity, "id", id.String()).Error(),
-		},
-	}
-
-	err := json.Unmarshal(rr.Body.Bytes(), &response)
-	require.NoError(t, err)
-
-	assert.Equal(t, want, response)
+		require.Equal(t, http.StatusInternalServerError, recorder.Code)
+		require.Equal(t, http_response.APIErrorDetail{
+			Code:    "internal_error",
+			Message: "internal server error",
+		}, decodeUsersTransportError(t, recorder))
+		require.NotContains(t, recorder.Body.String(), serviceErr.Error())
+	})
 }

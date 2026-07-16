@@ -7,17 +7,19 @@ import (
 	"messenger/internal/core/domain"
 	"messenger/internal/core/postgres"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
 
-func (r *UsersRepository) GetUserByUsername(
+func (r *UsersRepository) GetUserForUpdate(
 	ctx context.Context,
-	username string,
+	id uuid.UUID,
 ) (domain.User, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.timeout)
 	defer cancel()
 
 	db := postgres.GetExecutor(ctx, r.db)
+
 	query := `
 	SELECT id,
 		   username,
@@ -28,10 +30,11 @@ func (r *UsersRepository) GetUserByUsername(
 		   bio,
 		   password_hash
 	FROM users
-	WHERE lower(username)=lower($1);
+	WHERE id=$1
+	FOR UPDATE;
 	`
 
-	row := db.QueryRow(ctx, query, username)
+	row := db.QueryRow(ctx, query, id)
 
 	var userModel UserModel
 	err := row.Scan(
@@ -48,11 +51,8 @@ func (r *UsersRepository) GetUserByUsername(
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.User{}, domain.ErrNotFound
 		}
-		return domain.User{}, fmt.Errorf(
-			"scan user by username %q: %w",
-			username,
-			err,
-		)
+
+		return domain.User{}, fmt.Errorf("scan user by id: %w", err)
 	}
 
 	userDomain, err := UserDomainFromModel(userModel)

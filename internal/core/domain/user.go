@@ -2,12 +2,14 @@ package domain
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 )
 
 var ErrInvalidUser = errors.New("invalid user")
+var ErrAlreadyDeleted = errors.New("user already deleted")
 
 type User struct {
 	ID           uuid.UUID
@@ -69,4 +71,26 @@ func (u User) Validate() error {
 		}
 	}
 	return nil
+}
+
+func (u User) Delete(deletedAt time.Time) (User, error) {
+	if u.DeletedAt != nil {
+		return User{}, ErrAlreadyDeleted
+	}
+	suffix := strings.ReplaceAll(u.ID.String(), "-", "")[:16]
+	profile, err := NewUserProfile(
+		"deleted_"+suffix,
+		"Deleted Account",
+		nil,
+		nil,
+	)
+	if err != nil {
+		return User{}, err
+	}
+	u.Profile = profile
+	u.DeletedAt = &deletedAt
+	if err := u.Validate(); err != nil {
+		return User{}, err
+	}
+	return u, nil
 }

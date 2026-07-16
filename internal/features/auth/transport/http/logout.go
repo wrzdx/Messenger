@@ -26,8 +26,6 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	if err := h.authService.Logout(ctx, token); err != nil {
 		if errors.Is(err, auth.ErrInvalidToken) {
 			h.cookieManager.ClearRefreshToken(w)
-			sender.OK(http.StatusNoContent, nil)
-			return
 		}
 		sender.Error(err)
 		return
