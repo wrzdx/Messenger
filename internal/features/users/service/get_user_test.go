@@ -1,81 +1,95 @@
 package users_service
 
 import (
-	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"messenger/internal/core/domain"
 
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestUsersService_GetUser(t *testing.T) {
-	ctx := context.Background()
+func TestGetUser(t *testing.T) {
+	t.Run("returns active user", func(t *testing.T) {
+		repository := NewMockUsersRepository(t)
+		user := newGetUserTestUser(t, nil)
+		ctx := t.Context()
+		repository.EXPECT().
+			GetUser(ctx, user.ID).
+			Return(user, nil)
+		service := NewUsersService(repository, nil)
 
-	id := uuid.New()
+		got, err := service.GetUser(ctx, user.ID)
 
-	expectedUser := domain.User{
-		ID:        id,
-		Username:  "ecorp",
-		FirstName: "Elliot",
-	}
+		require.NoError(t, err)
+		require.Equal(t, user, got)
+	})
 
-	tests := []struct {
-		name     string
-		prepare  func(*MockUsersRepository)
-		wantUser domain.User
-		wantErr  error
-		errorMsg string
-	}{
-		{
-			name: "success",
-			prepare: func(repo *MockUsersRepository) {
-				repo.EXPECT().
-					GetUser(ctx, id).
-					Return(expectedUser, nil).
-					Once()
-			},
-			wantUser: expectedUser,
-		},
-		{
-			name: "repository error",
-			prepare: func(repo *MockUsersRepository) {
-				repo.EXPECT().
-					GetUser(ctx, id).
-					Return(domain.User{}, errors.New("database error")).
-					Once()
-			},
-			errorMsg: "get user",
-		},
-	}
+	t.Run("returns not found when repository cannot find user", func(t *testing.T) {
+		repository := NewMockUsersRepository(t)
+		userID := uuid.New()
+		ctx := t.Context()
+		repository.EXPECT().
+			GetUser(ctx, userID).
+			Return(domain.User{}, domain.ErrNotFound)
+		service := NewUsersService(repository, nil)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			repo := NewMockUsersRepository(t)
+		user, err := service.GetUser(ctx, userID)
 
-			tt.prepare(repo)
+		require.ErrorIs(t, err, domain.ErrNotFound)
+		require.Empty(t, user)
+	})
 
-			service := NewUsersService(repo, nil)
+	t.Run("hides deleted user", func(t *testing.T) {
+		repository := NewMockUsersRepository(t)
+		deletedAt := time.Now().UTC()
+		user := newGetUserTestUser(t, &deletedAt)
+		ctx := t.Context()
+		repository.EXPECT().
+			GetUser(ctx, user.ID).
+			Return(user, nil)
+		service := NewUsersService(repository, nil)
 
-			gotUser, err := service.GetUser(ctx, id)
+		got, err := service.GetUser(ctx, user.ID)
 
-			if tt.wantErr != nil {
-				require.Error(t, err)
-				assert.ErrorIs(t, err, tt.wantErr)
-				return
-			}
+		require.ErrorIs(t, err, domain.ErrNotFound)
+		require.Empty(t, got)
+	})
 
-			if tt.errorMsg != "" {
-				require.Error(t, err)
-				assert.ErrorContains(t, err, tt.errorMsg)
-				return
-			}
+	t.Run("wraps repository error", func(t *testing.T) {
+		repository := NewMockUsersRepository(t)
+		userID := uuid.New()
+		repositoryErr := errors.New("database unavailable")
+		ctx := t.Context()
+		repository.EXPECT().
+			GetUser(ctx, userID).
+			Return(domain.User{}, repositoryErr)
+		service := NewUsersService(repository, nil)
 
-			require.NoError(t, err)
-			assert.Equal(t, tt.wantUser, gotUser)
-		})
-	}
+		user, err := service.GetUser(ctx, userID)
+
+		require.ErrorIs(t, err, repositoryErr)
+		require.ErrorContains(t, err, "get user")
+		require.Empty(t, user)
+	})
+}
+
+func newGetUserTestUser(t *testing.T, deletedAt *time.Time) domain.User {
+	t.Helper()
+
+	profile, err := domain.NewUserProfile("Username_1", "First name", nil, nil)
+	require.NoError(t, err)
+
+	user, err := domain.NewUser(
+		uuid.New(),
+		profile,
+		time.Now().UTC().Add(-time.Hour),
+		deletedAt,
+		"password-hash",
+	)
+	require.NoError(t, err)
+
+	return user
 }

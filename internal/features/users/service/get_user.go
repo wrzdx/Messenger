@@ -17,5 +17,9 @@ func (s *UsersService) GetUser(
 		return domain.User{}, fmt.Errorf("get user: %w", err)
 	}
 
+	if user.DeletedAt != nil {
+		return domain.User{}, domain.ErrNotFound
+	}
+
 	return user, nil
 }

@@ -1,13 +1,18 @@
 package chats_postgres_repository
 
-import "messenger/internal/core/repository/postgres"
+import (
+	"messenger/internal/core/postgres"
+	"time"
+)
 
 type ChatsRepository struct {
-	db postgres.DB
+	db      postgres.DBTX
+	timeout time.Duration
 }
 
-func NewChatsRepository(db postgres.DB) *ChatsRepository {
+func NewChatsRepository(db postgres.DBTX, timeout time.Duration) *ChatsRepository {
 	return &ChatsRepository{
-		db: db,
+		db:      db,
+		timeout: timeout,
 	}
 }
