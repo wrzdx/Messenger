@@ -89,6 +89,12 @@ swagger-gen:
 		--parseInternal \
 		--parseDependency
 
+diagram-db:
+	@npx --yes @mermaid-js/mermaid-cli@11.16.0 \
+		-i docs/database.mmd \
+		-o docs/database.svg \
+		-b transparent
+
 test-unit:
 	@go test ${or ${action},./...}
 
@@ -113,5 +119,3 @@ test-integration:
 	@ export POSTGRES_HOST=localhost && \
 	export POSTGRES_DB=${POSTGRES_TEST_DB} && \
 	go test -tags=integration -count=1 ${or ${action},./...}
-
-

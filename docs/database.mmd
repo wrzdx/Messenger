@@ -1,0 +1,75 @@
+---
+config:
+  theme: redux-dark-color
+---
+erDiagram
+    direction LR
+
+    USERS["users"] {
+        uuid id PK
+        varchar_32 username
+        varchar_64 first_name
+        varchar_64? last_name
+        varchar_70? bio
+        text password_hash
+        timestamptz created_at
+        timestamptz? deleted_at
+    }
+
+    SESSIONS["sessions"] {
+        uuid id PK
+        uuid user_id FK
+        uuid current_token_id UK
+        timestamptz last_used_at
+        timestamptz created_at
+        timestamptz expires_at
+    }
+
+    CHATS["chats"] {
+        uuid id PK
+        chat_type type
+        uuid? last_message_id FK
+        timestamptz last_activity_at
+        timestamptz created_at
+    }
+
+    DIRECTS["directs"] {
+        uuid chat_id PK,FK
+        uuid user1_id FK
+        uuid user2_id FK
+    }
+
+    GROUPS["groups"] {
+        uuid chat_id PK,FK
+        varchar_128 title
+    }
+
+    CHAT_PARTICIPANTS["chat_participants"] {
+        uuid chat_id PK,FK
+        uuid user_id PK,FK
+        user_role role
+        uuid? last_read_message_id FK
+        timestamptz joined_at
+    }
+
+    MESSAGES["messages"] {
+        uuid id PK
+        uuid chat_id FK
+        uuid sender_id FK
+        text content
+        timestamptz created_at
+        timestamptz? updated_at
+    }
+
+    USERS ||--o{ SESSIONS : "owns"
+    USERS ||--o{ DIRECTS : "user 1"
+    USERS ||--o{ DIRECTS : "user 2"
+    USERS ||--o{ CHAT_PARTICIPANTS : "joins"
+    USERS ||--o{ MESSAGES : "sends"
+
+    DIRECTS o|--|| CHATS : "direct subtype"
+    CHATS ||--o| GROUPS : "group subtype"
+    CHAT_PARTICIPANTS }o--|| CHATS : "belongs to"
+    MESSAGES }o--|| CHATS : "belongs to"
+    CHATS o{--o| MESSAGES : "last message"
+    CHAT_PARTICIPANTS o{--o| MESSAGES : "read cursor"
