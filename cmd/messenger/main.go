@@ -16,6 +16,8 @@ import (
 	auth_service "messenger/internal/features/auth/service"
 	auth_transport_http "messenger/internal/features/auth/transport/http"
 	users_postgres_repository "messenger/internal/features/users/repository/postgres"
+	users_service "messenger/internal/features/users/service"
+	users_transport_http "messenger/internal/features/users/transport/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -89,27 +91,18 @@ func main() {
 	authTransportHTTP := auth_transport_http.NewAuthHTTPHandler(authService, cookieManager)
 
 	logger.Debug("initializing feature", zap.String("feature", "users"))
-	// usersService := users_service.NewUsersService(usersRepository, hasher)
-	// usersTranposrtHTTP := users_transport_http.NewUsersHandler(usersService)
+	usersService := users_service.NewUsersService(usersRepository, txManager)
+	usersTransportHTTP := users_transport_http.NewUsersHandler(usersService)
 
 	logger.Debug("initializing HTTP server")
 	httpConfig := http_server.NewConfigMust()
-	router := chi.NewRouter()
-	router.Use(
-		http_middleware.CORS(httpConfig.AllowedOrigins),
-		http_middleware.RequestID(),
-		http_middleware.Logging(logger),
-		http_middleware.Trace(),
-		http_middleware.Recovery(),
-	)
-
 	authMW := http_middleware.Auth(jwtProvider)
-
-	routerV1 := chi.NewRouter()
-	routerV1.Mount("/auth", authTransportHTTP.Router(authMW))
-	// routerV1.Mount("/users", usersTranposrtHTTP.Router(authMW))
-
-	router.Mount("/api/v1", routerV1)
+	router := newHTTPRouter(
+		logger,
+		httpConfig.AllowedOrigins,
+		authTransportHTTP.Router(authMW),
+		usersTransportHTTP.Router(authMW),
+	)
 	httpServer := http_server.NewHTTPServer(
 		httpConfig,
 		logger,
@@ -119,4 +112,27 @@ func main() {
 	if err := httpServer.Run(ctx); err != nil {
 		logger.Error("HTTP server run error", zap.Error(err))
 	}
+}
+
+func newHTTPRouter(
+	log *logger.Logger,
+	allowedOrigins []string,
+	authRouter chi.Router,
+	usersRouter chi.Router,
+) chi.Router {
+	router := chi.NewRouter()
+	router.Use(
+		http_middleware.CORS(allowedOrigins),
+		http_middleware.RequestID(),
+		http_middleware.Logging(log),
+		http_middleware.Trace(),
+		http_middleware.Recovery(),
+	)
+
+	routerV1 := chi.NewRouter()
+	routerV1.Mount("/auth", authRouter)
+	routerV1.Mount("/users", usersRouter)
+	router.Mount("/api/v1", routerV1)
+
+	return router
 }

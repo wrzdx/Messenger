@@ -19,7 +19,8 @@ func TestGetUser(t *testing.T) {
 		repository.EXPECT().
 			GetUser(ctx, user.ID).
 			Return(user, nil)
-		service := NewUsersService(repository, nil)
+		txManager := NewMockTXManager(t)
+		service := NewUsersService(repository, txManager)
 
 		got, err := service.GetUser(ctx, user.ID)
 
@@ -34,7 +35,8 @@ func TestGetUser(t *testing.T) {
 		repository.EXPECT().
 			GetUser(ctx, userID).
 			Return(domain.User{}, domain.ErrNotFound)
-		service := NewUsersService(repository, nil)
+		txManager := NewMockTXManager(t)
+		service := NewUsersService(repository, txManager)
 
 		user, err := service.GetUser(ctx, userID)
 
@@ -50,7 +52,8 @@ func TestGetUser(t *testing.T) {
 		repository.EXPECT().
 			GetUser(ctx, user.ID).
 			Return(user, nil)
-		service := NewUsersService(repository, nil)
+		txManager := NewMockTXManager(t)
+		service := NewUsersService(repository, txManager)
 
 		got, err := service.GetUser(ctx, user.ID)
 
@@ -66,7 +69,8 @@ func TestGetUser(t *testing.T) {
 		repository.EXPECT().
 			GetUser(ctx, userID).
 			Return(domain.User{}, repositoryErr)
-		service := NewUsersService(repository, nil)
+		txManager := NewMockTXManager(t)
+		service := NewUsersService(repository, txManager)
 
 		user, err := service.GetUser(ctx, userID)
 

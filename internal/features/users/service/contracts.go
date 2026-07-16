@@ -7,11 +7,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type Hasher interface {
-	Hash(password string) (string, error)
-	Compare(hash, password string) error
-}
-
 type UsersRepository interface {
 	GetUsers(
 		ctx context.Context,
@@ -23,6 +18,11 @@ type UsersRepository interface {
 		id uuid.UUID,
 	) (domain.User, error)
 
+	GetUserForUpdate(
+		ctx context.Context,
+		userID uuid.UUID,
+	) (domain.User, error)
+
 	DeleteUser(
 		ctx context.Context,
 		id uuid.UUID,
@@ -32,5 +32,12 @@ type UsersRepository interface {
 		ctx context.Context,
 		id uuid.UUID,
 		profile domain.UserProfile,
+	) error
+}
+
+type TXManager interface {
+	WithinTransaction(
+		ctx context.Context,
+		fn func(context.Context) error,
 	) error
 }

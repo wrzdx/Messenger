@@ -18,8 +18,10 @@ func NewUsersHandler(usersService UsersService) *UsersHandler {
 
 func (h *UsersHandler) Router(authMW http_middleware.Middleware) chi.Router {
 	router := chi.NewRouter()
-	router.Get("/{id}", h.GetUser)
+	router.Use(authMW)
 	router.Get("/me", h.GetMe)
+	router.Patch("/me", h.PatchMe)
+	router.Get("/{id}", h.GetUser)
 
 	return router
 }

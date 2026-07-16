@@ -29,6 +29,7 @@ func (r *UsersRepository) UpdateUserProfile(
 		last_name=$3,
 		bio=$4
 	WHERE id=$5
+		AND deleted_at IS NULL
 	RETURNING id;`
 
 	err := db.QueryRow(
@@ -55,7 +56,7 @@ func (r *UsersRepository) UpdateUserProfile(
 				Details: details,
 			}
 		}
-		return fmt.Errorf("scan error: %w", err)
+		return fmt.Errorf("update user profile: %w", err)
 	}
 
 	return nil
