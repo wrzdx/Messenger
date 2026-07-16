@@ -17,7 +17,8 @@ func TestGetMe(t *testing.T) {
 	service.EXPECT().
 		GetUser(mock.Anything, user.ID).
 		Return(user, nil)
-	handler := NewUsersHandler(service)
+	cookieManger := NewMockCookieManager(t)
+	handler := NewUsersHandler(service, cookieManger)
 	request := newUsersTransportRequest(t, http.MethodGet, "/users/me")
 	ctx := core_context.WithClaims(
 		request.Context(),

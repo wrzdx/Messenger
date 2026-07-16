@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -32,6 +33,63 @@ func TestNewUser(t *testing.T) {
 
 		require.ErrorIs(t, err, ErrInvalidUser)
 		require.Zero(t, user)
+	})
+}
+
+func TestUserDelete(t *testing.T) {
+	createdAt := time.Now().UTC()
+	lastName := "Anderson"
+	bio := "Profile to anonymize"
+	profile, err := NewUserProfile("Username_1", "Elliot", &lastName, &bio)
+	require.NoError(t, err)
+	user, err := NewUser(uuid.New(), profile, createdAt, nil, "password_hash")
+	require.NoError(t, err)
+
+	t.Run("anonymizes active user", func(t *testing.T) {
+		deletedAt := createdAt.Add(time.Hour)
+
+		deleted, err := user.Delete(deletedAt)
+
+		require.NoError(t, err)
+		require.Equal(t, user.ID, deleted.ID)
+		require.True(t, strings.HasPrefix(deleted.Profile.Username(), "deleted_"))
+		require.Len(t, deleted.Profile.Username(), 24)
+		require.True(t, UsernamePattern.MatchString(deleted.Profile.Username()))
+		require.Equal(t, "Deleted Account", deleted.Profile.FirstName())
+		require.Nil(t, deleted.Profile.LastName())
+		require.Nil(t, deleted.Profile.Bio())
+		require.NotNil(t, deleted.DeletedAt)
+		require.True(t, deletedAt.Equal(*deleted.DeletedAt))
+		require.True(t, user.CreatedAt.Equal(deleted.CreatedAt))
+		require.Equal(t, user.PasswordHash, deleted.PasswordHash)
+		require.Nil(t, user.DeletedAt)
+		require.Equal(t, profile, user.Profile)
+	})
+
+	t.Run("rejects deletion before creation", func(t *testing.T) {
+		deleted, err := user.Delete(createdAt.Add(-time.Second))
+
+		require.ErrorIs(t, err, ErrInvalidUser)
+		require.Zero(t, deleted)
+	})
+
+	t.Run("rejects zero deletion time", func(t *testing.T) {
+		deleted, err := user.Delete(time.Time{})
+
+		require.ErrorIs(t, err, ErrInvalidUser)
+		require.Zero(t, deleted)
+	})
+
+	t.Run("rejects already deleted user", func(t *testing.T) {
+		firstDeletedAt := createdAt.Add(time.Hour)
+		deleted, err := user.Delete(firstDeletedAt)
+		require.NoError(t, err)
+
+		second, err := deleted.Delete(firstDeletedAt.Add(time.Hour))
+
+		require.ErrorIs(t, err, ErrAlreadyDeleted)
+		require.Zero(t, second)
+		require.True(t, firstDeletedAt.Equal(*deleted.DeletedAt))
 	})
 }
 

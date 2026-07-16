@@ -21,7 +21,8 @@ func TestGetUser(t *testing.T) {
 		service.EXPECT().
 			GetUser(mock.Anything, user.ID).
 			Return(user, nil)
-		handler := NewUsersHandler(service)
+		cookieManger := NewMockCookieManager(t)
+		handler := NewUsersHandler(service, cookieManger)
 		request := newGetUserRequest(t, user.ID.String())
 		recorder := httptest.NewRecorder()
 
@@ -34,7 +35,8 @@ func TestGetUser(t *testing.T) {
 
 	t.Run("rejects malformed id without calling service", func(t *testing.T) {
 		service := NewMockUsersService(t)
-		handler := NewUsersHandler(service)
+		cookieManger := NewMockCookieManager(t)
+		handler := NewUsersHandler(service, cookieManger)
 		request := newGetUserRequest(t, "not-a-uuid")
 		recorder := httptest.NewRecorder()
 
@@ -52,7 +54,8 @@ func TestGetUser(t *testing.T) {
 		service.EXPECT().
 			GetUser(mock.Anything, uuid.Nil).
 			Return(domain.User{}, domain.ErrNotFound)
-		handler := NewUsersHandler(service)
+		cookieManger := NewMockCookieManager(t)
+		handler := NewUsersHandler(service, cookieManger)
 		request := newGetUserRequest(t, uuid.Nil.String())
 		recorder := httptest.NewRecorder()
 
@@ -71,7 +74,8 @@ func TestGetUser(t *testing.T) {
 		service.EXPECT().
 			GetUser(mock.Anything, userID).
 			Return(domain.User{}, domain.ErrNotFound)
-		handler := NewUsersHandler(service)
+		cookieManger := NewMockCookieManager(t)
+		handler := NewUsersHandler(service, cookieManger)
 		request := newGetUserRequest(t, userID.String())
 		recorder := httptest.NewRecorder()
 
@@ -91,7 +95,8 @@ func TestGetUser(t *testing.T) {
 		service.EXPECT().
 			GetUser(mock.Anything, userID).
 			Return(domain.User{}, serviceErr)
-		handler := NewUsersHandler(service)
+		cookieManger := NewMockCookieManager(t)
+		handler := NewUsersHandler(service, cookieManger)
 		request := newGetUserRequest(t, userID.String())
 		recorder := httptest.NewRecorder()
 

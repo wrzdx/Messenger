@@ -38,6 +38,11 @@ type UsersRepository interface {
 		id uuid.UUID,
 	) (domain.User, error)
 
+	GetUserForUpdate(
+		ctx context.Context,
+		userID uuid.UUID,
+	) (domain.User, error)
+
 	GetUserByUsername(
 		ctx context.Context,
 		username string,

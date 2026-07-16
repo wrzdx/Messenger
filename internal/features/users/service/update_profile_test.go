@@ -20,7 +20,8 @@ func TestUpdateProfile(t *testing.T) {
 		repository := NewMockUsersRepository(t)
 		repository.EXPECT().GetUser(t.Context(), user.ID).Return(user, nil)
 		txManager := NewMockTXManager(t)
-		service := NewUsersService(repository, txManager)
+		sessionsRepo := NewMockSessionsRepository(t)
+		service := NewUsersService(repository, sessionsRepo, txManager)
 
 		actual, err := service.UpdateProfile(t.Context(), user.ID, UpdateProfileCommand{})
 
@@ -54,7 +55,8 @@ func TestUpdateProfile(t *testing.T) {
 		repository.EXPECT().UpdateUserProfile(txCtx, user.ID, expectedProfile).Return(nil)
 		txManager := NewMockTXManager(t)
 		expectUpdateProfileTransaction(txManager, outerCtx, txCtx)
-		service := NewUsersService(repository, txManager)
+		sessionsRepo := NewMockSessionsRepository(t)
+		service := NewUsersService(repository, sessionsRepo, txManager)
 
 		actual, err := service.UpdateProfile(outerCtx, user.ID, command)
 
@@ -82,7 +84,8 @@ func TestUpdateProfile(t *testing.T) {
 		repository.EXPECT().UpdateUserProfile(txCtx, user.ID, expectedProfile).Return(nil)
 		txManager := NewMockTXManager(t)
 		expectUpdateProfileTransaction(txManager, outerCtx, txCtx)
-		service := NewUsersService(repository, txManager)
+		sessionsRepo := NewMockSessionsRepository(t)
+		service := NewUsersService(repository, sessionsRepo, txManager)
 
 		actual, err := service.UpdateProfile(outerCtx, user.ID, command)
 
@@ -101,7 +104,8 @@ func TestUpdateProfile(t *testing.T) {
 		repository.EXPECT().GetUserForUpdate(txCtx, user.ID).Return(user, nil)
 		txManager := NewMockTXManager(t)
 		expectUpdateProfileTransaction(txManager, outerCtx, txCtx)
-		service := NewUsersService(repository, txManager)
+		sessionsRepo := NewMockSessionsRepository(t)
+		service := NewUsersService(repository, sessionsRepo, txManager)
 
 		actual, err := service.UpdateProfile(outerCtx, user.ID, UpdateProfileCommand{
 			Username: &username,
@@ -123,7 +127,8 @@ func TestUpdateProfile(t *testing.T) {
 			Return(domain.User{}, repositoryErr)
 		txManager := NewMockTXManager(t)
 		expectUpdateProfileTransaction(txManager, outerCtx, txCtx)
-		service := NewUsersService(repository, txManager)
+		sessionsRepo := NewMockSessionsRepository(t)
+		service := NewUsersService(repository, sessionsRepo, txManager)
 
 		actual, err := service.UpdateProfile(outerCtx, userID, UpdateProfileCommand{
 			Username: &username,
@@ -143,7 +148,8 @@ func TestUpdateProfile(t *testing.T) {
 		repository.EXPECT().GetUserForUpdate(txCtx, user.ID).Return(user, nil)
 		txManager := NewMockTXManager(t)
 		expectUpdateProfileTransaction(txManager, outerCtx, txCtx)
-		service := NewUsersService(repository, txManager)
+		sessionsRepo := NewMockSessionsRepository(t)
+		service := NewUsersService(repository, sessionsRepo, txManager)
 
 		actual, err := service.UpdateProfile(outerCtx, user.ID, UpdateProfileCommand{
 			Username: &invalidUsername,
@@ -173,7 +179,8 @@ func TestUpdateProfile(t *testing.T) {
 			Return(repositoryErr)
 		txManager := NewMockTXManager(t)
 		expectUpdateProfileTransaction(txManager, outerCtx, txCtx)
-		service := NewUsersService(repository, txManager)
+		sessionsRepo := NewMockSessionsRepository(t)
+		service := NewUsersService(repository, sessionsRepo, txManager)
 
 		actual, err := service.UpdateProfile(outerCtx, user.ID, UpdateProfileCommand{
 			Username: &username,
@@ -193,7 +200,8 @@ func TestUpdateProfile(t *testing.T) {
 		txManager.EXPECT().
 			WithinTransaction(t.Context(), mock.Anything).
 			Return(transactionErr)
-		service := NewUsersService(repository, txManager)
+		sessionsRepo := NewMockSessionsRepository(t)
+		service := NewUsersService(repository, sessionsRepo, txManager)
 
 		actual, err := service.UpdateProfile(t.Context(), userID, UpdateProfileCommand{
 			Username: &username,

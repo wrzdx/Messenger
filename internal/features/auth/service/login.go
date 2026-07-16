@@ -51,8 +51,22 @@ func (s *AuthService) Login(
 	if err != nil {
 		return auth.TokenPair{}, fmt.Errorf("generate token pair: %w", err)
 	}
-	if err := s.sessionsRepository.CreateSession(ctx, session); err != nil {
-		return auth.TokenPair{}, fmt.Errorf("create session: %w", err)
+	err = s.txManager.WithinTransaction(ctx, func(ctx context.Context) error {
+		lockedUser, err := s.usersRepository.GetUserForUpdate(ctx, user.ID)
+		if err != nil {
+			return fmt.Errorf("get user by id from repo: %w", err)
+		}
+		if lockedUser.DeletedAt != nil || lockedUser.PasswordHash != user.PasswordHash {
+			return auth.ErrInvalidCredentials
+		}
+
+		if err := s.sessionsRepository.CreateSession(ctx, session); err != nil {
+			return fmt.Errorf("create session: %w", err)
+		}
+		return nil
+	})
+	if err != nil {
+		return auth.TokenPair{}, fmt.Errorf("transaction: %w", err)
 	}
 	return tokens, nil
 }

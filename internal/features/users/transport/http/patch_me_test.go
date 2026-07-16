@@ -39,7 +39,8 @@ func TestPatchMe(t *testing.T) {
 		service.EXPECT().
 			UpdateProfile(mock.Anything, user.ID, expectedCommand).
 			Return(user, nil)
-		handler := NewUsersHandler(service)
+		cookieManger := NewMockCookieManager(t)
+		handler := NewUsersHandler(service, cookieManger)
 		request := newPatchMeRequest(t, user, `{
 			"username":"Updated_user",
 			"first_name":"Updated name",
@@ -61,7 +62,8 @@ func TestPatchMe(t *testing.T) {
 		service.EXPECT().
 			UpdateProfile(mock.Anything, user.ID, users_service.UpdateProfileCommand{}).
 			Return(user, nil)
-		handler := NewUsersHandler(service)
+		cookieManger := NewMockCookieManager(t)
+		handler := NewUsersHandler(service, cookieManger)
 		request := newPatchMeRequest(t, user, `{}`)
 		recorder := httptest.NewRecorder()
 
@@ -73,7 +75,8 @@ func TestPatchMe(t *testing.T) {
 	t.Run("rejects malformed request before calling service", func(t *testing.T) {
 		user := newUsersTransportTestUser(t)
 		service := NewMockUsersService(t)
-		handler := NewUsersHandler(service)
+		cookieManger := NewMockCookieManager(t)
+		handler := NewUsersHandler(service, cookieManger)
 		request := newPatchMeRequest(t, user, `{"bio":42}`)
 		recorder := httptest.NewRecorder()
 
@@ -89,7 +92,8 @@ func TestPatchMe(t *testing.T) {
 		service.EXPECT().
 			UpdateProfile(mock.Anything, user.ID, users_service.UpdateProfileCommand{}).
 			Return(domain.User{}, fmt.Errorf("update profile: %w", domain.ErrNotFound))
-		handler := NewUsersHandler(service)
+		cookieManger := NewMockCookieManager(t)
+		handler := NewUsersHandler(service, cookieManger)
 		request := newPatchMeRequest(t, user, `{}`)
 		recorder := httptest.NewRecorder()
 

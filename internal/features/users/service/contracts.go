@@ -3,16 +3,12 @@ package users_service
 import (
 	"context"
 	"messenger/internal/core/domain"
+	"time"
 
 	"github.com/google/uuid"
 )
 
 type UsersRepository interface {
-	GetUsers(
-		ctx context.Context,
-		pagination domain.Pagination,
-	) ([]domain.User, error)
-
 	GetUser(
 		ctx context.Context,
 		id uuid.UUID,
@@ -26,6 +22,8 @@ type UsersRepository interface {
 	DeleteUser(
 		ctx context.Context,
 		id uuid.UUID,
+		profile domain.UserProfile,
+		deletedAt time.Time,
 	) error
 
 	UpdateUserProfile(
@@ -33,6 +31,10 @@ type UsersRepository interface {
 		id uuid.UUID,
 		profile domain.UserProfile,
 	) error
+}
+
+type SessionsRepository interface {
+	DeleteAllSessions(ctx context.Context, userID uuid.UUID) error
 }
 
 type TXManager interface {

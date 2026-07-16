@@ -1,16 +1,19 @@
 package users_service
 
 type UsersService struct {
-	userRepository UsersRepository
-	txManager      TXManager
+	userRepository     UsersRepository
+	sessionsRepository SessionsRepository
+	txManager          TXManager
 }
 
 func NewUsersService(
 	usersRepository UsersRepository,
+	sessionsRepository SessionsRepository,
 	txManager TXManager,
 ) *UsersService {
 	return &UsersService{
-		userRepository: usersRepository,
-		txManager: txManager,
+		userRepository:     usersRepository,
+		sessionsRepository: sessionsRepository,
+		txManager:          txManager,
 	}
 }

@@ -19,13 +19,15 @@ func TestUsersRoutesUseAuthMiddleware(t *testing.T) {
 	}{
 		{name: "get current user", method: http.MethodGet, path: "/me"},
 		{name: "patch current user", method: http.MethodPatch, path: "/me"},
+		{name: "delete current user", method: http.MethodDelete, path: "/me"},
 		{name: "get user by id", method: http.MethodGet, path: "/" + uuid.NewString()},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			service := NewMockUsersService(t)
-			handler := NewUsersHandler(service)
+			cookieManger := NewMockCookieManager(t)
+			handler := NewUsersHandler(service, cookieManger)
 			middlewareCalled := false
 			authMW := http_middleware.Middleware(func(next http.Handler) http.Handler {
 				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

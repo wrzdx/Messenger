@@ -91,8 +91,8 @@ func main() {
 	authTransportHTTP := auth_transport_http.NewAuthHTTPHandler(authService, cookieManager)
 
 	logger.Debug("initializing feature", zap.String("feature", "users"))
-	usersService := users_service.NewUsersService(usersRepository, txManager)
-	usersTransportHTTP := users_transport_http.NewUsersHandler(usersService)
+	usersService := users_service.NewUsersService(usersRepository, sessionsRepository, txManager)
+	usersTransportHTTP := users_transport_http.NewUsersHandler(usersService, cookieManager)
 
 	logger.Debug("initializing HTTP server")
 	httpConfig := http_server.NewConfigMust()

@@ -7,12 +7,17 @@ import (
 )
 
 type UsersHandler struct {
-	usersService UsersService
+	usersService  UsersService
+	cookieManager CookieManager
 }
 
-func NewUsersHandler(usersService UsersService) *UsersHandler {
+func NewUsersHandler(
+	usersService UsersService,
+	cookieManager CookieManager,
+) *UsersHandler {
 	return &UsersHandler{
-		usersService: usersService,
+		usersService:  usersService,
+		cookieManager: cookieManager,
 	}
 }
 
@@ -21,6 +26,7 @@ func (h *UsersHandler) Router(authMW http_middleware.Middleware) chi.Router {
 	router.Use(authMW)
 	router.Get("/me", h.GetMe)
 	router.Patch("/me", h.PatchMe)
+	router.Delete("/me", h.DeleteMe)
 	router.Get("/{id}", h.GetUser)
 
 	return router

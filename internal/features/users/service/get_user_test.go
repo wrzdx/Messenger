@@ -20,7 +20,8 @@ func TestGetUser(t *testing.T) {
 			GetUser(ctx, user.ID).
 			Return(user, nil)
 		txManager := NewMockTXManager(t)
-		service := NewUsersService(repository, txManager)
+		sessionsRepo := NewMockSessionsRepository(t)
+		service := NewUsersService(repository, sessionsRepo, txManager)
 
 		got, err := service.GetUser(ctx, user.ID)
 
@@ -36,7 +37,8 @@ func TestGetUser(t *testing.T) {
 			GetUser(ctx, userID).
 			Return(domain.User{}, domain.ErrNotFound)
 		txManager := NewMockTXManager(t)
-		service := NewUsersService(repository, txManager)
+		sessionsRepo := NewMockSessionsRepository(t)
+		service := NewUsersService(repository, sessionsRepo, txManager)
 
 		user, err := service.GetUser(ctx, userID)
 
@@ -53,7 +55,8 @@ func TestGetUser(t *testing.T) {
 			GetUser(ctx, user.ID).
 			Return(user, nil)
 		txManager := NewMockTXManager(t)
-		service := NewUsersService(repository, txManager)
+		sessionsRepo := NewMockSessionsRepository(t)
+		service := NewUsersService(repository, sessionsRepo, txManager)
 
 		got, err := service.GetUser(ctx, user.ID)
 
@@ -70,7 +73,8 @@ func TestGetUser(t *testing.T) {
 			GetUser(ctx, userID).
 			Return(domain.User{}, repositoryErr)
 		txManager := NewMockTXManager(t)
-		service := NewUsersService(repository, txManager)
+		sessionsRepo := NewMockSessionsRepository(t)
+		service := NewUsersService(repository, sessionsRepo, txManager)
 
 		user, err := service.GetUser(ctx, userID)
 
