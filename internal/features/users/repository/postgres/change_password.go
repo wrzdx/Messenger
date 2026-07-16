@@ -14,7 +14,8 @@ import (
 func (r *UsersRepository) ChangePassword(
 	ctx context.Context,
 	id uuid.UUID,
-	passwordHash string,
+	newPasswordHash string,
+	currentPasswordHash string,
 ) error {
 	ctx, cancel := context.WithTimeout(ctx, r.timeout)
 	defer cancel()
@@ -24,9 +25,11 @@ func (r *UsersRepository) ChangePassword(
 	UPDATE users
 	SET password_hash=$1
 	WHERE id=$2
+		AND password_hash=$3
+		AND deleted_at IS NULL
 	RETURNING id;`
 
-	err := db.QueryRow(ctx, query, passwordHash, id).Scan(&id)
+	err := db.QueryRow(ctx, query, newPasswordHash, id, currentPasswordHash).Scan(&id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.ErrNotFound

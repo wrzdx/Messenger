@@ -180,7 +180,7 @@ func TestRotateSession(t *testing.T) {
 	})
 
 	t.Run("allows only one concurrent rotation of the same token", func(t *testing.T) {
-		repository := NewAuthRepository(pool, config.Timeout)
+		repository := NewSessionsRepository(pool, config.Timeout)
 		createdAt := sessionTestTime()
 		usedAt := createdAt.Add(time.Hour)
 		userID := uuid.New()

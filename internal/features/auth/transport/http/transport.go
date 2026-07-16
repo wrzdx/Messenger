@@ -1,6 +1,8 @@
 package auth_transport_http
 
 import (
+	http_middleware "messenger/internal/core/transport/http/middleware"
+
 	"github.com/go-chi/chi/v5"
 )
 
@@ -19,11 +21,16 @@ func NewAuthHTTPHandler(
 	}
 }
 
-func (h *AuthHandler) Router() chi.Router {
+func (h *AuthHandler) Router(authMW http_middleware.Middleware) chi.Router {
 	router := chi.NewRouter()
 	router.Post("/login", h.Login)
 	router.Post("/register", h.Register)
 	router.Post("/logout", h.Logout)
 	router.Post("/refresh", h.Refresh)
+	router.Group(func(protected chi.Router) {
+		protected.Use(authMW)
+		protected.Put("/password", h.ChangePassword)
+	})
+
 	return router
 }

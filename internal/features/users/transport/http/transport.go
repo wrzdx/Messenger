@@ -35,13 +35,6 @@ type UsersService interface {
 		id uuid.UUID,
 		patch users_service.UserPatch,
 	) (domain.User, error)
-
-	ChangePassword(
-		ctx context.Context,
-		id uuid.UUID,
-		old_password string,
-		new_password string,
-	) error
 }
 
 func NewUsersHandler(usersService UsersService) *UsersHandler {

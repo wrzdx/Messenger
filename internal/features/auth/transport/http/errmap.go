@@ -27,6 +27,14 @@ func errorMapper(err error) http_response.HTTPError {
 			Fields:     http_errmap.FieldsFrom(err),
 		}
 
+	case errors.Is(err, auth.ErrPasswordMismatch):
+		return http_response.HTTPError{
+			StatusCode: http.StatusBadRequest,
+			Code:       "password_mismatch",
+			Message:    "password mismatch",
+			Fields:     http_errmap.FieldsFrom(err),
+		}
+
 	case errors.Is(err, auth.ErrInvalidCredentials):
 		return http_response.HTTPError{
 			StatusCode: http.StatusUnauthorized,

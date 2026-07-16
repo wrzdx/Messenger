@@ -14,7 +14,7 @@ import (
 
 	auth_postgres_repository "messenger/internal/features/auth/repository/postgres"
 	auth_service "messenger/internal/features/auth/service"
-	auth_transport_http "messenger/internal/features/auth/transport"
+	auth_transport_http "messenger/internal/features/auth/transport/http"
 	users_postgres_repository "messenger/internal/features/users/repository/postgres"
 	"os"
 	"os/signal"
@@ -60,7 +60,7 @@ func main() {
 
 	logger.Debug("initializing feature", zap.String("feature", "auth"))
 	usersRepository := users_postgres_repository.NewUsersRepository(pool, postgresConfig.Timeout)
-	sessionsRepository := auth_postgres_repository.NewAuthRepository(pool, postgresConfig.Timeout)
+	sessionsRepository := auth_postgres_repository.NewSessionsRepository(pool, postgresConfig.Timeout)
 	hasher := auth_bcrypt.NewBcryptHasher()
 	jwtProvider := auth_jwt.NewTokenProvider(auth_jwt.NewConfigMust())
 	txManager := postgres.NewTransactionManager(pool)
@@ -103,10 +103,10 @@ func main() {
 		http_middleware.Recovery(),
 	)
 
-	// authMW := http_middleware.Auth(jwtProvider)
+	authMW := http_middleware.Auth(jwtProvider)
 
 	routerV1 := chi.NewRouter()
-	routerV1.Mount("/auth", authTransportHTTP.Router())
+	routerV1.Mount("/auth", authTransportHTTP.Router(authMW))
 	// routerV1.Mount("/users", usersTranposrtHTTP.Router(authMW))
 
 	router.Mount("/api/v1", routerV1)

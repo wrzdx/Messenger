@@ -7,7 +7,7 @@ import (
 	"messenger/internal/core/postgres"
 )
 
-func (r *AuthRepository) CreateSession(
+func (r *SessionsRepository) CreateSession(
 	ctx context.Context,
 	session domain.Session,
 ) error {

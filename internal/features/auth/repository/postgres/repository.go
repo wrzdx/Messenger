@@ -5,13 +5,13 @@ import (
 	"time"
 )
 
-type AuthRepository struct {
+type SessionsRepository struct {
 	db      postgres.DBTX
 	timeout time.Duration
 }
 
-func NewAuthRepository(db postgres.DBTX, timeout time.Duration) *AuthRepository {
-	return &AuthRepository{
+func NewSessionsRepository(db postgres.DBTX, timeout time.Duration) *SessionsRepository {
+	return &SessionsRepository{
 		db:      db,
 		timeout: timeout,
 	}

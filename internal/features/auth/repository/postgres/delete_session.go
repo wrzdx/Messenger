@@ -12,7 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func (r *AuthRepository) DeleteSession(
+func (r *SessionsRepository) DeleteSession(
 	ctx context.Context,
 	sessionID, currentTokenID uuid.UUID,
 ) error {

@@ -33,10 +33,4 @@ type UsersRepository interface {
 		id uuid.UUID,
 		profile domain.UserProfile,
 	) error
-
-	ChangePassword(
-		ctx context.Context,
-		id uuid.UUID,
-		newPasswordHash string,
-	) error
 }

@@ -12,7 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func (r *AuthRepository) RotateSession(
+func (r *SessionsRepository) RotateSession(
 	ctx context.Context,
 	sessionID, currentTokenID, newTokenID uuid.UUID,
 	usedAt time.Time,

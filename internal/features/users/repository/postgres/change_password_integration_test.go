@@ -2,81 +2,121 @@
 
 package users_postgres_repository
 
-// import (
-// 	"errors"
-// 	"messenger/internal/core/domain"
-// 	pgx_pool "messenger/internal/core/repository/postgres/pgx"
-// 	test_utils "messenger/internal/core/utils/test"
-// 	"testing"
+import (
+	"context"
+	"strings"
+	"testing"
+	"time"
 
-// 	"github.com/google/uuid"
-// )
+	"messenger/internal/core/domain"
+	"messenger/internal/core/postgres"
 
-// func TestChangePassword(t *testing.T) {
-// 	const newPasswordHash = "new_password_hash"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/stretchr/testify/require"
+)
 
-// 	tests := []struct {
-// 		name         string
-// 		userID       uuid.UUID
-// 		passwordHash string
-// 		wantError    error
-// 	}{
-// 		{
-// 			name:         "existing user",
-// 			userID:       test_utils.MockUsers[0].ID,
-// 			passwordHash: newPasswordHash,
-// 		},
-// 		{
-// 			name:         "non-existing user",
-// 			userID:       test_utils.MockUser.ID,
-// 			passwordHash: newPasswordHash,
-// 			wantError:    domain.ErrNotFound,
-// 		},
-// 	}
+func TestChangePassword(t *testing.T) {
+	config := postgres.NewConfigMust()
+	pool, err := postgres.NewPool(t.Context(), config)
+	require.NoError(t, err)
+	t.Cleanup(pool.Close)
 
-// 	pool, err := pgx_pool.NewPool(
-// 		t.Context(),
-// 		pgx_pool.NewConfigMust(),
-// 	)
-// 	if err != nil {
-// 		t.Fatalf("unexpected error: %v", err)
-// 	}
-// 	defer pool.Close()
+	t.Run("updates active user when expected hash matches", func(t *testing.T) {
+		tx, repository := newPasswordTestRepository(t, pool, config.Timeout)
+		userID := insertPasswordTestUser(t, tx, false, "current-hash")
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			tx, err := pool.Begin(t.Context())
-// 			if err != nil {
-// 				t.Fatal(err)
-// 			}
-// 			defer tx.Rollback(t.Context())
-// 			repository := NewUsersRepository(tx)
-// 			test_utils.LoadData(t, tx)
+		err := repository.ChangePassword(t.Context(), userID, "new-hash", "current-hash")
 
-// 			err = repository.ChangePassword(
-// 				t.Context(),
-// 				tt.userID,
-// 				tt.passwordHash,
-// 			)
+		require.NoError(t, err)
+		require.Equal(t, "new-hash", passwordHashForUser(t, tx, userID))
+	})
 
-// 			if !errors.Is(err, tt.wantError) {
-// 				t.Fatalf("want %v, got %v", tt.wantError, err)
-// 			}
+	t.Run("rejects stale expected hash without changing password", func(t *testing.T) {
+		tx, repository := newPasswordTestRepository(t, pool, config.Timeout)
+		userID := insertPasswordTestUser(t, tx, false, "current-hash")
 
-// 			if tt.wantError == nil {
-// 				user, err := repository.GetUser(t.Context(), tt.userID)
-// 				if err != nil {
-// 					t.Fatalf("unexpected error: %v", err)
-// 				}
+		err := repository.ChangePassword(t.Context(), userID, "new-hash", "stale-hash")
 
-// 				if user.PasswordHash != newPasswordHash {
-// 					t.Fatalf(
-// 						"password hash = %q, want %q",
-// 						user.PasswordHash,
-// 						newPasswordHash,
-// 					)
-// 				}
-// 			}
-// 		})
-// 	}
-// }
+		require.ErrorIs(t, err, domain.ErrNotFound)
+		require.Equal(t, "current-hash", passwordHashForUser(t, tx, userID))
+	})
+
+	t.Run("only first update succeeds with the same expected hash", func(t *testing.T) {
+		tx, repository := newPasswordTestRepository(t, pool, config.Timeout)
+		userID := insertPasswordTestUser(t, tx, false, "current-hash")
+
+		firstErr := repository.ChangePassword(t.Context(), userID, "first-new-hash", "current-hash")
+		secondErr := repository.ChangePassword(t.Context(), userID, "second-new-hash", "current-hash")
+
+		require.NoError(t, firstErr)
+		require.ErrorIs(t, secondErr, domain.ErrNotFound)
+		require.Equal(t, "first-new-hash", passwordHashForUser(t, tx, userID))
+	})
+
+	t.Run("does not update deleted user", func(t *testing.T) {
+		tx, repository := newPasswordTestRepository(t, pool, config.Timeout)
+		userID := insertPasswordTestUser(t, tx, true, "current-hash")
+
+		err := repository.ChangePassword(t.Context(), userID, "new-hash", "current-hash")
+
+		require.ErrorIs(t, err, domain.ErrNotFound)
+		require.Equal(t, "current-hash", passwordHashForUser(t, tx, userID))
+	})
+
+	t.Run("returns not found for unknown user", func(t *testing.T) {
+		_, repository := newPasswordTestRepository(t, pool, config.Timeout)
+
+		err := repository.ChangePassword(t.Context(), uuid.New(), "new-hash", "current-hash")
+
+		require.ErrorIs(t, err, domain.ErrNotFound)
+	})
+}
+
+func newPasswordTestRepository(
+	t *testing.T,
+	pool *pgxpool.Pool,
+	timeout time.Duration,
+) (pgx.Tx, *UsersRepository) {
+	t.Helper()
+	tx, err := pool.Begin(t.Context())
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = tx.Rollback(context.Background())
+	})
+	return tx, NewUsersRepository(tx, timeout)
+}
+
+func insertPasswordTestUser(
+	t *testing.T,
+	db postgres.DBTX,
+	deleted bool,
+	passwordHash string,
+) uuid.UUID {
+	t.Helper()
+	userID := uuid.New()
+	usernameSuffix := strings.ReplaceAll(userID.String(), "-", "")[:16]
+	var deletedAt *time.Time
+	if deleted {
+		value := time.Now().UTC()
+		deletedAt = &value
+	}
+	_, err := db.Exec(t.Context(), `
+		INSERT INTO users (id, username, first_name, created_at, deleted_at, password_hash)
+		VALUES ($1, $2, $3, $4, $5, $6)
+	`, userID, "password_"+usernameSuffix, "Password Test", time.Now().UTC(), deletedAt, passwordHash)
+	require.NoError(t, err)
+	return userID
+}
+
+func passwordHashForUser(t *testing.T, db postgres.DBTX, userID uuid.UUID) string {
+	t.Helper()
+	var passwordHash string
+	require.NoError(t, db.QueryRow(t.Context(), `
+		SELECT password_hash
+		FROM users
+		WHERE id = $1
+	`, userID).Scan(&passwordHash))
+	return passwordHash
+}
