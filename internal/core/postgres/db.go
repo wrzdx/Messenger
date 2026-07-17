@@ -26,4 +26,9 @@ type DBTX interface {
 		string,
 		...any,
 	) pgx.Row
+
+	SendBatch(
+		context.Context,
+		*pgx.Batch,
+	) pgx.BatchResults
 }

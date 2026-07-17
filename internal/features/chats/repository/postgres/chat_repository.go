@@ -16,3 +16,7 @@ func NewChatsRepository(db postgres.DBTX, timeout time.Duration) *ChatsRepositor
 		timeout: timeout,
 	}
 }
+
+const (
+	directsUK = "directs_unique_pair"
+)

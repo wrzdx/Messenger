@@ -11,27 +11,42 @@ CREATE TABLE chats (
 );
 
 CREATE TABLE groups (
-    chat_id UUID PRIMARY KEY REFERENCES chats(id) ON DELETE CASCADE,
-    title VARCHAR(128) NOT NULL CHECK (char_length(btrim(title)) BETWEEN 1 AND 128)
+    chat_id UUID         PRIMARY KEY REFERENCES chats(id) ON DELETE CASCADE,
+    title   VARCHAR(128) NOT NULL,
+
+    CONSTRAINT groups_title_check
+        CHECK (char_length(btrim(title)) BETWEEN 1 AND 128)
 );
 
 CREATE TABLE messages (
     id         UUID        PRIMARY KEY,
     chat_id    UUID        NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
     sender_id  UUID        NOT NULL REFERENCES users(id),
-    content    TEXT        NOT NULL CHECK (char_length(content) <= 4096),
+    content    TEXT        NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
-    updated_at TIMESTAMPTZ
+    updated_at TIMESTAMPTZ,
+
+
+    CONSTRAINT messages_content_check
+        CHECK (char_length(content) <= 4096)
 );
 
 CREATE TABLE chat_participants (
-    chat_id              UUID        NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
-    user_id              UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    role                 user_role   NOT NULL,
+    chat_id              UUID        REFERENCES chats(id) ON DELETE CASCADE,
+    user_id              UUID        REFERENCES users(id) ON DELETE CASCADE,
     last_read_message_id UUID        REFERENCES messages(id),
     joined_at            TIMESTAMPTZ NOT NULL,
 
-    PRIMARY KEY(chat_id, user_id)
+    CONSTRAINT chat_participants_pkey PRIMARY KEY(chat_id, user_id)
+);
+
+CREATE TABLE group_participants (
+    chat_id              UUID        REFERENCES groups(chat_id) ON DELETE CASCADE,
+    user_id              UUID,
+    role                 user_role   NOT NULL,
+
+    PRIMARY KEY(chat_id, user_id),
+    FOREIGN KEY (chat_id, user_id) REFERENCES chat_participants(chat_id, user_id) ON DELETE CASCADE
 );
 
 CREATE TABLE directs (
@@ -39,7 +54,7 @@ CREATE TABLE directs (
     user1_id UUID NOT NULL REFERENCES users(id), 
     user2_id UUID NOT NULL REFERENCES users(id),
 
-    UNIQUE(user1_id, user2_id),
+    CONSTRAINT directs_unique_pair UNIQUE(user1_id, user2_id),
     CHECK (user1_id < user2_id)
 );
 

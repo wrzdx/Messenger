@@ -1,25 +1,13 @@
 package chats_transport_http
 
 import (
-	"context"
-	"messenger/internal/core/domain"
+	http_middleware "messenger/internal/core/transport/http/middleware"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 )
 
 type ChatsHandler struct {
 	chatsService ChatsService
-}
-
-type ChatsService interface {
-	CreateChat(
-		ctx context.Context,
-		userID uuid.UUID,
-		chatType string,
-		name *string,
-		ParticipantIDs []uuid.UUID,
-	) (domain.Chat, error)
 }
 
 func NewChatsHandler(chatsService ChatsService) *ChatsHandler {
@@ -28,7 +16,9 @@ func NewChatsHandler(chatsService ChatsService) *ChatsHandler {
 	}
 }
 
-func (h *ChatsHandler) Router() chi.Router {
+func (h *ChatsHandler) Router(authMW http_middleware.Middleware) chi.Router {
 	router := chi.NewRouter()
+	router.Use(authMW)
+	router.Post("/directs", h.CreateDirect)
 	return router
 }

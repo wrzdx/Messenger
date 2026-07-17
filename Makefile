@@ -4,6 +4,11 @@ export
 export PROJECT_ROOT=${shell pwd}
 MAKEFLAGS += --no-print-directory
 
+ifeq ($(OS),Windows_NT)
+MERMAID_BROWSER ?= C:/Program Files/Google/Chrome/Application/chrome.exe
+export PUPPETEER_EXECUTABLE_PATH := $(MERMAID_BROWSER)
+endif
+
 env-up:
 	@docker compose up -d postgres
 
@@ -90,6 +95,11 @@ swagger-gen:
 		--parseDependency
 
 diagram-db:
+	@if [ -n "$(MERMAID_BROWSER)" ] && [ ! -f "$(MERMAID_BROWSER)" ]; then \
+		echo "Mermaid browser not found: $(MERMAID_BROWSER)"; \
+		echo "Override it with: make diagram-db MERMAID_BROWSER=/path/to/chrome"; \
+		exit 1; \
+	fi
 	@npx --yes @mermaid-js/mermaid-cli@11.16.0 \
 		-i docs/database.mmd \
 		-o docs/database.svg \

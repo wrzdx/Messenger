@@ -40,29 +40,20 @@ func (_m *MockChatsRepository) EXPECT() *MockChatsRepository_Expecter {
 }
 
 // CreateDirect provides a mock function for the type MockChatsRepository
-func (_mock *MockChatsRepository) CreateDirect(ctx context.Context, chat domain.Chat, user1 uuid.UUID, user2 uuid.UUID) (domain.Chat, error) {
-	ret := _mock.Called(ctx, chat, user1, user2)
+func (_mock *MockChatsRepository) CreateDirect(ctx context.Context, direct domain.DirectChat, participant1 domain.ChatParticipant, participant2 domain.ChatParticipant) error {
+	ret := _mock.Called(ctx, direct, participant1, participant2)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateDirect")
 	}
 
-	var r0 domain.Chat
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.Chat, uuid.UUID, uuid.UUID) (domain.Chat, error)); ok {
-		return returnFunc(ctx, chat, user1, user2)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.Chat, uuid.UUID, uuid.UUID) domain.Chat); ok {
-		r0 = returnFunc(ctx, chat, user1, user2)
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.DirectChat, domain.ChatParticipant, domain.ChatParticipant) error); ok {
+		r0 = returnFunc(ctx, direct, participant1, participant2)
 	} else {
-		r0 = ret.Get(0).(domain.Chat)
+		r0 = ret.Error(0)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, domain.Chat, uuid.UUID, uuid.UUID) error); ok {
-		r1 = returnFunc(ctx, chat, user1, user2)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
+	return r0
 }
 
 // MockChatsRepository_CreateDirect_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateDirect'
@@ -72,30 +63,30 @@ type MockChatsRepository_CreateDirect_Call struct {
 
 // CreateDirect is a helper method to define mock.On call
 //   - ctx context.Context
-//   - chat domain.Chat
-//   - user1 uuid.UUID
-//   - user2 uuid.UUID
-func (_e *MockChatsRepository_Expecter) CreateDirect(ctx any, chat any, user1 any, user2 any) *MockChatsRepository_CreateDirect_Call {
-	return &MockChatsRepository_CreateDirect_Call{Call: _e.mock.On("CreateDirect", ctx, chat, user1, user2)}
+//   - direct domain.DirectChat
+//   - participant1 domain.ChatParticipant
+//   - participant2 domain.ChatParticipant
+func (_e *MockChatsRepository_Expecter) CreateDirect(ctx any, direct any, participant1 any, participant2 any) *MockChatsRepository_CreateDirect_Call {
+	return &MockChatsRepository_CreateDirect_Call{Call: _e.mock.On("CreateDirect", ctx, direct, participant1, participant2)}
 }
 
-func (_c *MockChatsRepository_CreateDirect_Call) Run(run func(ctx context.Context, chat domain.Chat, user1 uuid.UUID, user2 uuid.UUID)) *MockChatsRepository_CreateDirect_Call {
+func (_c *MockChatsRepository_CreateDirect_Call) Run(run func(ctx context.Context, direct domain.DirectChat, participant1 domain.ChatParticipant, participant2 domain.ChatParticipant)) *MockChatsRepository_CreateDirect_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 domain.Chat
+		var arg1 domain.DirectChat
 		if args[1] != nil {
-			arg1 = args[1].(domain.Chat)
+			arg1 = args[1].(domain.DirectChat)
 		}
-		var arg2 uuid.UUID
+		var arg2 domain.ChatParticipant
 		if args[2] != nil {
-			arg2 = args[2].(uuid.UUID)
+			arg2 = args[2].(domain.ChatParticipant)
 		}
-		var arg3 uuid.UUID
+		var arg3 domain.ChatParticipant
 		if args[3] != nil {
-			arg3 = args[3].(uuid.UUID)
+			arg3 = args[3].(domain.ChatParticipant)
 		}
 		run(
 			arg0,
@@ -107,12 +98,84 @@ func (_c *MockChatsRepository_CreateDirect_Call) Run(run func(ctx context.Contex
 	return _c
 }
 
-func (_c *MockChatsRepository_CreateDirect_Call) Return(chat1 domain.Chat, err error) *MockChatsRepository_CreateDirect_Call {
-	_c.Call.Return(chat1, err)
+func (_c *MockChatsRepository_CreateDirect_Call) Return(err error) *MockChatsRepository_CreateDirect_Call {
+	_c.Call.Return(err)
 	return _c
 }
 
-func (_c *MockChatsRepository_CreateDirect_Call) RunAndReturn(run func(ctx context.Context, chat domain.Chat, user1 uuid.UUID, user2 uuid.UUID) (domain.Chat, error)) *MockChatsRepository_CreateDirect_Call {
+func (_c *MockChatsRepository_CreateDirect_Call) RunAndReturn(run func(ctx context.Context, direct domain.DirectChat, participant1 domain.ChatParticipant, participant2 domain.ChatParticipant) error) *MockChatsRepository_CreateDirect_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetDirectByUsers provides a mock function for the type MockChatsRepository
+func (_mock *MockChatsRepository) GetDirectByUsers(ctx context.Context, user1ID uuid.UUID, user2ID uuid.UUID) (domain.DirectChat, error) {
+	ret := _mock.Called(ctx, user1ID, user2ID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetDirectByUsers")
+	}
+
+	var r0 domain.DirectChat
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) (domain.DirectChat, error)); ok {
+		return returnFunc(ctx, user1ID, user2ID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) domain.DirectChat); ok {
+		r0 = returnFunc(ctx, user1ID, user2ID)
+	} else {
+		r0 = ret.Get(0).(domain.DirectChat)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, user1ID, user2ID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockChatsRepository_GetDirectByUsers_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetDirectByUsers'
+type MockChatsRepository_GetDirectByUsers_Call struct {
+	*mock.Call
+}
+
+// GetDirectByUsers is a helper method to define mock.On call
+//   - ctx context.Context
+//   - user1ID uuid.UUID
+//   - user2ID uuid.UUID
+func (_e *MockChatsRepository_Expecter) GetDirectByUsers(ctx any, user1ID any, user2ID any) *MockChatsRepository_GetDirectByUsers_Call {
+	return &MockChatsRepository_GetDirectByUsers_Call{Call: _e.mock.On("GetDirectByUsers", ctx, user1ID, user2ID)}
+}
+
+func (_c *MockChatsRepository_GetDirectByUsers_Call) Run(run func(ctx context.Context, user1ID uuid.UUID, user2ID uuid.UUID)) *MockChatsRepository_GetDirectByUsers_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockChatsRepository_GetDirectByUsers_Call) Return(directChat domain.DirectChat, err error) *MockChatsRepository_GetDirectByUsers_Call {
+	_c.Call.Return(directChat, err)
+	return _c
+}
+
+func (_c *MockChatsRepository_GetDirectByUsers_Call) RunAndReturn(run func(ctx context.Context, user1ID uuid.UUID, user2ID uuid.UUID) (domain.DirectChat, error)) *MockChatsRepository_GetDirectByUsers_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -201,13 +264,13 @@ func (_c *MockTXManager_WithinTransaction_Call) RunAndReturn(run func(ctx contex
 	return _c
 }
 
-// NewMockUsersRepostiory creates a new instance of MockUsersRepostiory. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// NewMockUsersRepository creates a new instance of MockUsersRepository. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
-func NewMockUsersRepostiory(t interface {
+func NewMockUsersRepository(t interface {
 	mock.TestingT
 	Cleanup(func())
-}) *MockUsersRepostiory {
-	mock := &MockUsersRepostiory{}
+}) *MockUsersRepository {
+	mock := &MockUsersRepository{}
 	mock.Mock.Test(t)
 
 	t.Cleanup(func() { mock.AssertExpectations(t) })
@@ -215,25 +278,25 @@ func NewMockUsersRepostiory(t interface {
 	return mock
 }
 
-// MockUsersRepostiory is an autogenerated mock type for the UsersRepostiory type
-type MockUsersRepostiory struct {
+// MockUsersRepository is an autogenerated mock type for the UsersRepository type
+type MockUsersRepository struct {
 	mock.Mock
 }
 
-type MockUsersRepostiory_Expecter struct {
+type MockUsersRepository_Expecter struct {
 	mock *mock.Mock
 }
 
-func (_m *MockUsersRepostiory) EXPECT() *MockUsersRepostiory_Expecter {
-	return &MockUsersRepostiory_Expecter{mock: &_m.Mock}
+func (_m *MockUsersRepository) EXPECT() *MockUsersRepository_Expecter {
+	return &MockUsersRepository_Expecter{mock: &_m.Mock}
 }
 
-// GetUser provides a mock function for the type MockUsersRepostiory
-func (_mock *MockUsersRepostiory) GetUser(ctx context.Context, userID uuid.UUID) (domain.User, error) {
+// GetUserForUpdate provides a mock function for the type MockUsersRepository
+func (_mock *MockUsersRepository) GetUserForUpdate(ctx context.Context, userID uuid.UUID) (domain.User, error) {
 	ret := _mock.Called(ctx, userID)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetUser")
+		panic("no return value specified for GetUserForUpdate")
 	}
 
 	var r0 domain.User
@@ -254,19 +317,19 @@ func (_mock *MockUsersRepostiory) GetUser(ctx context.Context, userID uuid.UUID)
 	return r0, r1
 }
 
-// MockUsersRepostiory_GetUser_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUser'
-type MockUsersRepostiory_GetUser_Call struct {
+// MockUsersRepository_GetUserForUpdate_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUserForUpdate'
+type MockUsersRepository_GetUserForUpdate_Call struct {
 	*mock.Call
 }
 
-// GetUser is a helper method to define mock.On call
+// GetUserForUpdate is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userID uuid.UUID
-func (_e *MockUsersRepostiory_Expecter) GetUser(ctx any, userID any) *MockUsersRepostiory_GetUser_Call {
-	return &MockUsersRepostiory_GetUser_Call{Call: _e.mock.On("GetUser", ctx, userID)}
+func (_e *MockUsersRepository_Expecter) GetUserForUpdate(ctx any, userID any) *MockUsersRepository_GetUserForUpdate_Call {
+	return &MockUsersRepository_GetUserForUpdate_Call{Call: _e.mock.On("GetUserForUpdate", ctx, userID)}
 }
 
-func (_c *MockUsersRepostiory_GetUser_Call) Run(run func(ctx context.Context, userID uuid.UUID)) *MockUsersRepostiory_GetUser_Call {
+func (_c *MockUsersRepository_GetUserForUpdate_Call) Run(run func(ctx context.Context, userID uuid.UUID)) *MockUsersRepository_GetUserForUpdate_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -284,12 +347,12 @@ func (_c *MockUsersRepostiory_GetUser_Call) Run(run func(ctx context.Context, us
 	return _c
 }
 
-func (_c *MockUsersRepostiory_GetUser_Call) Return(user domain.User, err error) *MockUsersRepostiory_GetUser_Call {
+func (_c *MockUsersRepository_GetUserForUpdate_Call) Return(user domain.User, err error) *MockUsersRepository_GetUserForUpdate_Call {
 	_c.Call.Return(user, err)
 	return _c
 }
 
-func (_c *MockUsersRepostiory_GetUser_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID) (domain.User, error)) *MockUsersRepostiory_GetUser_Call {
+func (_c *MockUsersRepository_GetUserForUpdate_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID) (domain.User, error)) *MockUsersRepository_GetUserForUpdate_Call {
 	_c.Call.Return(run)
 	return _c
 }

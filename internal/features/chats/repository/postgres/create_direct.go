@@ -1,26 +1,79 @@
 package chats_postgres_repository
 
-// func (r *ChatsRepository) createDirect(
-// 	ctx context.Context,
-// 	chat domain.Chat,
-// 	user1 uuid.UUID,
-// 	user2 uuid.UUID,
-// ) error {
-// ctx, cancel := context.WithTimeout(ctx, r.timeout)
-// defer cancel()
-// db := postgres.GetExecutor(ctx, r.db)
+import (
+	"context"
+	"errors"
+	"fmt"
+	"messenger/internal/core/domain"
+	"messenger/internal/core/postgres"
 
-// query := `
-// INSERT INTO directs (chat_id, user1_id, user2_id)
-// VALUES ($1, $2, $3);
-// `
+	"github.com/jackc/pgx/v5"
+)
 
-// if _, err := db.Exec(ctx, query, chat.ID, user1, user2); err != nil {
-// 	if errors.Is(err, postgres.ErrViolatesUnique) {
-// 		return domain.AlreadyExistsErr(domain.ChatEntity, nil)
-// 	}
-// 	return fmt.Errorf("exec direct creation query: %w", err)
-// }
+func (r *ChatsRepository) CreateDirect(
+	ctx context.Context,
+	direct domain.DirectChat,
+	participant1 domain.ChatParticipant,
+	participant2 domain.ChatParticipant,
+) error {
+	if participant2.ChatID != direct.Chat.ID || participant1.ChatID != direct.Chat.ID {
+		return errors.New("chat ids do not match")
+	}
+	if participant1.UserID == participant2.UserID {
+		return errors.New("participant ids must be different")
+	}
+	if (participant1.UserID != direct.User1ID && participant1.UserID != direct.User2ID) ||
+		(participant2.UserID != direct.User1ID && participant2.UserID != direct.User2ID) {
+		return errors.New("participant ids do not match to direct chat user ids")
+	}
+	ctx, cancel := context.WithTimeout(ctx, r.timeout)
+	defer cancel()
+	db := postgres.GetExecutor(ctx, r.db)
+	batch := &pgx.Batch{}
 
-// 	return nil
-// }
+	insertChatQuery := `
+	INSERT INTO chats (id, type, last_message_id, last_activity_at, created_at)
+	VALUES ($1, 'direct', $2, $3, $4);
+	`
+	batch.Queue(insertChatQuery,
+		direct.Chat.ID,
+		direct.Chat.LastMessageID,
+		direct.Chat.LastActivityAt,
+		direct.Chat.CreatedAt,
+	)
+	insertDirectQuery := `
+	INSERT INTO directs (chat_id, user1_id, user2_id)
+	VALUES ($1, $2, $3);
+	`
+
+	batch.Queue(
+		insertDirectQuery,
+		direct.Chat.ID,
+		direct.User1ID,
+		direct.User2ID,
+	)
+	insertParticipantsQuery := `
+	INSERT INTO chat_participants (chat_id, user_id, last_read_message_id, joined_at)
+	VALUES ($1, $2, $3, $4),
+		   ($1, $5, $6, $7);
+	`
+	batch.Queue(
+		insertParticipantsQuery,
+		direct.Chat.ID,
+		participant1.UserID,
+		participant1.LastReadMessageID,
+		participant1.JoinedAt,
+		participant2.UserID,
+		participant2.LastReadMessageID,
+		participant2.JoinedAt,
+	)
+
+	if err := db.SendBatch(ctx, batch).Close(); err != nil {
+		if postgres.IsConstraintViolation(err, postgres.UniqueViolation, directsUK) {
+			return domain.ErrAlreadyExists
+		}
+		return fmt.Errorf("create direct aggregate: %w", err)
+	}
+
+	return nil
+}

@@ -1,5 +1,6 @@
 ALTER TABLE chats DROP CONSTRAINT fk_last_message;
 DROP TABLE directs;
+DROP TABLE group_participants;
 DROP TABLE chat_participants;
 DROP TABLE messages;
 DROP TABLE groups;
