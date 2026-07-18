@@ -15,6 +15,9 @@ import (
 	auth_postgres_repository "messenger/internal/features/auth/repository/postgres"
 	auth_service "messenger/internal/features/auth/service"
 	auth_transport_http "messenger/internal/features/auth/transport/http"
+	chats_postgres_repository "messenger/internal/features/chats/repository/postgres"
+	chats_service "messenger/internal/features/chats/service"
+	chats_transport_http "messenger/internal/features/chats/transport/http"
 	users_postgres_repository "messenger/internal/features/users/repository/postgres"
 	users_service "messenger/internal/features/users/service"
 	users_transport_http "messenger/internal/features/users/transport/http"
@@ -70,6 +73,12 @@ func main() {
 		AccessTokenTTL: cfg.AccessTokenTTL,
 		SessionTTL:     cfg.SessionTTL,
 	}
+	cookieManager := auth_cookie.NewCookieManager(
+		authConfig.SessionTTL,
+		cfg.Environment.IsProduction(),
+		"/api/v1/auth",
+	)
+
 	authService, err := auth_service.NewAuthService(
 		usersRepository,
 		sessionsRepository,
@@ -83,26 +92,35 @@ func main() {
 		logger.Fatal("failed create auth service", zap.Error(err))
 	}
 
-	cookieManager := auth_cookie.NewCookieManager(
-		authConfig.SessionTTL,
-		cfg.Environment.IsProduction(),
-		"/api/v1/auth",
-	)
-	authTransportHTTP := auth_transport_http.NewAuthHTTPHandler(authService, cookieManager)
+	authHTTP := auth_transport_http.NewAuthHTTPHandler(authService, cookieManager)
 
 	logger.Debug("initializing feature", zap.String("feature", "users"))
 	usersService := users_service.NewUsersService(usersRepository, sessionsRepository, txManager)
-	usersTransportHTTP := users_transport_http.NewUsersHandler(usersService, cookieManager)
+	usersHTTP := users_transport_http.NewUsersHandler(usersService, cookieManager)
+
+	logger.Debug("initializing feature", zap.String("feature", "chats"))
+	chatsRepository := chats_postgres_repository.NewChatsRepository(pool, postgresConfig.Timeout)
+	chatsService := chats_service.NewChatsService(chatsRepository, usersRepository, txManager)
+	chatsHTTP := chats_transport_http.NewChatsHandler(chatsService)
 
 	logger.Debug("initializing HTTP server")
 	httpConfig := http_server.NewConfigMust()
 	authMW := http_middleware.Auth(jwtProvider)
-	router := newHTTPRouter(
-		logger,
-		httpConfig.AllowedOrigins,
-		authTransportHTTP.Router(authMW),
-		usersTransportHTTP.Router(authMW),
+	router := chi.NewRouter()
+	router.Use(
+		http_middleware.CORS(httpConfig.AllowedOrigins),
+		http_middleware.RequestID(),
+		http_middleware.Logging(logger),
+		http_middleware.Trace(),
+		http_middleware.Recovery(),
 	)
+
+	routerV1 := chi.NewRouter()
+	routerV1.Mount("/auth", authHTTP.Router(authMW))
+	routerV1.Mount("/users", usersHTTP.Router(authMW))
+	routerV1.Mount("/chats", chatsHTTP.Router(authMW))
+
+	router.Mount("/api/v1", routerV1)
 	httpServer := http_server.NewHTTPServer(
 		httpConfig,
 		logger,
@@ -112,27 +130,4 @@ func main() {
 	if err := httpServer.Run(ctx); err != nil {
 		logger.Error("HTTP server run error", zap.Error(err))
 	}
-}
-
-func newHTTPRouter(
-	log *logger.Logger,
-	allowedOrigins []string,
-	authRouter chi.Router,
-	usersRouter chi.Router,
-) chi.Router {
-	router := chi.NewRouter()
-	router.Use(
-		http_middleware.CORS(allowedOrigins),
-		http_middleware.RequestID(),
-		http_middleware.Logging(log),
-		http_middleware.Trace(),
-		http_middleware.Recovery(),
-	)
-
-	routerV1 := chi.NewRouter()
-	routerV1.Mount("/auth", authRouter)
-	routerV1.Mount("/users", usersRouter)
-	router.Mount("/api/v1", routerV1)
-
-	return router
 }

@@ -1,5 +1,5 @@
 CREATE TABLE users (
-    id            UUID,
+    id            UUID         PRIMARY KEY,
     username      VARCHAR(32)  NOT NULL,
     first_name    VARCHAR(64)  NOT NULL,
     last_name     VARCHAR(64),
@@ -19,9 +19,7 @@ CREATE TABLE users (
     CONSTRAINT users_last_name_not_blank_check
         CHECK (last_name IS NULL OR btrim(last_name) <> ''),
     CONSTRAINT users_bio_not_blank_check
-        CHECK (bio IS NULL OR btrim(bio) <> ''),
-
-    CONSTRAINT users_pkey PRIMARY KEY (id)
+        CHECK (bio IS NULL OR btrim(bio) <> '')
 );
 
 CREATE UNIQUE INDEX users_username_lower_uidx
