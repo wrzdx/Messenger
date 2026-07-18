@@ -37,8 +37,9 @@ erDiagram
 
     MESSAGES["messages"] {
         uuid id PK
+        uuid client_message_id UK
         uuid chat_id FK
-        uuid sender_id FK
+        uuid sender_id FK,UK
         text content
         timestamptz created_at
         timestamptz? updated_at

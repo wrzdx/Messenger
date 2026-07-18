@@ -13,7 +13,7 @@ import (
 type AuthService interface {
 	Register(
 		ctx context.Context,
-		payload auth_service.RegisterPayload,
+		payload auth_service.RegisterCommand,
 	) (domain.User, auth.TokenPair, error)
 
 	Login(

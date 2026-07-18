@@ -13,25 +13,27 @@ import (
 var ErrInvalidMessage = errors.New("invalid message")
 
 type Message struct {
-	ID        uuid.UUID
-	ChatID    uuid.UUID
-	SenderID  uuid.UUID
-	Content   string
-	CreatedAt time.Time
-	UpdatedAt *time.Time
+	ID              uuid.UUID
+	ClientMessageID uuid.UUID
+	ChatID          uuid.UUID
+	SenderID        uuid.UUID
+	Content         string
+	CreatedAt       time.Time
+	UpdatedAt       *time.Time
 }
 
 func NewMessage(
-	id, chatID, senderID uuid.UUID,
+	id, clientMessageID, chatID, senderID uuid.UUID,
 	content string,
 	createdAt time.Time,
 ) (Message, error) {
 	message := Message{
-		ID:        id,
-		ChatID:    chatID,
-		SenderID:  senderID,
-		Content:   content,
-		CreatedAt: createdAt,
+		ID:              id,
+		ClientMessageID: clientMessageID,
+		ChatID:          chatID,
+		SenderID:        senderID,
+		Content:         content,
+		CreatedAt:       createdAt,
 	}
 
 	message = message.normalize()
@@ -51,6 +53,10 @@ func (m Message) Validate() error {
 
 	if m.ID == uuid.Nil {
 		return fmt.Errorf("id is nil: %w", ErrInvalidMessage)
+	}
+
+	if m.ClientMessageID == uuid.Nil {
+		return fmt.Errorf("client_message_id is nil: %w", ErrInvalidMessage)
 	}
 
 	if m.ChatID == uuid.Nil {

@@ -26,7 +26,7 @@ func TestRegister(t *testing.T) {
 			Access:  "access-token",
 			Refresh: "refresh-token",
 		}
-		payload := auth_service.RegisterPayload{
+		payload := auth_service.RegisterCommand{
 			Username:  "Username_1",
 			FirstName: "First Name",
 			LastName:  new("Last Name"),
@@ -74,7 +74,7 @@ func TestRegister(t *testing.T) {
 	t.Run("returns conflict fields without setting refresh cookie", func(t *testing.T) {
 		service := NewMockAuthService(t)
 		cookieManager := NewMockCookieManager(t)
-		payload := auth_service.RegisterPayload{
+		payload := auth_service.RegisterCommand{
 			Username:  "Username_1",
 			FirstName: "First Name",
 			Password:  "valid password value",

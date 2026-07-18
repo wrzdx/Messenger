@@ -30,6 +30,7 @@ func (h *ChatsHandler) CreateDirect(w http.ResponseWriter, r *http.Request) {
 	}
 	response := CreateDirectResponse{
 		ID:             direct.Chat.ID,
+		Type:           string(direct.Chat.Type),
 		LastMessageID:  direct.Chat.LastMessageID,
 		LastActivityAt: direct.Chat.LastActivityAt,
 		CreatedAt:      direct.Chat.CreatedAt,
@@ -47,6 +48,7 @@ type CreateDirectRequest struct {
 
 type CreateDirectResponse struct {
 	ID             uuid.UUID  `json:"id"`
+	Type           string     `json:"type"`
 	LastMessageID  *uuid.UUID `json:"last_message_id"`
 	LastActivityAt time.Time  `json:"last_activity_at"`
 	CreatedAt      time.Time  `json:"created_at"`

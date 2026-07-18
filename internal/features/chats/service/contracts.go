@@ -11,14 +11,12 @@ type ChatsRepository interface {
 	CreateDirect(
 		ctx context.Context,
 		direct domain.DirectChat,
-		participant1 domain.ChatParticipant,
-		participant2 domain.ChatParticipant,
+		participant1, participant2 domain.ChatParticipant,
 	) error
 
 	GetDirectByUsers(
 		ctx context.Context,
-		user1ID uuid.UUID,
-		user2ID uuid.UUID,
+		user1ID, user2ID uuid.UUID,
 	) (domain.DirectChat, error)
 }
 

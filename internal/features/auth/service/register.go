@@ -12,28 +12,28 @@ import (
 
 func (s *AuthService) Register(
 	ctx context.Context,
-	payload RegisterPayload,
+	command RegisterCommand,
 ) (
 	domain.User,
 	auth.TokenPair,
 	error,
 ) {
 	profile, err := domain.NewUserProfile(
-		payload.Username,
-		payload.FirstName,
-		payload.LastName,
-		payload.Bio,
+		command.Username,
+		command.FirstName,
+		command.LastName,
+		command.Bio,
 	)
 	if err != nil {
 		return domain.User{}, auth.TokenPair{}, fmt.Errorf("new user profile: %w", err)
 	}
-	if err := auth.ValidatePassword(payload.Password); err != nil {
+	if err := auth.ValidatePassword(command.Password); err != nil {
 		return domain.User{}, auth.TokenPair{}, domain.DetailedError{
 			Err:     err,
 			Details: map[string]string{"password": err.Error()},
 		}
 	}
-	passwordHash, err := s.hasher.Hash(payload.Password)
+	passwordHash, err := s.hasher.Hash(command.Password)
 	if err != nil {
 		return domain.User{}, auth.TokenPair{}, fmt.Errorf("hash password: %w", err)
 	}
@@ -84,7 +84,7 @@ func (s *AuthService) Register(
 	return user, tokens, nil
 }
 
-type RegisterPayload struct {
+type RegisterCommand struct {
 	Username  string
 	FirstName string
 	LastName  *string

@@ -33,10 +33,11 @@ func (r *ChatsRepository) CreateDirect(
 
 	insertChatQuery := `
 	INSERT INTO chats (id, type, last_message_id, last_activity_at, created_at)
-	VALUES ($1, 'direct', $2, $3, $4);
+	VALUES ($1, $2, $3, $4, $5);
 	`
 	batch.Queue(insertChatQuery,
 		direct.Chat.ID,
+		direct.Chat.Type,
 		direct.Chat.LastMessageID,
 		direct.Chat.LastActivityAt,
 		direct.Chat.CreatedAt,

@@ -20,7 +20,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		sender.Error(err)
 		return
 	}
-	payload := auth_service.RegisterPayload{
+	payload := auth_service.RegisterCommand{
 		Username:  request.Username,
 		FirstName: request.FirstName,
 		LastName:  request.LastName,

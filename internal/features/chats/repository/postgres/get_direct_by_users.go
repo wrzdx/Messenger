@@ -27,7 +27,7 @@ func (r *ChatsRepository) GetDirectByUsers(
 	db := postgres.GetExecutor(ctx, r.db)
 
 	query := `
-	SELECT c.id, c.last_message_id, c.last_activity_at, c.created_at, d.user1_id, d.user2_id
+	SELECT c.id, c.type, c.last_message_id, c.last_activity_at, c.created_at, d.user1_id, d.user2_id
 	FROM chats c
 	JOIN directs d ON d.chat_id=c.id
 	WHERE d.user1_id=$1
@@ -37,6 +37,7 @@ func (r *ChatsRepository) GetDirectByUsers(
 	var direct domain.DirectChat
 	err := db.QueryRow(ctx, query, user1ID, user2ID).Scan(
 		&direct.Chat.ID,
+		&direct.Chat.Type,
 		&direct.Chat.LastMessageID,
 		&direct.Chat.LastActivityAt,
 		&direct.Chat.CreatedAt,

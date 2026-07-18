@@ -20,6 +20,7 @@ func TestNewDirectChatNormalizesUsers(t *testing.T) {
 	require.Equal(t, DirectChat{
 		Chat: Chat{
 			ID:             chatID,
+			Type:           ChatTypeDirect,
 			LastActivityAt: now,
 			CreatedAt:      now,
 		},
@@ -62,7 +63,7 @@ func TestDirectChatValidate(t *testing.T) {
 	now := time.Now()
 	lowerUserID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
 	higherUserID := uuid.MustParse("ffffffff-ffff-ffff-ffff-ffffffffffff")
-	validChat := Chat{ID: uuid.New(), LastActivityAt: now, CreatedAt: now}
+	validChat := Chat{ID: uuid.New(), Type: ChatTypeDirect, LastActivityAt: now, CreatedAt: now}
 
 	tests := []struct {
 		name      string
@@ -72,6 +73,11 @@ func TestDirectChatValidate(t *testing.T) {
 		{
 			name: "valid normalized chat",
 			chat: DirectChat{Chat: validChat, User1ID: lowerUserID, User2ID: higherUserID},
+		},
+		{
+			name:      "wrong common chat type",
+			chat:      DirectChat{Chat: Chat{ID: uuid.New(), Type: ChatTypeGroup, LastActivityAt: now, CreatedAt: now}, User1ID: lowerUserID, User2ID: higherUserID},
+			wantError: ErrInvalidDirectChat,
 		},
 		{
 			name:      "users are not normalized",

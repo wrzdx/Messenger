@@ -307,7 +307,7 @@ func (_c *MockAuthService_Refresh_Call) RunAndReturn(run func(ctx context.Contex
 }
 
 // Register provides a mock function for the type MockAuthService
-func (_mock *MockAuthService) Register(ctx context.Context, payload auth_service.RegisterPayload) (domain.User, auth.TokenPair, error) {
+func (_mock *MockAuthService) Register(ctx context.Context, payload auth_service.RegisterCommand) (domain.User, auth.TokenPair, error) {
 	ret := _mock.Called(ctx, payload)
 
 	if len(ret) == 0 {
@@ -317,20 +317,20 @@ func (_mock *MockAuthService) Register(ctx context.Context, payload auth_service
 	var r0 domain.User
 	var r1 auth.TokenPair
 	var r2 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, auth_service.RegisterPayload) (domain.User, auth.TokenPair, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, auth_service.RegisterCommand) (domain.User, auth.TokenPair, error)); ok {
 		return returnFunc(ctx, payload)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, auth_service.RegisterPayload) domain.User); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, auth_service.RegisterCommand) domain.User); ok {
 		r0 = returnFunc(ctx, payload)
 	} else {
 		r0 = ret.Get(0).(domain.User)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, auth_service.RegisterPayload) auth.TokenPair); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, auth_service.RegisterCommand) auth.TokenPair); ok {
 		r1 = returnFunc(ctx, payload)
 	} else {
 		r1 = ret.Get(1).(auth.TokenPair)
 	}
-	if returnFunc, ok := ret.Get(2).(func(context.Context, auth_service.RegisterPayload) error); ok {
+	if returnFunc, ok := ret.Get(2).(func(context.Context, auth_service.RegisterCommand) error); ok {
 		r2 = returnFunc(ctx, payload)
 	} else {
 		r2 = ret.Error(2)
@@ -345,20 +345,20 @@ type MockAuthService_Register_Call struct {
 
 // Register is a helper method to define mock.On call
 //   - ctx context.Context
-//   - payload auth_service.RegisterPayload
+//   - payload auth_service.RegisterCommand
 func (_e *MockAuthService_Expecter) Register(ctx any, payload any) *MockAuthService_Register_Call {
 	return &MockAuthService_Register_Call{Call: _e.mock.On("Register", ctx, payload)}
 }
 
-func (_c *MockAuthService_Register_Call) Run(run func(ctx context.Context, payload auth_service.RegisterPayload)) *MockAuthService_Register_Call {
+func (_c *MockAuthService_Register_Call) Run(run func(ctx context.Context, payload auth_service.RegisterCommand)) *MockAuthService_Register_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 auth_service.RegisterPayload
+		var arg1 auth_service.RegisterCommand
 		if args[1] != nil {
-			arg1 = args[1].(auth_service.RegisterPayload)
+			arg1 = args[1].(auth_service.RegisterCommand)
 		}
 		run(
 			arg0,
@@ -373,7 +373,7 @@ func (_c *MockAuthService_Register_Call) Return(user domain.User, tokenPair auth
 	return _c
 }
 
-func (_c *MockAuthService_Register_Call) RunAndReturn(run func(ctx context.Context, payload auth_service.RegisterPayload) (domain.User, auth.TokenPair, error)) *MockAuthService_Register_Call {
+func (_c *MockAuthService_Register_Call) RunAndReturn(run func(ctx context.Context, payload auth_service.RegisterCommand) (domain.User, auth.TokenPair, error)) *MockAuthService_Register_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -20,6 +20,7 @@ CREATE TABLE groups (
 
 CREATE TABLE messages (
     id         UUID        PRIMARY KEY,
+    client_message_id UUID NOT NULL,
     chat_id    UUID        NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
     sender_id  UUID        NOT NULL REFERENCES users(id),
     content    TEXT        NOT NULL,
@@ -27,6 +28,8 @@ CREATE TABLE messages (
     updated_at TIMESTAMPTZ,
 
 
+    CONSTRAINT messages_sender_client_message_unique
+        UNIQUE (sender_id, client_message_id),
     CONSTRAINT messages_content_check
         CHECK (char_length(content) <= 4096)
 );
