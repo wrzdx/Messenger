@@ -43,7 +43,7 @@ func (c DirectChat) normalize() DirectChat {
 	return c
 }
 func (c DirectChat) Validate() error {
-	if err := c.Chat.validate(); err != nil {
+	if err := c.Chat.Validate(); err != nil {
 		return err
 	}
 	if c.Chat.Type != ChatTypeDirect {

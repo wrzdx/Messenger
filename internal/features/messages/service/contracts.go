@@ -33,7 +33,7 @@ type ChatsRepository interface {
 	GetGroupSenderState(
 		ctx context.Context,
 		chatID, senderID uuid.UUID,
-	) (GroupSenderState, error)
+	) (AccountState, error)
 }
 
 type TXManager interface {

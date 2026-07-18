@@ -328,22 +328,22 @@ func (_c *MockChatsRepository_GetDirectMessageState_Call) RunAndReturn(run func(
 }
 
 // GetGroupSenderState provides a mock function for the type MockChatsRepository
-func (_mock *MockChatsRepository) GetGroupSenderState(ctx context.Context, chatID uuid.UUID, senderID uuid.UUID) (GroupSenderState, error) {
+func (_mock *MockChatsRepository) GetGroupSenderState(ctx context.Context, chatID uuid.UUID, senderID uuid.UUID) (AccountState, error) {
 	ret := _mock.Called(ctx, chatID, senderID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetGroupSenderState")
 	}
 
-	var r0 GroupSenderState
+	var r0 AccountState
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) (GroupSenderState, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) (AccountState, error)); ok {
 		return returnFunc(ctx, chatID, senderID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) GroupSenderState); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) AccountState); ok {
 		r0 = returnFunc(ctx, chatID, senderID)
 	} else {
-		r0 = ret.Get(0).(GroupSenderState)
+		r0 = ret.Get(0).(AccountState)
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
 		r1 = returnFunc(ctx, chatID, senderID)
@@ -389,12 +389,12 @@ func (_c *MockChatsRepository_GetGroupSenderState_Call) Run(run func(ctx context
 	return _c
 }
 
-func (_c *MockChatsRepository_GetGroupSenderState_Call) Return(groupSenderState GroupSenderState, err error) *MockChatsRepository_GetGroupSenderState_Call {
-	_c.Call.Return(groupSenderState, err)
+func (_c *MockChatsRepository_GetGroupSenderState_Call) Return(accountState AccountState, err error) *MockChatsRepository_GetGroupSenderState_Call {
+	_c.Call.Return(accountState, err)
 	return _c
 }
 
-func (_c *MockChatsRepository_GetGroupSenderState_Call) RunAndReturn(run func(ctx context.Context, chatID uuid.UUID, senderID uuid.UUID) (GroupSenderState, error)) *MockChatsRepository_GetGroupSenderState_Call {
+func (_c *MockChatsRepository_GetGroupSenderState_Call) RunAndReturn(run func(ctx context.Context, chatID uuid.UUID, senderID uuid.UUID) (AccountState, error)) *MockChatsRepository_GetGroupSenderState_Call {
 	_c.Call.Return(run)
 	return _c
 }

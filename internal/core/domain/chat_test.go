@@ -128,7 +128,7 @@ func TestChatValidate(t *testing.T) {
 			chat := validChat()
 			tt.change(&chat)
 
-			require.ErrorIs(t, chat.validate(), tt.wantError)
+			require.ErrorIs(t, chat.Validate(), tt.wantError)
 		})
 	}
 }

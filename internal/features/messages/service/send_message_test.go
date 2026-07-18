@@ -192,7 +192,7 @@ func TestSendMessage(t *testing.T) {
 	t.Run("appends group message for active participant", func(t *testing.T) {
 		outerCtx := t.Context()
 		txCtx := context.WithValue(outerCtx, sendMessageTxContextKey{}, "transaction")
-		groupChat, participant := newSendMessageTestGroup(t, chatID, senderID)
+		groupChat := newSendMessageTestGroup(t, chatID)
 		messagesRepository := NewMockMessagesRepository(t)
 		expectMessageNotFound(messagesRepository, outerCtx, senderID, clientMessageID)
 		var appended domain.Message
@@ -206,10 +206,7 @@ func TestSendMessage(t *testing.T) {
 		expectLockedChat(chatsRepository, txCtx, groupChat.Chat)
 		chatsRepository.EXPECT().
 			GetGroupSenderState(txCtx, chatID, senderID).
-			Return(GroupSenderState{
-				Participant: participant,
-				Account:     AccountState{UserID: senderID},
-			}, nil)
+			Return(AccountState{UserID: senderID}, nil)
 		txManager := NewMockTXManager(t)
 		expectSendMessageTransaction(txManager, outerCtx, txCtx)
 		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
@@ -224,17 +221,14 @@ func TestSendMessage(t *testing.T) {
 	t.Run("rejects group message from deleted participant", func(t *testing.T) {
 		outerCtx := t.Context()
 		txCtx := context.WithValue(outerCtx, sendMessageTxContextKey{}, "transaction")
-		groupChat, participant := newSendMessageTestGroup(t, chatID, senderID)
+		groupChat := newSendMessageTestGroup(t, chatID)
 		messagesRepository := NewMockMessagesRepository(t)
 		expectMessageNotFound(messagesRepository, outerCtx, senderID, clientMessageID)
 		chatsRepository := NewMockChatsRepository(t)
 		expectLockedChat(chatsRepository, txCtx, groupChat.Chat)
 		chatsRepository.EXPECT().
 			GetGroupSenderState(txCtx, chatID, senderID).
-			Return(GroupSenderState{
-				Participant: participant,
-				Account:     AccountState{UserID: senderID, Deleted: true},
-			}, nil)
+			Return(AccountState{UserID: senderID, Deleted: true}, nil)
 		txManager := NewMockTXManager(t)
 		expectSendMessageTransaction(txManager, outerCtx, txCtx)
 		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
@@ -267,6 +261,29 @@ func TestSendMessage(t *testing.T) {
 		require.Zero(t, actual)
 	})
 
+	t.Run("reports inconsistency when locked direct has no direct state", func(t *testing.T) {
+		outerCtx := t.Context()
+		txCtx := context.WithValue(outerCtx, sendMessageTxContextKey{}, "transaction")
+		direct := newSendMessageTestDirect(t, chatID, senderID, peerID)
+		messagesRepository := NewMockMessagesRepository(t)
+		expectMessageNotFound(messagesRepository, outerCtx, senderID, clientMessageID)
+		chatsRepository := NewMockChatsRepository(t)
+		expectLockedChat(chatsRepository, txCtx, direct.Chat)
+		chatsRepository.EXPECT().
+			GetDirectMessageState(txCtx, chatID).
+			Return(DirectMessageState{}, domain.ErrNotFound)
+		txManager := NewMockTXManager(t)
+		expectSendMessageTransaction(txManager, outerCtx, txCtx)
+		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
+
+		actual, created, err := service.SendMessage(outerCtx, senderID, command)
+
+		require.ErrorIs(t, err, ErrInternalInconsistency)
+		require.NotErrorIs(t, err, domain.ErrNotFound)
+		require.False(t, created)
+		require.Zero(t, actual)
+	})
+
 	t.Run("returns append error", func(t *testing.T) {
 		appendErr := errors.New("insert failed")
 		outerCtx := t.Context()
@@ -287,6 +304,31 @@ func TestSendMessage(t *testing.T) {
 		actual, created, err := service.SendMessage(outerCtx, senderID, command)
 
 		require.ErrorIs(t, err, appendErr)
+		require.False(t, created)
+		require.Zero(t, actual)
+	})
+
+	t.Run("reports inconsistency when append cannot update locked chat", func(t *testing.T) {
+		outerCtx := t.Context()
+		txCtx := context.WithValue(outerCtx, sendMessageTxContextKey{}, "transaction")
+		direct := newSendMessageTestDirect(t, chatID, senderID, peerID)
+		messagesRepository := NewMockMessagesRepository(t)
+		expectMessageNotFound(messagesRepository, outerCtx, senderID, clientMessageID)
+		messagesRepository.EXPECT().AppendMessage(txCtx, mock.Anything).Return(domain.ErrNotFound)
+		chatsRepository := NewMockChatsRepository(t)
+		expectLockedChat(chatsRepository, txCtx, direct.Chat)
+		chatsRepository.EXPECT().
+			GetDirectMessageState(txCtx, chatID).
+			Return(activeDirectMessageState(direct), nil)
+		txManager := NewMockTXManager(t)
+		expectSendMessageTransaction(txManager, outerCtx, txCtx)
+		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
+
+		actual, created, err := service.SendMessage(outerCtx, senderID, command)
+
+		require.Error(t, err)
+		require.NotErrorIs(t, err, domain.ErrNotFound)
+		require.Contains(t, err.Error(), "internal inconsistency")
 		require.False(t, created)
 		require.Zero(t, actual)
 	})
@@ -433,7 +475,6 @@ func newSendMessageTestDirect(
 
 func activeDirectMessageState(direct domain.DirectChat) DirectMessageState {
 	return DirectMessageState{
-		Direct: direct,
 		Users: [2]AccountState{
 			{UserID: direct.User1ID},
 			{UserID: direct.User2ID},
@@ -443,17 +484,15 @@ func activeDirectMessageState(direct domain.DirectChat) DirectMessageState {
 
 func newSendMessageTestGroup(
 	t *testing.T,
-	chatID, senderID uuid.UUID,
-) (domain.GroupChat, domain.GroupParticipant) {
+	chatID uuid.UUID,
+) domain.GroupChat {
 	t.Helper()
 	createdAt := time.Now().Add(-time.Hour)
 	group, err := domain.NewGroupChat(chatID, "Test group", createdAt)
 	require.NoError(t, err)
-	participant, err := domain.NewChatParticipant(chatID, senderID, nil, createdAt)
 	require.NoError(t, err)
-	groupParticipant, err := domain.NewGroupParticipant(participant, domain.MemberRole)
 	require.NoError(t, err)
-	return group, groupParticipant
+	return group
 }
 
 func newSendMessageTestMessage(

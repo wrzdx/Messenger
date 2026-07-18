@@ -40,7 +40,7 @@ func (c GroupChat) normalize() GroupChat {
 
 func (c GroupChat) Validate() error {
 	fields := make(map[string]string)
-	if err := c.Chat.validate(); err != nil {
+	if err := c.Chat.Validate(); err != nil {
 		return err
 	}
 	if c.Chat.Type != ChatTypeGroup {

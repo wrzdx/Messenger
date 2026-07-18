@@ -40,14 +40,14 @@ func newChat(
 		CreatedAt:      createdAt,
 	}
 
-	if err := chat.validate(); err != nil {
+	if err := chat.Validate(); err != nil {
 		return Chat{}, err
 	}
 
 	return chat, nil
 }
 
-func (c Chat) validate() error {
+func (c Chat) Validate() error {
 	if c.ID == uuid.Nil {
 		return fmt.Errorf("id is nil: %w", ErrInvalidChat)
 	}

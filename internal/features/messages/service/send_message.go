@@ -68,10 +68,13 @@ func (s *MessagesService) SendMessage(
 		case domain.ChatTypeDirect:
 			directMsgState, err := s.chatsRepo.GetDirectMessageState(ctx, newMessage.ChatID)
 			if err != nil {
+				if errors.Is(err, domain.ErrNotFound) {
+					return ErrInternalInconsistency
+				}
 				return fmt.Errorf("get direct message state: %w", err)
 			}
-			if newMessage.SenderID != directMsgState.Direct.User1ID &&
-				newMessage.SenderID != directMsgState.Direct.User2ID {
+			if newMessage.SenderID != directMsgState.Users[0].UserID &&
+				newMessage.SenderID != directMsgState.Users[1].UserID {
 				return domain.ErrNotFound
 			}
 			if directMsgState.Users[0].Deleted || directMsgState.Users[1].Deleted {
@@ -89,7 +92,7 @@ func (s *MessagesService) SendMessage(
 				return fmt.Errorf("get group sender state: %w", err)
 			}
 
-			if groupSenderState.Account.Deleted {
+			if groupSenderState.Deleted {
 				return ErrMessageTargetUnavailable
 			}
 		default:
@@ -97,6 +100,9 @@ func (s *MessagesService) SendMessage(
 		}
 
 		if err = s.messagesRepo.AppendMessage(ctx, newMessage); err != nil {
+			if errors.Is(err, domain.ErrNotFound) {
+				return ErrInternalInconsistency
+			}
 			return fmt.Errorf("append message: %w", err)
 		}
 
@@ -111,7 +117,7 @@ func (s *MessagesService) SendMessage(
 			)
 			if err != nil {
 				if errors.Is(err, domain.ErrNotFound) {
-					return domain.Message{}, false, errors.New("internal inconsistency")
+					return domain.Message{}, false, ErrInternalInconsistency
 				}
 				return domain.Message{}, false, fmt.Errorf("get message by client id: %w", err)
 			}
@@ -140,11 +146,5 @@ type AccountState struct {
 }
 
 type DirectMessageState struct {
-	Direct domain.DirectChat
-	Users  [2]AccountState
-}
-
-type GroupSenderState struct {
-	Participant domain.GroupParticipant
-	Account     AccountState
+	Users [2]AccountState
 }

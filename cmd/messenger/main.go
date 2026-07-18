@@ -18,6 +18,9 @@ import (
 	chats_postgres_repository "messenger/internal/features/chats/repository/postgres"
 	chats_service "messenger/internal/features/chats/service"
 	chats_transport_http "messenger/internal/features/chats/transport/http"
+	messages_postgres_repository "messenger/internal/features/messages/repository/postgres"
+	messages_service "messenger/internal/features/messages/service"
+	messages_transport_http "messenger/internal/features/messages/transport/http"
 	users_postgres_repository "messenger/internal/features/users/repository/postgres"
 	users_service "messenger/internal/features/users/service"
 	users_transport_http "messenger/internal/features/users/transport/http"
@@ -64,8 +67,14 @@ func main() {
 	defer pool.Close()
 
 	logger.Debug("initializing feature", zap.String("feature", "auth"))
-	usersRepository := users_postgres_repository.NewUsersRepository(pool, postgresConfig.Timeout)
-	sessionsRepository := auth_postgres_repository.NewSessionsRepository(pool, postgresConfig.Timeout)
+	usersRepository := users_postgres_repository.NewUsersRepository(
+		pool,
+		postgresConfig.Timeout,
+	)
+	sessionsRepository := auth_postgres_repository.NewSessionsRepository(
+		pool,
+		postgresConfig.Timeout,
+	)
 	hasher := auth_bcrypt.NewBcryptHasher()
 	jwtProvider := auth_jwt.NewTokenProvider(auth_jwt.NewConfigMust())
 	txManager := postgres.NewTransactionManager(pool)
@@ -92,16 +101,41 @@ func main() {
 		logger.Fatal("failed create auth service", zap.Error(err))
 	}
 
-	authHTTP := auth_transport_http.NewAuthHTTPHandler(authService, cookieManager)
+	authHTTP := auth_transport_http.NewAuthHTTPHandler(
+		authService, cookieManager,
+	)
 
 	logger.Debug("initializing feature", zap.String("feature", "users"))
-	usersService := users_service.NewUsersService(usersRepository, sessionsRepository, txManager)
+	usersService := users_service.NewUsersService(
+		usersRepository,
+		sessionsRepository,
+		txManager,
+	)
 	usersHTTP := users_transport_http.NewUsersHandler(usersService, cookieManager)
 
 	logger.Debug("initializing feature", zap.String("feature", "chats"))
-	chatsRepository := chats_postgres_repository.NewChatsRepository(pool, postgresConfig.Timeout)
-	chatsService := chats_service.NewChatsService(chatsRepository, usersRepository, txManager)
+	chatsRepository := chats_postgres_repository.NewChatsRepository(
+		pool,
+		postgresConfig.Timeout,
+	)
+	chatsService := chats_service.NewChatsService(
+		chatsRepository,
+		usersRepository,
+		txManager,
+	)
 	chatsHTTP := chats_transport_http.NewChatsHandler(chatsService)
+
+	logger.Debug("initializing feature", zap.String("feature", "messages"))
+	messagesRepository := messages_postgres_repository.NewRepository(
+		pool,
+		postgresConfig.Timeout,
+	)
+	messagesService := messages_service.NewMessagesService(
+		messagesRepository,
+		messagesRepository,
+		txManager,
+	)
+	messagesHTTP := messages_transport_http.NewMessagesHandler(messagesService)
 
 	logger.Debug("initializing HTTP server")
 	httpConfig := http_server.NewConfigMust()
@@ -119,6 +153,10 @@ func main() {
 	routerV1.Mount("/auth", authHTTP.Router(authMW))
 	routerV1.Mount("/users", usersHTTP.Router(authMW))
 	routerV1.Mount("/chats", chatsHTTP.Router(authMW))
+	routerV1.Mount(
+		"/chats/{chat_id}/messages",
+		messagesHTTP.Router(authMW),
+	)
 
 	router.Mount("/api/v1", routerV1)
 	httpServer := http_server.NewHTTPServer(
