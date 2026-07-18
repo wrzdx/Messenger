@@ -19,6 +19,7 @@ func TestNewGroupChatNormalizesTitle(t *testing.T) {
 	require.Equal(t, GroupChat{
 		Chat: Chat{
 			ID:             chatID,
+			Type:           ChatTypeGroup,
 			LastActivityAt: now,
 			CreatedAt:      now,
 		},
@@ -57,7 +58,7 @@ func TestNewGroupChatReturnsZeroValueWhenCommonChatIsInvalid(t *testing.T) {
 
 func TestGroupChatValidate(t *testing.T) {
 	now := time.Now()
-	validChat := Chat{ID: uuid.New(), LastActivityAt: now, CreatedAt: now}
+	validChat := Chat{ID: uuid.New(), Type: ChatTypeGroup, LastActivityAt: now, CreatedAt: now}
 
 	tests := []struct {
 		name      string
@@ -67,6 +68,11 @@ func TestGroupChatValidate(t *testing.T) {
 		{
 			name: "valid group chat",
 			chat: GroupChat{Chat: validChat, Title: "Group title"},
+		},
+		{
+			name:      "wrong common chat type",
+			chat:      GroupChat{Chat: Chat{ID: uuid.New(), Type: ChatTypeDirect, LastActivityAt: now, CreatedAt: now}, Title: "Group title"},
+			wantError: ErrInvalidGroupChat,
 		},
 		{
 			name:      "title is not normalized",

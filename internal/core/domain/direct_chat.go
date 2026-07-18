@@ -21,7 +21,7 @@ func NewDirectChat(
 	id, user1ID, user2ID uuid.UUID,
 	createdAt time.Time,
 ) (DirectChat, error) {
-	chat, err := newChat(id, createdAt)
+	chat, err := newChat(id, ChatTypeDirect, createdAt)
 	if err != nil {
 		return DirectChat{}, err
 	}
@@ -45,6 +45,9 @@ func (c DirectChat) normalize() DirectChat {
 func (c DirectChat) Validate() error {
 	if err := c.Chat.validate(); err != nil {
 		return err
+	}
+	if c.Chat.Type != ChatTypeDirect {
+		return fmt.Errorf("wrong chat type for direct: %w", ErrInvalidDirectChat)
 	}
 	if c.User1ID == uuid.Nil || c.User2ID == uuid.Nil {
 		return fmt.Errorf("id is nil: %w", ErrInvalidDirectChat)

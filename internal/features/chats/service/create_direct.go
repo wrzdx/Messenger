@@ -60,6 +60,9 @@ func (s *ChatsService) CreateDirect(
 		if errors.Is(err, domain.ErrAlreadyExists) {
 			direct, err := s.chatsRepo.GetDirectByUsers(ctx, direct.User1ID, direct.User2ID)
 			if err != nil {
+				if errors.Is(err, domain.ErrNotFound) {
+					return domain.DirectChat{}, false, errors.New("internal inconsistency")
+				}
 				return domain.DirectChat{}, false, fmt.Errorf("get direct chat from repo: %w", err)
 			}
 			return direct, false, nil

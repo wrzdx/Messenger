@@ -35,11 +35,26 @@ func TestGetDirectByUsers(t *testing.T) {
 		))
 
 		messageID := uuid.New()
+		clientMessageID := uuid.New()
 		lastActivityAt := expected.Chat.CreatedAt.Add(time.Minute)
 		_, err := pool.Exec(t.Context(), `
-			INSERT INTO messages (id, chat_id, sender_id, content, created_at)
-			VALUES ($1, $2, $3, $4, $5)
-		`, messageID, expected.Chat.ID, expected.User1ID, "test message", lastActivityAt)
+			INSERT INTO messages (
+				id,
+				client_message_id,
+				chat_id,
+				sender_id,
+				content,
+				created_at
+			)
+			VALUES ($1, $2, $3, $4, $5, $6)
+		`,
+			messageID,
+			clientMessageID,
+			expected.Chat.ID,
+			expected.User1ID,
+			"test message",
+			lastActivityAt,
+		)
 		require.NoError(t, err)
 		_, err = pool.Exec(t.Context(), `
 			UPDATE chats

@@ -12,8 +12,16 @@ var (
 	ErrInvalidChat = errors.New("invalid chat")
 )
 
+type ChatType string
+
+const (
+	ChatTypeDirect ChatType = "direct"
+	ChatTypeGroup  ChatType = "group"
+)
+
 type Chat struct {
 	ID             uuid.UUID
+	Type           ChatType
 	LastMessageID  *uuid.UUID
 	LastActivityAt time.Time
 	CreatedAt      time.Time
@@ -21,10 +29,12 @@ type Chat struct {
 
 func newChat(
 	id uuid.UUID,
+	chatType ChatType,
 	createdAt time.Time,
 ) (Chat, error) {
 	chat := Chat{
 		ID:             id,
+		Type:           chatType,
 		LastMessageID:  nil,
 		LastActivityAt: createdAt,
 		CreatedAt:      createdAt,
@@ -52,6 +62,9 @@ func (c Chat) validate() error {
 	}
 	if c.LastMessageID != nil && *c.LastMessageID == uuid.Nil {
 		return fmt.Errorf("last_message_id is nil: %w", ErrInvalidChat)
+	}
+	if c.Type != ChatTypeDirect && c.Type != ChatTypeGroup {
+		return fmt.Errorf("unknown chat type: %w", ErrInvalidChat)
 	}
 	return nil
 }

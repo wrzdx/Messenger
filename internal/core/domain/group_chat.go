@@ -18,7 +18,7 @@ type GroupChat struct {
 }
 
 func NewGroupChat(id uuid.UUID, title string, createdAt time.Time) (GroupChat, error) {
-	chat, err := newChat(id, createdAt)
+	chat, err := newChat(id, ChatTypeGroup, createdAt)
 	if err != nil {
 		return GroupChat{}, err
 	}
@@ -42,6 +42,9 @@ func (c GroupChat) Validate() error {
 	fields := make(map[string]string)
 	if err := c.Chat.validate(); err != nil {
 		return err
+	}
+	if c.Chat.Type != ChatTypeGroup {
+		return fmt.Errorf("wrong chat type for group chat: %w", ErrInvalidGroupChat)
 	}
 	if strings.TrimSpace(c.Title) != c.Title {
 		return fmt.Errorf("title is not normalized: %w", ErrInvalidGroupChat)

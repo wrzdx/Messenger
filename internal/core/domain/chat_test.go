@@ -12,11 +12,12 @@ func TestNewChat(t *testing.T) {
 	now := time.Now()
 	id := uuid.New()
 
-	chat, err := newChat(id, now)
+	chat, err := newChat(id, ChatTypeDirect, now)
 
 	require.NoError(t, err)
 	require.Equal(t, Chat{
 		ID:             id,
+		Type:           ChatTypeDirect,
 		LastActivityAt: now,
 		CreatedAt:      now,
 	}, chat)
@@ -26,15 +27,18 @@ func TestNewChatReturnsZeroValueWhenInvalid(t *testing.T) {
 	tests := []struct {
 		name      string
 		id        uuid.UUID
+		chatType  ChatType
 		createdAt time.Time
 	}{
-		{name: "nil id", id: uuid.Nil, createdAt: time.Now()},
-		{name: "zero created_at", id: uuid.New(), createdAt: time.Time{}},
+		{name: "nil id", id: uuid.Nil, chatType: ChatTypeDirect, createdAt: time.Now()},
+		{name: "empty type", id: uuid.New(), createdAt: time.Now()},
+		{name: "unknown type", id: uuid.New(), chatType: ChatType("channel"), createdAt: time.Now()},
+		{name: "zero created_at", id: uuid.New(), chatType: ChatTypeDirect, createdAt: time.Time{}},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			chat, err := newChat(tt.id, tt.createdAt)
+			chat, err := newChat(tt.id, tt.chatType, tt.createdAt)
 
 			require.ErrorIs(t, err, ErrInvalidChat)
 			require.Zero(t, chat)
@@ -49,6 +53,7 @@ func TestChatValidate(t *testing.T) {
 	validChat := func() Chat {
 		return Chat{
 			ID:             uuid.New(),
+			Type:           ChatTypeDirect,
 			LastActivityAt: now,
 			CreatedAt:      now,
 		}
@@ -71,6 +76,20 @@ func TestChatValidate(t *testing.T) {
 			name: "nil id",
 			change: func(chat *Chat) {
 				chat.ID = uuid.Nil
+			},
+			wantError: ErrInvalidChat,
+		},
+		{
+			name: "empty type",
+			change: func(chat *Chat) {
+				chat.Type = ""
+			},
+			wantError: ErrInvalidChat,
+		},
+		{
+			name: "unknown type",
+			change: func(chat *Chat) {
+				chat.Type = ChatType("channel")
 			},
 			wantError: ErrInvalidChat,
 		},

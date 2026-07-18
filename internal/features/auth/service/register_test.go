@@ -274,8 +274,8 @@ func TestRegister(t *testing.T) {
 
 type registerTxContextKey struct{}
 
-func validRegisterTestPayload() RegisterPayload {
-	return RegisterPayload{
+func validRegisterTestPayload() RegisterCommand {
+	return RegisterCommand{
 		Username:  "  Username_1  ",
 		FirstName: "  First Name  ",
 		LastName:  new("  Last Name  "),

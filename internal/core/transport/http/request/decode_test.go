@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -72,5 +73,21 @@ func TestDecodeAndValidateRequest(t *testing.T) {
 		fields["username"] = "changed"
 
 		require.Equal(t, "required", err.Fields()["username"])
+	})
+
+	t.Run("rejects required zero-value UUID", func(t *testing.T) {
+		r := httptest.NewRequest("POST", "/", bytes.NewBufferString(`{}`))
+		var decoded struct {
+			ID uuid.UUID `json:"id" validate:"required"`
+		}
+
+		err := DecodeAndValidateRequest(r, &decoded)
+
+		require.ErrorIs(t, err, ErrInvalidRequest)
+		var withFields interface {
+			Fields() map[string]string
+		}
+		require.ErrorAs(t, err, &withFields)
+		require.Equal(t, "id is required", withFields.Fields()["id"])
 	})
 }
