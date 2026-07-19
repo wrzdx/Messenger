@@ -17,6 +17,18 @@ type MessagesRepository interface {
 		ctx context.Context,
 		message domain.Message,
 	) error
+
+	CheckParticipant(
+		ctx context.Context,
+		chatID, participantID uuid.UUID,
+	) error
+
+	GetMessages(
+		ctx context.Context,
+		chatID uuid.UUID,
+		before *MessageCursor,
+		limit int,
+	) ([]domain.Message, error)
 }
 
 type ChatsRepository interface {

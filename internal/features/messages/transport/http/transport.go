@@ -19,6 +19,7 @@ func NewMessagesHandler(messagesService MessagesService) *MessagesHandler {
 func (h *MessagesHandler) Router(authMW http_middleware.Middleware) chi.Router {
 	router := chi.NewRouter()
 	router.Use(authMW)
+	router.Get("/", h.GetMessages)
 	router.Post("/", h.SendMessage)
 	return router
 }

@@ -66,13 +66,11 @@ ADD CONSTRAINT fk_last_message
 FOREIGN KEY (last_message_id)
 REFERENCES messages(id);
 
-CREATE INDEX idx_messages_chat_created
-ON messages(chat_id, created_at DESC);
-
 CREATE INDEX idx_chat_participants_user
 ON chat_participants(user_id);
 
+CREATE INDEX idx_messages_chat_created
+ON messages(chat_id, created_at DESC, id DESC);
+
 CREATE INDEX idx_chats_activity
 ON chats(last_activity_at DESC);
-
-CREATE INDEX idx_chat_type ON chats(type);

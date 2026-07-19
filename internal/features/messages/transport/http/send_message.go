@@ -8,7 +8,6 @@ import (
 	http_response "messenger/internal/core/transport/http/response"
 	messages_service "messenger/internal/features/messages/service"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -47,15 +46,7 @@ func (h *MessagesHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 		sender.Error(err)
 		return
 	}
-	response := SendMessageResponse{
-		ID:              message.ID,
-		ClientMessageID: message.ClientMessageID,
-		ChatID:          message.ChatID,
-		SenderID:        message.SenderID,
-		Content:         message.Content,
-		CreatedAt:       message.CreatedAt,
-		UpdatedAt:       message.UpdatedAt,
-	}
+	response := SendMessageResponse(messageResponseFromDomain(message))
 	status := http.StatusOK
 	if isCreated {
 		status = http.StatusCreated
@@ -69,12 +60,4 @@ type SendMessageRequest struct {
 	Content         string    `json:"content" validate:"required"`
 }
 
-type SendMessageResponse struct {
-	ID              uuid.UUID  `json:"id"`
-	ClientMessageID uuid.UUID  `json:"client_message_id"`
-	ChatID          uuid.UUID  `json:"chat_id"`
-	SenderID        uuid.UUID  `json:"sender_id"`
-	Content         string     `json:"content"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       *time.Time `json:"updated_at"`
-}
+type SendMessageResponse MessageResponse
