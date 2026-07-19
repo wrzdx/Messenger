@@ -96,6 +96,69 @@ func (_c *MockMessagesRepository_AppendMessage_Call) RunAndReturn(run func(ctx c
 	return _c
 }
 
+// CheckParticipant provides a mock function for the type MockMessagesRepository
+func (_mock *MockMessagesRepository) CheckParticipant(ctx context.Context, chatID uuid.UUID, participantID uuid.UUID) error {
+	ret := _mock.Called(ctx, chatID, participantID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CheckParticipant")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
+		r0 = returnFunc(ctx, chatID, participantID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockMessagesRepository_CheckParticipant_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CheckParticipant'
+type MockMessagesRepository_CheckParticipant_Call struct {
+	*mock.Call
+}
+
+// CheckParticipant is a helper method to define mock.On call
+//   - ctx context.Context
+//   - chatID uuid.UUID
+//   - participantID uuid.UUID
+func (_e *MockMessagesRepository_Expecter) CheckParticipant(ctx any, chatID any, participantID any) *MockMessagesRepository_CheckParticipant_Call {
+	return &MockMessagesRepository_CheckParticipant_Call{Call: _e.mock.On("CheckParticipant", ctx, chatID, participantID)}
+}
+
+func (_c *MockMessagesRepository_CheckParticipant_Call) Run(run func(ctx context.Context, chatID uuid.UUID, participantID uuid.UUID)) *MockMessagesRepository_CheckParticipant_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMessagesRepository_CheckParticipant_Call) Return(err error) *MockMessagesRepository_CheckParticipant_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockMessagesRepository_CheckParticipant_Call) RunAndReturn(run func(ctx context.Context, chatID uuid.UUID, participantID uuid.UUID) error) *MockMessagesRepository_CheckParticipant_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetMessageByClientID provides a mock function for the type MockMessagesRepository
 func (_mock *MockMessagesRepository) GetMessageByClientID(ctx context.Context, senderID uuid.UUID, clientMessageID uuid.UUID) (domain.Message, error) {
 	ret := _mock.Called(ctx, senderID, clientMessageID)
@@ -164,6 +227,86 @@ func (_c *MockMessagesRepository_GetMessageByClientID_Call) Return(message domai
 }
 
 func (_c *MockMessagesRepository_GetMessageByClientID_Call) RunAndReturn(run func(ctx context.Context, senderID uuid.UUID, clientMessageID uuid.UUID) (domain.Message, error)) *MockMessagesRepository_GetMessageByClientID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetMessages provides a mock function for the type MockMessagesRepository
+func (_mock *MockMessagesRepository) GetMessages(ctx context.Context, chatID uuid.UUID, before *MessageCursor, limit int) ([]domain.Message, error) {
+	ret := _mock.Called(ctx, chatID, before, limit)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetMessages")
+	}
+
+	var r0 []domain.Message
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *MessageCursor, int) ([]domain.Message, error)); ok {
+		return returnFunc(ctx, chatID, before, limit)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *MessageCursor, int) []domain.Message); ok {
+		r0 = returnFunc(ctx, chatID, before, limit)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]domain.Message)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, *MessageCursor, int) error); ok {
+		r1 = returnFunc(ctx, chatID, before, limit)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockMessagesRepository_GetMessages_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetMessages'
+type MockMessagesRepository_GetMessages_Call struct {
+	*mock.Call
+}
+
+// GetMessages is a helper method to define mock.On call
+//   - ctx context.Context
+//   - chatID uuid.UUID
+//   - before *MessageCursor
+//   - limit int
+func (_e *MockMessagesRepository_Expecter) GetMessages(ctx any, chatID any, before any, limit any) *MockMessagesRepository_GetMessages_Call {
+	return &MockMessagesRepository_GetMessages_Call{Call: _e.mock.On("GetMessages", ctx, chatID, before, limit)}
+}
+
+func (_c *MockMessagesRepository_GetMessages_Call) Run(run func(ctx context.Context, chatID uuid.UUID, before *MessageCursor, limit int)) *MockMessagesRepository_GetMessages_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 *MessageCursor
+		if args[2] != nil {
+			arg2 = args[2].(*MessageCursor)
+		}
+		var arg3 int
+		if args[3] != nil {
+			arg3 = args[3].(int)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMessagesRepository_GetMessages_Call) Return(messages []domain.Message, err error) *MockMessagesRepository_GetMessages_Call {
+	_c.Call.Return(messages, err)
+	return _c
+}
+
+func (_c *MockMessagesRepository_GetMessages_Call) RunAndReturn(run func(ctx context.Context, chatID uuid.UUID, before *MessageCursor, limit int) ([]domain.Message, error)) *MockMessagesRepository_GetMessages_Call {
 	_c.Call.Return(run)
 	return _c
 }

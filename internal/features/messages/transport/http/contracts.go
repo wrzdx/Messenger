@@ -9,6 +9,12 @@ import (
 )
 
 type MessagesService interface {
+	GetMessages(
+		ctx context.Context,
+		requesterID uuid.UUID,
+		query messages_service.GetMessagesQuery,
+	) (messages_service.MessagePage, error)
+
 	SendMessage(
 		ctx context.Context,
 		senderID uuid.UUID,

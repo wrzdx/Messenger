@@ -40,6 +40,78 @@ func (_m *MockMessagesService) EXPECT() *MockMessagesService_Expecter {
 	return &MockMessagesService_Expecter{mock: &_m.Mock}
 }
 
+// GetMessages provides a mock function for the type MockMessagesService
+func (_mock *MockMessagesService) GetMessages(ctx context.Context, requesterID uuid.UUID, query messages_service.GetMessagesQuery) (messages_service.MessagePage, error) {
+	ret := _mock.Called(ctx, requesterID, query)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetMessages")
+	}
+
+	var r0 messages_service.MessagePage
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, messages_service.GetMessagesQuery) (messages_service.MessagePage, error)); ok {
+		return returnFunc(ctx, requesterID, query)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, messages_service.GetMessagesQuery) messages_service.MessagePage); ok {
+		r0 = returnFunc(ctx, requesterID, query)
+	} else {
+		r0 = ret.Get(0).(messages_service.MessagePage)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, messages_service.GetMessagesQuery) error); ok {
+		r1 = returnFunc(ctx, requesterID, query)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockMessagesService_GetMessages_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetMessages'
+type MockMessagesService_GetMessages_Call struct {
+	*mock.Call
+}
+
+// GetMessages is a helper method to define mock.On call
+//   - ctx context.Context
+//   - requesterID uuid.UUID
+//   - query messages_service.GetMessagesQuery
+func (_e *MockMessagesService_Expecter) GetMessages(ctx any, requesterID any, query any) *MockMessagesService_GetMessages_Call {
+	return &MockMessagesService_GetMessages_Call{Call: _e.mock.On("GetMessages", ctx, requesterID, query)}
+}
+
+func (_c *MockMessagesService_GetMessages_Call) Run(run func(ctx context.Context, requesterID uuid.UUID, query messages_service.GetMessagesQuery)) *MockMessagesService_GetMessages_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 messages_service.GetMessagesQuery
+		if args[2] != nil {
+			arg2 = args[2].(messages_service.GetMessagesQuery)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMessagesService_GetMessages_Call) Return(messagePage messages_service.MessagePage, err error) *MockMessagesService_GetMessages_Call {
+	_c.Call.Return(messagePage, err)
+	return _c
+}
+
+func (_c *MockMessagesService_GetMessages_Call) RunAndReturn(run func(ctx context.Context, requesterID uuid.UUID, query messages_service.GetMessagesQuery) (messages_service.MessagePage, error)) *MockMessagesService_GetMessages_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // SendMessage provides a mock function for the type MockMessagesService
 func (_mock *MockMessagesService) SendMessage(ctx context.Context, senderID uuid.UUID, command messages_service.SendMessageCommand) (domain.Message, bool, error) {
 	ret := _mock.Called(ctx, senderID, command)

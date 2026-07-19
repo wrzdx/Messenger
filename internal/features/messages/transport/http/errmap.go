@@ -19,6 +19,14 @@ func errorMapper(err error) http_response.HTTPError {
 			Fields:     http_errmap.FieldsFrom(err),
 		}
 
+	case errors.Is(err, messages_service.ErrInvalidGetMessagesQuery):
+		return http_response.HTTPError{
+			StatusCode: http.StatusBadRequest,
+			Code:       "invalid_get_message_query",
+			Message:    "invalid get message query",
+			Fields:     http_errmap.FieldsFrom(err),
+		}
+
 	case errors.Is(err, messages_service.ErrMessageConflict):
 		return http_response.HTTPError{
 			StatusCode: http.StatusConflict,
