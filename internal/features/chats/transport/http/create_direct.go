@@ -6,7 +6,6 @@ import (
 	http_request "messenger/internal/core/transport/http/request"
 	http_response "messenger/internal/core/transport/http/response"
 	"net/http"
-	"time"
 
 	"github.com/google/uuid"
 )
@@ -28,13 +27,7 @@ func (h *ChatsHandler) CreateDirect(w http.ResponseWriter, r *http.Request) {
 		sender.Error(err)
 		return
 	}
-	response := CreateDirectResponse{
-		ID:             direct.Chat.ID,
-		Type:           string(direct.Chat.Type),
-		LastMessageID:  direct.Chat.LastMessageID,
-		LastActivityAt: direct.Chat.LastActivityAt,
-		CreatedAt:      direct.Chat.CreatedAt,
-	}
+	response := CreateDirectResponse(chatResponseFromDomain(direct.Chat))
 	status := http.StatusOK
 	if isCreated {
 		status = http.StatusCreated
@@ -46,10 +39,4 @@ type CreateDirectRequest struct {
 	PeerID uuid.UUID `json:"peer_id" validate:"required"`
 }
 
-type CreateDirectResponse struct {
-	ID             uuid.UUID  `json:"id"`
-	Type           string     `json:"type"`
-	LastMessageID  *uuid.UUID `json:"last_message_id"`
-	LastActivityAt time.Time  `json:"last_activity_at"`
-	CreatedAt      time.Time  `json:"created_at"`
-}
+type CreateDirectResponse ChatResponse

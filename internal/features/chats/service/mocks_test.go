@@ -180,6 +180,86 @@ func (_c *MockChatsRepository_GetDirectByUsers_Call) RunAndReturn(run func(ctx c
 	return _c
 }
 
+// ListChats provides a mock function for the type MockChatsRepository
+func (_mock *MockChatsRepository) ListChats(ctx context.Context, userID uuid.UUID, query *ChatCursor, limit int) ([]ChatItem, error) {
+	ret := _mock.Called(ctx, userID, query, limit)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListChats")
+	}
+
+	var r0 []ChatItem
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *ChatCursor, int) ([]ChatItem, error)); ok {
+		return returnFunc(ctx, userID, query, limit)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *ChatCursor, int) []ChatItem); ok {
+		r0 = returnFunc(ctx, userID, query, limit)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]ChatItem)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, *ChatCursor, int) error); ok {
+		r1 = returnFunc(ctx, userID, query, limit)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockChatsRepository_ListChats_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListChats'
+type MockChatsRepository_ListChats_Call struct {
+	*mock.Call
+}
+
+// ListChats is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uuid.UUID
+//   - query *ChatCursor
+//   - limit int
+func (_e *MockChatsRepository_Expecter) ListChats(ctx any, userID any, query any, limit any) *MockChatsRepository_ListChats_Call {
+	return &MockChatsRepository_ListChats_Call{Call: _e.mock.On("ListChats", ctx, userID, query, limit)}
+}
+
+func (_c *MockChatsRepository_ListChats_Call) Run(run func(ctx context.Context, userID uuid.UUID, query *ChatCursor, limit int)) *MockChatsRepository_ListChats_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 *ChatCursor
+		if args[2] != nil {
+			arg2 = args[2].(*ChatCursor)
+		}
+		var arg3 int
+		if args[3] != nil {
+			arg3 = args[3].(int)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockChatsRepository_ListChats_Call) Return(chatItems []ChatItem, err error) *MockChatsRepository_ListChats_Call {
+	_c.Call.Return(chatItems, err)
+	return _c
+}
+
+func (_c *MockChatsRepository_ListChats_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID, query *ChatCursor, limit int) ([]ChatItem, error)) *MockChatsRepository_ListChats_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewMockTXManager creates a new instance of MockTXManager. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockTXManager(t interface {

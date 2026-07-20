@@ -7,6 +7,7 @@ package chats_transport_http
 import (
 	"context"
 	"messenger/internal/core/domain"
+	"messenger/internal/features/chats/service"
 
 	"github.com/google/uuid"
 	mock "github.com/stretchr/testify/mock"
@@ -113,6 +114,78 @@ func (_c *MockChatsService_CreateDirect_Call) Return(directChat domain.DirectCha
 }
 
 func (_c *MockChatsService_CreateDirect_Call) RunAndReturn(run func(ctx context.Context, currentUserID uuid.UUID, peerID uuid.UUID) (domain.DirectChat, bool, error)) *MockChatsService_CreateDirect_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListChats provides a mock function for the type MockChatsService
+func (_mock *MockChatsService) ListChats(ctx context.Context, requesterID uuid.UUID, query chats_service.ListChatsQuery) (chats_service.ChatPage, error) {
+	ret := _mock.Called(ctx, requesterID, query)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListChats")
+	}
+
+	var r0 chats_service.ChatPage
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, chats_service.ListChatsQuery) (chats_service.ChatPage, error)); ok {
+		return returnFunc(ctx, requesterID, query)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, chats_service.ListChatsQuery) chats_service.ChatPage); ok {
+		r0 = returnFunc(ctx, requesterID, query)
+	} else {
+		r0 = ret.Get(0).(chats_service.ChatPage)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, chats_service.ListChatsQuery) error); ok {
+		r1 = returnFunc(ctx, requesterID, query)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockChatsService_ListChats_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListChats'
+type MockChatsService_ListChats_Call struct {
+	*mock.Call
+}
+
+// ListChats is a helper method to define mock.On call
+//   - ctx context.Context
+//   - requesterID uuid.UUID
+//   - query chats_service.ListChatsQuery
+func (_e *MockChatsService_Expecter) ListChats(ctx any, requesterID any, query any) *MockChatsService_ListChats_Call {
+	return &MockChatsService_ListChats_Call{Call: _e.mock.On("ListChats", ctx, requesterID, query)}
+}
+
+func (_c *MockChatsService_ListChats_Call) Run(run func(ctx context.Context, requesterID uuid.UUID, query chats_service.ListChatsQuery)) *MockChatsService_ListChats_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 chats_service.ListChatsQuery
+		if args[2] != nil {
+			arg2 = args[2].(chats_service.ListChatsQuery)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockChatsService_ListChats_Call) Return(chatPage chats_service.ChatPage, err error) *MockChatsService_ListChats_Call {
+	_c.Call.Return(chatPage, err)
+	return _c
+}
+
+func (_c *MockChatsService_ListChats_Call) RunAndReturn(run func(ctx context.Context, requesterID uuid.UUID, query chats_service.ListChatsQuery) (chats_service.ChatPage, error)) *MockChatsService_ListChats_Call {
 	_c.Call.Return(run)
 	return _c
 }
