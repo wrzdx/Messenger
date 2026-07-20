@@ -19,6 +19,7 @@ func NewChatsHandler(chatsService ChatsService) *ChatsHandler {
 func (h *ChatsHandler) Router(authMW http_middleware.Middleware) chi.Router {
 	router := chi.NewRouter()
 	router.Use(authMW)
+	router.Get("/", h.ListChats)
 	router.Post("/directs", h.CreateDirect)
 	return router
 }

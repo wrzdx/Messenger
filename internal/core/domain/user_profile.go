@@ -14,11 +14,10 @@ var (
 var ErrInvalidUserProfile = errors.New("invalid user profile")
 
 type UserProfile struct {
-	normalizedUsername string
-	username           string
-	firstName          string
-	lastName           *string
-	bio                *string
+	username  string
+	firstName string
+	lastName  *string
+	bio       *string
 }
 
 func NewUserProfile(
@@ -34,7 +33,7 @@ func NewUserProfile(
 		bio:       bio,
 	}
 	profile = profile.normalize()
-	if err := profile.validate(); err != nil {
+	if err := profile.Validate(); err != nil {
 		return UserProfile{}, err
 	}
 	return profile, nil
@@ -78,7 +77,7 @@ func (p UserProfile) normalize() UserProfile {
 
 	return p
 }
-func (p UserProfile) validate() error {
+func (p UserProfile) Validate() error {
 	fields := make(map[string]string)
 	if !UsernamePattern.MatchString(p.username) {
 		fields["username"] = "must contain between 5 and 32 characters, and only ASCII letters, digits, and underscores"

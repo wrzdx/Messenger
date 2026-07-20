@@ -18,6 +18,13 @@ type ChatsRepository interface {
 		ctx context.Context,
 		user1ID, user2ID uuid.UUID,
 	) (domain.DirectChat, error)
+
+	ListChats(
+		ctx context.Context,
+		userID uuid.UUID,
+		before *ChatCursor,
+		limit int,
+	) ([]ChatItem, error)
 }
 
 type TXManager interface {
