@@ -25,12 +25,12 @@ func (r *UsersRepository) CreateUser(
 		ctx,
 		query,
 		user.ID,
-		user.Profile.Username(),
-		user.Profile.FirstName(),
-		user.Profile.LastName(),
+		user.Profile.Username,
+		user.Profile.FirstName,
+		user.Profile.LastName,
 		user.CreatedAt,
 		user.DeletedAt,
-		user.Profile.Bio(),
+		user.Profile.Bio,
 		user.PasswordHash,
 	)
 	if err != nil {

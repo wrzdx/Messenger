@@ -94,10 +94,10 @@ func TestUpdateUserProfile(t *testing.T) {
 		insertGetUserTestUser(t, tx, second)
 		updatedProfile := newProfileUpdateTestProfile(
 			t,
-			second.Profile.Username(),
-			first.Profile.FirstName(),
-			first.Profile.LastName(),
-			first.Profile.Bio(),
+			second.Profile.Username,
+			first.Profile.FirstName,
+			first.Profile.LastName,
+			first.Profile.Bio,
 		)
 
 		err := repository.UpdateUserProfile(t.Context(), first.ID, updatedProfile)

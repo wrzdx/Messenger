@@ -72,9 +72,9 @@ func TestUpdateProfile(t *testing.T) {
 		}
 		expectedProfile := newUpdateProfileTestProfile(
 			t,
-			user.Profile.Username(),
-			user.Profile.FirstName(),
-			user.Profile.LastName(),
+			user.Profile.Username,
+			user.Profile.FirstName,
+			user.Profile.LastName,
 			nil,
 		)
 		outerCtx := t.Context()
@@ -165,9 +165,9 @@ func TestUpdateProfile(t *testing.T) {
 		expectedProfile := newUpdateProfileTestProfile(
 			t,
 			username,
-			user.Profile.FirstName(),
-			user.Profile.LastName(),
-			user.Profile.Bio(),
+			user.Profile.FirstName,
+			user.Profile.LastName,
+			user.Profile.Bio,
 		)
 		repositoryErr := errors.New("update failed")
 		outerCtx := t.Context()

@@ -35,11 +35,11 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	userResponse := UserResponse{
 		userDomain.ID,
-		userDomain.Profile.Username(),
-		userDomain.Profile.FirstName(),
-		userDomain.Profile.LastName(),
+		userDomain.Profile.Username,
+		userDomain.Profile.FirstName,
+		userDomain.Profile.LastName,
 		userDomain.CreatedAt,
-		userDomain.Profile.Bio(),
+		userDomain.Profile.Bio,
 	}
 	response := RegisterResponse{
 		User:   userResponse,

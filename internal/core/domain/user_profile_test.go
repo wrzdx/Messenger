@@ -17,18 +17,18 @@ func TestNewUserProfile(t *testing.T) {
 		)
 
 		require.NoError(t, err)
-		require.Equal(t, "Username_1", profile.Username())
-		require.Equal(t, "First Name", profile.FirstName())
-		require.Equal(t, "Last Name", *profile.LastName())
-		require.Equal(t, "Bio", *profile.Bio())
+		require.Equal(t, "Username_1", profile.Username)
+		require.Equal(t, "First Name", profile.FirstName)
+		require.Equal(t, "Last Name", *profile.LastName)
+		require.Equal(t, "Bio", *profile.Bio)
 	})
 
 	t.Run("normalizes blank optional fields to nil", func(t *testing.T) {
 		profile, err := NewUserProfile("Username_1", "First Name", new("  "), new("\t"))
 
 		require.NoError(t, err)
-		require.Nil(t, profile.LastName())
-		require.Nil(t, profile.Bio())
+		require.Nil(t, profile.LastName)
+		require.Nil(t, profile.Bio)
 	})
 
 	validCases := []struct {
@@ -76,22 +76,4 @@ func TestNewUserProfile(t *testing.T) {
 			require.Zero(t, profile)
 		})
 	}
-}
-
-func TestUserProfileOptionalFieldsAreImmutable(t *testing.T) {
-	profile, err := NewUserProfile(
-		"Username_1",
-		"First Name",
-		new("Last Name"),
-		new("Bio"),
-	)
-	require.NoError(t, err)
-
-	lastName := profile.LastName()
-	bio := profile.Bio()
-	*lastName = "Changed Last Name"
-	*bio = "Changed Bio"
-
-	require.Equal(t, "Last Name", *profile.LastName())
-	require.Equal(t, "Bio", *profile.Bio())
 }

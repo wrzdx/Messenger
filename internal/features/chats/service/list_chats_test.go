@@ -2,9 +2,10 @@ package chats_service
 
 import (
 	"errors"
-	"messenger/internal/core/domain"
 	"testing"
 	"time"
+
+	"messenger/internal/core/domain"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
@@ -13,10 +14,9 @@ import (
 
 func TestListChats(t *testing.T) {
 	requesterID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
-	peerID := uuid.MustParse("00000000-0000-0000-0000-000000000002")
-	baseTime := time.Date(2026, time.July, 20, 12, 0, 0, 0, time.UTC)
+	baseTime := time.Date(2026, time.July, 21, 12, 0, 0, 0, time.UTC)
 
-	t.Run("returns empty page with default limit", func(t *testing.T) {
+	t.Run("uses default limit and returns non nil empty page", func(t *testing.T) {
 		repository := NewMockChatsRepository(t)
 		repository.EXPECT().
 			ListChats(mock.Anything, requesterID, (*ChatCursor)(nil), 51).
@@ -31,10 +31,10 @@ func TestListChats(t *testing.T) {
 		require.Nil(t, page.NextCursor)
 	})
 
-	t.Run("returns page and cursor from last visible chat", func(t *testing.T) {
-		first := newListChatsDirectItem(t, requesterID, peerID, baseTime.Add(2*time.Minute), true)
-		second := newListChatsGroupItem(t, requesterID, baseTime.Add(time.Minute), false)
-		extra := newListChatsGroupItem(t, requesterID, baseTime, false)
+	t.Run("requests one extra item and builds cursor from last visible chat", func(t *testing.T) {
+		first := newListChatsTestGroupItem(t, baseTime.Add(2*time.Minute), false)
+		second := newListChatsTestDirectItem(t, requesterID, baseTime.Add(time.Minute), true)
+		extra := newListChatsTestGroupItem(t, baseTime, false)
 		before := &ChatCursor{ChatID: uuid.New(), LastActivityAt: baseTime.Add(time.Hour)}
 		repository := NewMockChatsRepository(t)
 		repository.EXPECT().
@@ -49,12 +49,30 @@ func TestListChats(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Equal(t, []ChatItem{first, second}, page.Chats)
-		require.NotNil(t, page.NextCursor)
-		require.Equal(t, second.Group.Chat.ID, page.NextCursor.ChatID)
-		require.True(t, second.Group.Chat.LastActivityAt.Equal(page.NextCursor.LastActivityAt))
+		require.Equal(t, &ChatCursor{
+			ChatID:         second.Chat.ID,
+			LastActivityAt: second.Chat.LastActivityAt,
+		}, page.NextCursor)
 	})
 
-	t.Run("rejects nil requester", func(t *testing.T) {
+	t.Run("does not return cursor for complete page", func(t *testing.T) {
+		item := newListChatsTestGroupItem(t, baseTime, false)
+		repository := NewMockChatsRepository(t)
+		repository.EXPECT().
+			ListChats(mock.Anything, requesterID, (*ChatCursor)(nil), 2).
+			Return([]ChatItem{item}, nil)
+		service := NewChatsService(repository, nil, nil)
+
+		page, err := service.ListChats(
+			t.Context(), requesterID, ListChatsQuery{Limit: 1},
+		)
+
+		require.NoError(t, err)
+		require.Equal(t, []ChatItem{item}, page.Chats)
+		require.Nil(t, page.NextCursor)
+	})
+
+	t.Run("rejects nil requester before repository call", func(t *testing.T) {
 		service := NewChatsService(NewMockChatsRepository(t), nil, nil)
 
 		page, err := service.ListChats(t.Context(), uuid.Nil, ListChatsQuery{})
@@ -110,108 +128,161 @@ func TestListChats(t *testing.T) {
 
 func TestChatItemValidate(t *testing.T) {
 	requesterID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
-	peerID := uuid.MustParse("00000000-0000-0000-0000-000000000002")
-	createdAt := time.Date(2026, time.July, 20, 12, 0, 0, 0, time.UTC)
+	activityAt := time.Date(2026, time.July, 21, 12, 0, 0, 0, time.UTC)
 
 	t.Run("accepts valid direct with last message", func(t *testing.T) {
-		item := newListChatsDirectItem(t, requesterID, peerID, createdAt, true)
+		item := newListChatsTestDirectItem(t, requesterID, activityAt, true)
 
 		require.NoError(t, item.Validate())
 	})
 
-	t.Run("accepts valid empty group", func(t *testing.T) {
-		item := newListChatsGroupItem(t, requesterID, createdAt, false)
+	t.Run("accepts valid group without last message", func(t *testing.T) {
+		item := newListChatsTestGroupItem(t, activityAt, false)
 
 		require.NoError(t, item.Validate())
 	})
 
-	t.Run("rejects missing subtype", func(t *testing.T) {
-		require.ErrorIs(t, (ChatItem{}).Validate(), ErrInvalidChatItem)
+	t.Run("rejects invalid chat", func(t *testing.T) {
+		item := newListChatsTestGroupItem(t, activityAt, false)
+		item.Chat.ID = uuid.Nil
+
+		require.ErrorIs(t, item.Validate(), ErrInvalidChatItem)
 	})
 
-	t.Run("rejects both subtypes", func(t *testing.T) {
-		direct := newListChatsDirectItem(t, requesterID, peerID, createdAt, false)
-		group := newListChatsGroupItem(t, requesterID, createdAt, false)
-		direct.Group = group.Group
+	t.Run("rejects direct without peer", func(t *testing.T) {
+		item := newListChatsTestDirectItem(t, requesterID, activityAt, false)
+		item.DirectPeer = nil
 
-		require.ErrorIs(t, direct.Validate(), ErrInvalidChatItem)
+		require.ErrorIs(t, item.Validate(), ErrInvalidChatItem)
 	})
 
-	t.Run("rejects mismatched last message", func(t *testing.T) {
-		item := newListChatsDirectItem(t, requesterID, peerID, createdAt, true)
+	t.Run("rejects group without group info", func(t *testing.T) {
+		item := newListChatsTestGroupItem(t, activityAt, false)
+		item.GroupInfo = nil
+
+		require.ErrorIs(t, item.Validate(), ErrInvalidChatItem)
+	})
+
+	t.Run("rejects data for both chat types", func(t *testing.T) {
+		item := newListChatsTestDirectItem(t, requesterID, activityAt, false)
+		group := newListChatsTestGroupItem(t, activityAt, false)
+		item.GroupInfo = group.GroupInfo
+
+		require.ErrorIs(t, item.Validate(), ErrInvalidChatItem)
+	})
+
+	t.Run("rejects missing last message", func(t *testing.T) {
+		item := newListChatsTestDirectItem(t, requesterID, activityAt, true)
+		item.LastMessage = nil
+
+		require.ErrorIs(t, item.Validate(), ErrInvalidChatItem)
+	})
+
+	t.Run("rejects unexpected last message", func(t *testing.T) {
+		item := newListChatsTestDirectItem(t, requesterID, activityAt, true)
+		item.Chat.LastMessageID = nil
+
+		require.ErrorIs(t, item.Validate(), ErrInvalidChatItem)
+	})
+
+	t.Run("rejects mismatched last message id", func(t *testing.T) {
+		item := newListChatsTestDirectItem(t, requesterID, activityAt, true)
+		otherMessageID := uuid.New()
+		item.Chat.LastMessageID = &otherMessageID
+
+		require.ErrorIs(t, item.Validate(), ErrInvalidChatItem)
+	})
+
+	t.Run("rejects message from another chat", func(t *testing.T) {
+		item := newListChatsTestDirectItem(t, requesterID, activityAt, true)
 		item.LastMessage.Message.ChatID = uuid.New()
 
 		require.ErrorIs(t, item.Validate(), ErrInvalidChatItem)
 	})
 }
 
-func newListChatsDirectItem(
+func newListChatsTestDirectItem(
 	t *testing.T,
 	requesterID uuid.UUID,
-	peerID uuid.UUID,
 	activityAt time.Time,
 	withMessage bool,
 ) ChatItem {
 	t.Helper()
-	direct, err := domain.NewDirectChat(uuid.New(), requesterID, peerID, activityAt.Add(-time.Hour))
+
+	peerID := uuid.New()
+	direct, err := domain.NewDirectChat(
+		uuid.New(), requesterID, peerID, activityAt.Add(-time.Hour),
+	)
 	require.NoError(t, err)
-	peerProfile, err := domain.NewUserProfile("Peer_123", "Peer", nil, nil)
+	peer, err := PeerFromUser(newListChatsTestUser(t, peerID, "Peer_123", "Peer"))
 	require.NoError(t, err)
-	item := ChatItem{Direct: &DirectChatItem{
-		Chat:        direct,
-		PeerID:      peerID,
-		PeerProfile: peerProfile,
-	}}
+	item := ChatItem{Chat: direct.Chat, DirectPeer: &peer}
 	if withMessage {
 		message, err := domain.NewMessage(
-			uuid.New(),
-			uuid.New(),
-			direct.Chat.ID,
-			requesterID,
-			"hello",
-			activityAt,
+			uuid.New(), uuid.New(), direct.Chat.ID, requesterID, "hello", activityAt,
 		)
 		require.NoError(t, err)
-		item.Direct.Chat.Chat.LastMessageID = &message.ID
-		item.Direct.Chat.Chat.LastActivityAt = message.CreatedAt
-		senderProfile, err := domain.NewUserProfile("Sender_123", "Sender", nil, nil)
+		item.Chat.LastMessageID = &message.ID
+		item.Chat.LastActivityAt = message.CreatedAt
+		profile, err := domain.NewUserProfile("Sender_123", "Sender", nil, nil)
 		require.NoError(t, err)
-		item.LastMessage = &LastMessageItem{Message: message, SenderProfile: senderProfile}
+		lastMessage, err := NewLastMessageItem(message, profile)
+		require.NoError(t, err)
+		item.LastMessage = &lastMessage
 	} else {
-		item.Direct.Chat.Chat.LastActivityAt = activityAt
+		item.Chat.LastActivityAt = activityAt
 	}
-	require.NoError(t, item.Validate())
 	return item
 }
 
-func newListChatsGroupItem(
+func newListChatsTestGroupItem(
 	t *testing.T,
-	senderID uuid.UUID,
 	activityAt time.Time,
 	withMessage bool,
 ) ChatItem {
 	t.Helper()
+
 	group, err := domain.NewGroupChat(uuid.New(), "Backend", activityAt.Add(-time.Hour))
 	require.NoError(t, err)
-	item := ChatItem{Group: &group}
+	groupInfo, err := GroupInfoFromGroup(group)
+	require.NoError(t, err)
+	item := ChatItem{Chat: group.Chat, GroupInfo: &groupInfo}
 	if withMessage {
+		senderID := uuid.New()
 		message, err := domain.NewMessage(
-			uuid.New(),
-			uuid.New(),
-			group.Chat.ID,
-			senderID,
-			"group message",
-			activityAt,
+			uuid.New(), uuid.New(), group.Chat.ID, senderID, "group message", activityAt,
 		)
 		require.NoError(t, err)
-		item.Group.Chat.LastMessageID = &message.ID
-		item.Group.Chat.LastActivityAt = message.CreatedAt
-		senderProfile, err := domain.NewUserProfile("Author_123", "Author", nil, nil)
+		item.Chat.LastMessageID = &message.ID
+		item.Chat.LastActivityAt = message.CreatedAt
+		profile, err := domain.NewUserProfile("Author_123", "Author", nil, nil)
 		require.NoError(t, err)
-		item.LastMessage = &LastMessageItem{Message: message, SenderProfile: senderProfile}
+		lastMessage, err := NewLastMessageItem(message, profile)
+		require.NoError(t, err)
+		item.LastMessage = &lastMessage
 	} else {
-		item.Group.Chat.LastActivityAt = activityAt
+		item.Chat.LastActivityAt = activityAt
 	}
-	require.NoError(t, item.Validate())
 	return item
+}
+
+func newListChatsTestUser(
+	t *testing.T,
+	id uuid.UUID,
+	username string,
+	firstName string,
+) domain.User {
+	t.Helper()
+
+	profile, err := domain.NewUserProfile(username, firstName, nil, nil)
+	require.NoError(t, err)
+	user, err := domain.NewUser(
+		id,
+		profile,
+		time.Date(2026, time.July, 20, 12, 0, 0, 0, time.UTC),
+		nil,
+		"password_hash",
+	)
+	require.NoError(t, err)
+	return user
 }

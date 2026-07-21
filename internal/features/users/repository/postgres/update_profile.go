@@ -35,10 +35,10 @@ func (r *UsersRepository) UpdateUserProfile(
 	err := db.QueryRow(
 		ctx,
 		query,
-		profile.Username(),
-		profile.FirstName(),
-		profile.LastName(),
-		profile.Bio(),
+		profile.Username,
+		profile.FirstName,
+		profile.LastName,
+		profile.Bio,
 		id,
 	).Scan(&id)
 
