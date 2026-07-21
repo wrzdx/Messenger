@@ -59,9 +59,9 @@ func (u User) Validate() error {
 	if u.PasswordHash == "" {
 		fields["password_hash"] = "password_hash cannot be empty"
 	}
-	emptyProfile := UserProfile{}
-	if u.Profile == emptyProfile {
-		fields["profile"] = "profile cannot be empty"
+
+	if err := u.Profile.Validate(); err != nil {
+		return err
 	}
 
 	if len(fields) > 0 {

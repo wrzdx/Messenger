@@ -118,12 +118,12 @@ func insertGetUserTestUser(t *testing.T, db postgres.DBTX, user domain.User) {
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`,
 		user.ID,
-		user.Profile.Username(),
-		user.Profile.FirstName(),
-		user.Profile.LastName(),
+		user.Profile.Username,
+		user.Profile.FirstName,
+		user.Profile.LastName,
 		user.CreatedAt,
 		user.DeletedAt,
-		user.Profile.Bio(),
+		user.Profile.Bio,
 		user.PasswordHash,
 	)
 	require.NoError(t, err)
@@ -133,10 +133,10 @@ func requireGetUserTestUserEqual(t *testing.T, expected, actual domain.User) {
 	t.Helper()
 
 	require.Equal(t, expected.ID, actual.ID)
-	require.Equal(t, expected.Profile.Username(), actual.Profile.Username())
-	require.Equal(t, expected.Profile.FirstName(), actual.Profile.FirstName())
-	require.Equal(t, expected.Profile.LastName(), actual.Profile.LastName())
-	require.Equal(t, expected.Profile.Bio(), actual.Profile.Bio())
+	require.Equal(t, expected.Profile.Username, actual.Profile.Username)
+	require.Equal(t, expected.Profile.FirstName, actual.Profile.FirstName)
+	require.Equal(t, expected.Profile.LastName, actual.Profile.LastName)
+	require.Equal(t, expected.Profile.Bio, actual.Profile.Bio)
 	require.True(t, expected.CreatedAt.Equal(actual.CreatedAt))
 	require.Equal(t, expected.PasswordHash, actual.PasswordHash)
 

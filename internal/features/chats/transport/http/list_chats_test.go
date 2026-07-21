@@ -3,17 +3,18 @@ package chats_transport_http
 import (
 	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"testing"
+	"time"
+
 	core_context "messenger/internal/core/context"
 	"messenger/internal/core/domain"
 	"messenger/internal/core/logger"
 	http_middleware "messenger/internal/core/transport/http/middleware"
 	http_response "messenger/internal/core/transport/http/response"
 	chats_service "messenger/internal/features/chats/service"
-	"net/http"
-	"net/http/httptest"
-	"net/url"
-	"testing"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -24,15 +25,18 @@ import (
 func TestListChats(t *testing.T) {
 	requesterID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
 	peerID := uuid.MustParse("00000000-0000-0000-0000-000000000002")
-	activityAt := time.Date(2026, time.July, 20, 12, 0, 0, 0, time.UTC)
+	activityAt := time.Date(2026, time.July, 21, 12, 0, 0, 0, time.UTC)
 
 	t.Run("returns direct and group chat summaries", func(t *testing.T) {
-		direct := newChatsTransportDirectItem(t, requesterID, peerID, activityAt)
-		group := newChatsTransportGroupItem(t, requesterID, activityAt.Add(-time.Minute))
-		before := &chats_service.ChatCursor{ChatID: uuid.New(), LastActivityAt: activityAt.Add(time.Hour)}
+		direct := newListChatsTransportDirectItem(t, requesterID, peerID, activityAt)
+		group := newListChatsTransportGroupItem(t, requesterID, activityAt.Add(-time.Minute))
+		before := &chats_service.ChatCursor{
+			ChatID:         uuid.New(),
+			LastActivityAt: activityAt.Add(time.Hour),
+		}
 		next := &chats_service.ChatCursor{
-			ChatID:         group.Group.Chat.ID,
-			LastActivityAt: group.Group.Chat.LastActivityAt,
+			ChatID:         group.Chat.ID,
+			LastActivityAt: group.Chat.LastActivityAt,
 		}
 		service := NewMockChatsService(t)
 		service.EXPECT().ListChats(
@@ -43,51 +47,63 @@ func TestListChats(t *testing.T) {
 			Chats:      []chats_service.ChatItem{direct, group},
 			NextCursor: next,
 		}, nil)
-		router := newChatsTransportRouter(service, requesterID)
+		router := newListChatsTransportRouter(service, requesterID)
 		encodedBefore, err := encodeChatCursor(before)
 		require.NoError(t, err)
-		request := newListChatsRequest(t, "?limit=2&cursor="+url.QueryEscape(*encodedBefore))
 		recorder := httptest.NewRecorder()
 
-		router.ServeHTTP(recorder, request)
+		router.ServeHTTP(
+			recorder,
+			newListChatsHTTPRequest(t, "?limit=2&cursor="+url.QueryEscape(*encodedBefore)),
+		)
 
 		require.Equal(t, http.StatusOK, recorder.Code)
 		require.Equal(t, "application/json", recorder.Header().Get("Content-Type"))
-		response := decodeListChatsResponse(t, recorder)
+		response := decodeListChatsHTTPResponse(t, recorder)
 		require.Len(t, response.Chats, 2)
-		require.NotNil(t, response.Chats[0].Direct)
-		require.Nil(t, response.Chats[0].Group)
-		require.Equal(t, peerID, response.Chats[0].Direct.Peer.ID)
-		require.Equal(t, direct.Direct.PeerProfile.Username(), response.Chats[0].Direct.Peer.Username)
-		require.Nil(t, response.Chats[0].LastMessage)
-		require.NotNil(t, response.Chats[1].Group)
-		require.Equal(t, group.Group.Title, response.Chats[1].Group.Title)
-		require.NotNil(t, response.Chats[1].LastMessage)
+
+		directResponse := response.Chats[0]
+		require.Equal(t, direct.Chat.ID, directResponse.Chat.ID)
+		require.NotNil(t, directResponse.Direct)
+		require.Nil(t, directResponse.Group)
+		require.Equal(t, peerID, directResponse.Direct.Peer.ID)
+		require.Equal(t, direct.DirectPeer.Username, directResponse.Direct.Peer.Username)
+		require.Equal(t, direct.DirectPeer.FirstName, directResponse.Direct.Peer.FirstName)
+		require.Nil(t, directResponse.LastMessage)
+
+		groupResponse := response.Chats[1]
+		require.Equal(t, group.Chat.ID, groupResponse.Chat.ID)
+		require.Nil(t, groupResponse.Direct)
+		require.NotNil(t, groupResponse.Group)
+		require.Equal(t, group.GroupInfo.Title, groupResponse.Group.Title)
+		require.NotNil(t, groupResponse.LastMessage)
+		require.Equal(t, group.LastMessage.Message.ID, groupResponse.LastMessage.ID)
 		require.Equal(
 			t,
-			group.LastMessage.SenderProfile.Username(),
-			response.Chats[1].LastMessage.SenderUsername,
+			group.LastMessage.SenderFirstName,
+			groupResponse.LastMessage.SenderFirstName,
 		)
+
 		require.NotNil(t, response.NextCursor)
 		decodedNext, err := decodeChatCursor(*response.NextCursor)
 		require.NoError(t, err)
 		require.Equal(t, next, decodedNext)
 	})
 
-	t.Run("returns empty final page", func(t *testing.T) {
+	t.Run("returns non nil empty final page", func(t *testing.T) {
 		service := NewMockChatsService(t)
 		service.EXPECT().ListChats(
 			mock.Anything,
 			requesterID,
 			chats_service.ListChatsQuery{},
 		).Return(chats_service.ChatPage{Chats: []chats_service.ChatItem{}}, nil)
-		router := newChatsTransportRouter(service, requesterID)
+		router := newListChatsTransportRouter(service, requesterID)
 		recorder := httptest.NewRecorder()
 
-		router.ServeHTTP(recorder, newListChatsRequest(t, ""))
+		router.ServeHTTP(recorder, newListChatsHTTPRequest(t, ""))
 
 		require.Equal(t, http.StatusOK, recorder.Code)
-		response := decodeListChatsResponse(t, recorder)
+		response := decodeListChatsHTTPResponse(t, recorder)
 		require.NotNil(t, response.Chats)
 		require.Empty(t, response.Chats)
 		require.Nil(t, response.NextCursor)
@@ -102,10 +118,10 @@ func TestListChats(t *testing.T) {
 	}
 	for _, testCase := range testCases {
 		t.Run("rejects "+testCase.name, func(t *testing.T) {
-			router := newChatsTransportRouter(NewMockChatsService(t), requesterID)
+			router := newListChatsTransportRouter(NewMockChatsService(t), requesterID)
 			recorder := httptest.NewRecorder()
 
-			router.ServeHTTP(recorder, newListChatsRequest(t, testCase.query))
+			router.ServeHTTP(recorder, newListChatsHTTPRequest(t, testCase.query))
 
 			require.Equal(t, http.StatusBadRequest, recorder.Code)
 			require.Equal(t, http_response.APIErrorDetail{
@@ -127,10 +143,10 @@ func TestListChats(t *testing.T) {
 				"limit": "limit must be between 1 and 100",
 			},
 		})
-		router := newChatsTransportRouter(service, requesterID)
+		router := newListChatsTransportRouter(service, requesterID)
 		recorder := httptest.NewRecorder()
 
-		router.ServeHTTP(recorder, newListChatsRequest(t, "?limit=-1"))
+		router.ServeHTTP(recorder, newListChatsHTTPRequest(t, "?limit=-1"))
 
 		require.Equal(t, http.StatusBadRequest, recorder.Code)
 		require.Equal(t, http_response.APIErrorDetail{
@@ -150,10 +166,10 @@ func TestListChats(t *testing.T) {
 			requesterID,
 			chats_service.ListChatsQuery{},
 		).Return(chats_service.ChatPage{}, serviceErr)
-		router := newChatsTransportRouter(service, requesterID)
+		router := newListChatsTransportRouter(service, requesterID)
 		recorder := httptest.NewRecorder()
 
-		router.ServeHTTP(recorder, newListChatsRequest(t, ""))
+		router.ServeHTTP(recorder, newListChatsHTTPRequest(t, ""))
 
 		require.Equal(t, http.StatusInternalServerError, recorder.Code)
 		require.Equal(t, http_response.APIErrorDetail{
@@ -164,7 +180,10 @@ func TestListChats(t *testing.T) {
 	})
 }
 
-func newChatsTransportRouter(service ChatsService, currentUserID uuid.UUID) http.Handler {
+func newListChatsTransportRouter(
+	service ChatsService,
+	currentUserID uuid.UUID,
+) http.Handler {
 	authMiddleware := http_middleware.Middleware(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := core_context.WithClaims(
@@ -179,15 +198,20 @@ func newChatsTransportRouter(service ChatsService, currentUserID uuid.UUID) http
 	return router
 }
 
-func newListChatsRequest(t *testing.T, query string) *http.Request {
+func newListChatsHTTPRequest(t *testing.T, query string) *http.Request {
 	t.Helper()
-	request := httptest.NewRequest(http.MethodGet, "/chats"+query, nil)
+
+	request := httptest.NewRequest(http.MethodGet, "/chats/"+query, nil)
 	ctx := logger.WithLogger(request.Context(), logger.NewTestLogger())
 	return request.WithContext(ctx)
 }
 
-func decodeListChatsResponse(t *testing.T, recorder *httptest.ResponseRecorder) ListChatsResponse {
+func decodeListChatsHTTPResponse(
+	t *testing.T,
+	recorder *httptest.ResponseRecorder,
+) ListChatsResponse {
 	t.Helper()
+
 	var body struct {
 		Data ListChatsResponse `json:"data"`
 	}
@@ -195,33 +219,43 @@ func decodeListChatsResponse(t *testing.T, recorder *httptest.ResponseRecorder) 
 	return body.Data
 }
 
-func newChatsTransportDirectItem(
+func newListChatsTransportDirectItem(
 	t *testing.T,
 	requesterID uuid.UUID,
 	peerID uuid.UUID,
 	activityAt time.Time,
 ) chats_service.ChatItem {
 	t.Helper()
+
 	direct, err := domain.NewDirectChat(uuid.New(), requesterID, peerID, activityAt)
 	require.NoError(t, err)
-	profile, err := domain.NewUserProfile("Peer_123", "Peer", nil, nil)
+	peerProfile, err := domain.NewUserProfile("Peer_123", "Peer", nil, nil)
 	require.NoError(t, err)
-	item := chats_service.ChatItem{Direct: &chats_service.DirectChatItem{
-		Chat:        direct,
-		PeerID:      peerID,
-		PeerProfile: profile,
-	}}
+	peerUser, err := domain.NewUser(
+		peerID,
+		peerProfile,
+		activityAt.Add(-24*time.Hour),
+		nil,
+		"password_hash",
+	)
+	require.NoError(t, err)
+	peer, err := chats_service.PeerFromUser(peerUser)
+	require.NoError(t, err)
+	item := chats_service.ChatItem{Chat: direct.Chat, DirectPeer: &peer}
 	require.NoError(t, item.Validate())
 	return item
 }
 
-func newChatsTransportGroupItem(
+func newListChatsTransportGroupItem(
 	t *testing.T,
 	senderID uuid.UUID,
 	activityAt time.Time,
 ) chats_service.ChatItem {
 	t.Helper()
+
 	group, err := domain.NewGroupChat(uuid.New(), "Backend", activityAt.Add(-time.Hour))
+	require.NoError(t, err)
+	groupInfo, err := chats_service.GroupInfoFromGroup(group)
 	require.NoError(t, err)
 	message, err := domain.NewMessage(
 		uuid.New(), uuid.New(), group.Chat.ID, senderID, "group message", activityAt,
@@ -231,12 +265,12 @@ func newChatsTransportGroupItem(
 	group.Chat.LastActivityAt = message.CreatedAt
 	senderProfile, err := domain.NewUserProfile("Author_123", "Author", nil, nil)
 	require.NoError(t, err)
+	lastMessage, err := chats_service.NewLastMessageItem(message, senderProfile)
+	require.NoError(t, err)
 	item := chats_service.ChatItem{
-		Group: &group,
-		LastMessage: &chats_service.LastMessageItem{
-			Message:       message,
-			SenderProfile: senderProfile,
-		},
+		Chat:        group.Chat,
+		GroupInfo:   &groupInfo,
+		LastMessage: &lastMessage,
 	}
 	require.NoError(t, item.Validate())
 	return item

@@ -37,11 +37,11 @@ func (r *UsersRepository) DeleteUser(
 	err := db.QueryRow(
 		ctx,
 		query,
-		profile.Username(),
-		profile.FirstName(),
-		profile.LastName(),
+		profile.Username,
+		profile.FirstName,
+		profile.LastName,
 		deletedAt,
-		profile.Bio(),
+		profile.Bio,
 		id,
 	).Scan(&id)
 	if err != nil {

@@ -47,13 +47,9 @@ func (s ChatsService) ListChats(
 
 	if hasMore {
 		last := page.Chats[len(page.Chats)-1]
-		chat, err := last.baseChat()
-		if err != nil {
-			return ChatPage{}, fmt.Errorf("get last chat: %w", err)
-		}
 		page.NextCursor = &ChatCursor{
-			ChatID:         chat.ID,
-			LastActivityAt: chat.LastActivityAt,
+			ChatID:         last.Chat.ID,
+			LastActivityAt: last.Chat.LastActivityAt,
 		}
 	}
 	return page, nil
@@ -96,89 +92,96 @@ func (q ListChatsQuery) validate() error {
 }
 
 type ChatItem struct {
-	Direct      *DirectChatItem
-	Group       *domain.GroupChat
-	LastMessage *LastMessageItem
+	Chat        domain.Chat
+	DirectPeer  *directPeer
+	GroupInfo   *groupInfo
+	LastMessage *lastMessageItem
 }
 
 func (i ChatItem) Validate() error {
-	chat, err := i.baseChat()
-	if err != nil {
-		return err
+	if err := i.Chat.Validate(); err != nil {
+		return fmt.Errorf("invalid chat: %w", ErrInvalidChatItem)
 	}
-
-	if i.Direct != nil {
-		if err := i.Direct.Chat.Validate(); err != nil {
-			return fmt.Errorf("validate direct chat: %v: %w", err, ErrInvalidChatItem)
-		}
-		if i.Direct.PeerID != i.Direct.Chat.User1ID &&
-			i.Direct.PeerID != i.Direct.Chat.User2ID {
-			return fmt.Errorf("peer does not belong to direct chat: %w", ErrInvalidChatItem)
-		}
-		if err := i.Direct.PeerProfile.Validate(); err != nil {
-			return fmt.Errorf("validate peer profile: %v: %w", err, ErrInvalidChatItem)
-		}
-		if i.Direct.PeerDeletedAt != nil && i.Direct.PeerDeletedAt.IsZero() {
-			return fmt.Errorf("peer deleted_at is zero: %w", ErrInvalidChatItem)
-		}
-	}
-
-	if i.Group != nil {
-		if err := i.Group.Validate(); err != nil {
-			return fmt.Errorf("validate group chat: %v: %w", err, ErrInvalidChatItem)
-		}
-	}
-
-	if chat.LastMessageID == nil {
-		if i.LastMessage != nil {
-			return fmt.Errorf("unexpected last message: %w", ErrInvalidChatItem)
-		}
-		return nil
-	}
-
-	if i.LastMessage == nil {
-		return fmt.Errorf("last message is missing: %w", ErrInvalidChatItem)
-	}
-	if err := i.LastMessage.Message.Validate(); err != nil {
-		return fmt.Errorf("validate last message: %v: %w", err, ErrInvalidChatItem)
-	}
-	if i.LastMessage.Message.ID != *chat.LastMessageID {
-		return fmt.Errorf("last message id mismatch: %w", ErrInvalidChatItem)
-	}
-	if i.LastMessage.Message.ChatID != chat.ID {
-		return fmt.Errorf("last message chat id mismatch: %w", ErrInvalidChatItem)
-	}
-	if err := i.LastMessage.SenderProfile.Validate(); err != nil {
-		return fmt.Errorf("validate last message sender profile: %v: %w", err, ErrInvalidChatItem)
-	}
-
-	return nil
-}
-
-type DirectChatItem struct {
-	Chat          domain.DirectChat
-	PeerID        uuid.UUID
-	PeerProfile   domain.UserProfile
-	PeerDeletedAt *time.Time
-}
-
-type LastMessageItem struct {
-	Message       domain.Message
-	SenderProfile domain.UserProfile
-}
-
-func (i ChatItem) baseChat() (domain.Chat, error) {
-	switch {
-	case i.Direct != nil && i.Group == nil:
-		return i.Direct.Chat.Chat, nil
-	case i.Direct == nil && i.Group != nil:
-		return i.Group.Chat, nil
-	default:
-		return domain.Chat{}, fmt.Errorf(
-			"chat item must contain exactly one chat subtype: %w",
+	if i.LastMessage != nil && i.LastMessage.Message.ChatID != i.Chat.ID {
+		return fmt.Errorf(
+			"last message chat id not equal to chat id: %w",
 			ErrInvalidChatItem,
 		)
 	}
+	if i.DirectPeer == nil && i.GroupInfo == nil {
+		return fmt.Errorf("mutex of direct peer and group info: %w", ErrInvalidChatItem)
+	}
+	if i.DirectPeer != nil && i.GroupInfo != nil {
+		return fmt.Errorf("presense of both direct peer and group info: %w", ErrInvalidChatItem)
+	}
+	if i.Chat.LastMessageID != nil && i.LastMessage == nil ||
+		i.Chat.LastMessageID == nil && i.LastMessage != nil {
+		return fmt.Errorf(
+			"mistmatch last message info and last message: %w",
+			ErrInvalidChatItem,
+		)
+	}
+	if i.Chat.LastMessageID != nil &&
+		*i.Chat.LastMessageID != (i.LastMessage.Message.ID) {
+		return fmt.Errorf("last message id mismatch: %w", ErrInvalidChatItem)
+	}
+	return nil
+}
+
+type groupInfo struct {
+	Title string
+}
+
+func GroupInfoFromGroup(group domain.GroupChat) (groupInfo, error) {
+	if err := group.Validate(); err != nil {
+		return groupInfo{}, fmt.Errorf("validate group: %w", ErrInvalidChatItem)
+	}
+	return groupInfo{
+		Title: group.Title,
+	}, nil
+}
+
+type directPeer struct {
+	ID        uuid.UUID
+	DeletedAt *time.Time
+	Username  string
+	FirstName string
+	LastName  *string
+}
+
+func PeerFromUser(user domain.User) (directPeer, error) {
+	if err := user.Validate(); err != nil {
+		return directPeer{}, fmt.Errorf("invalid user: %w", ErrInvalidChatItem)
+	}
+	return directPeer{
+		ID:        user.ID,
+		DeletedAt: user.DeletedAt,
+		Username:  user.Profile.Username,
+		FirstName: user.Profile.FirstName,
+		LastName:  user.Profile.LastName,
+	}, nil
+}
+
+type lastMessageItem struct {
+	Message         domain.Message
+	SenderFirstName string
+}
+
+func NewLastMessageItem(m domain.Message, profile domain.UserProfile) (lastMessageItem, error) {
+	if err := m.Validate(); err != nil {
+		return lastMessageItem{}, fmt.Errorf("invalid last message: %w", ErrInvalidChatItem)
+	}
+	if err := profile.Validate(); err != nil {
+		return lastMessageItem{}, fmt.Errorf(
+			"invalid last message sender profile: %w",
+			ErrInvalidChatItem,
+		)
+	}
+
+	return lastMessageItem{
+		Message:         m,
+		SenderFirstName: profile.FirstName,
+	}, nil
 }
 
 type ChatPage struct {

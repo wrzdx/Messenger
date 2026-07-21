@@ -17,10 +17,10 @@ type UserDTOResponse struct {
 func userDTOFromDomain(user domain.User) UserDTOResponse {
 	return UserDTOResponse{
 		ID:        user.ID,
-		Username:  user.Profile.Username(),
-		FirstName: user.Profile.FirstName(),
-		LastName:  user.Profile.LastName(),
-		Bio:       user.Profile.Bio(),
+		Username:  user.Profile.Username,
+		FirstName: user.Profile.FirstName,
+		LastName:  user.Profile.LastName,
+		Bio:       user.Profile.Bio,
 	}
 }
 

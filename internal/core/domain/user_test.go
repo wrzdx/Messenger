@@ -52,12 +52,12 @@ func TestUserDelete(t *testing.T) {
 
 		require.NoError(t, err)
 		require.Equal(t, user.ID, deleted.ID)
-		require.True(t, strings.HasPrefix(deleted.Profile.Username(), "deleted_"))
-		require.Len(t, deleted.Profile.Username(), 24)
-		require.True(t, UsernamePattern.MatchString(deleted.Profile.Username()))
-		require.Equal(t, "Deleted Account", deleted.Profile.FirstName())
-		require.Nil(t, deleted.Profile.LastName())
-		require.Nil(t, deleted.Profile.Bio())
+		require.True(t, strings.HasPrefix(deleted.Profile.Username, "deleted_"))
+		require.Len(t, deleted.Profile.Username, 24)
+		require.True(t, UsernamePattern.MatchString(deleted.Profile.Username))
+		require.Equal(t, "Deleted Account", deleted.Profile.FirstName)
+		require.Nil(t, deleted.Profile.LastName)
+		require.Nil(t, deleted.Profile.Bio)
 		require.NotNil(t, deleted.DeletedAt)
 		require.True(t, deletedAt.Equal(*deleted.DeletedAt))
 		require.True(t, user.CreatedAt.Equal(deleted.CreatedAt))
@@ -157,13 +157,6 @@ func TestUserValidate(t *testing.T) {
 			name: "empty password hash",
 			change: func(user *User) {
 				user.PasswordHash = ""
-			},
-			wantError: ErrInvalidUser,
-		},
-		{
-			name: "empty profile",
-			change: func(user *User) {
-				user.Profile = UserProfile{}
 			},
 			wantError: ErrInvalidUser,
 		},

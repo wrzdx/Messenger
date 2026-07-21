@@ -92,41 +92,42 @@ type GroupChatResponse struct {
 }
 
 type LastMessageResponse struct {
-	ID             uuid.UUID  `json:"id"`
-	SenderID       uuid.UUID  `json:"sender_id"`
-	SenderUsername string     `json:"sender_username"`
-	Content        string     `json:"content"`
-	CreatedAt      time.Time  `json:"created_at"`
-	UpdatedAt      *time.Time `json:"updated_at"`
+	ID              uuid.UUID  `json:"id"`
+	SenderID        uuid.UUID  `json:"sender_id"`
+	SenderFirstName string     `json:"sender_first_name"`
+	Content         string     `json:"content"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       *time.Time `json:"updated_at"`
 }
 
 func chatItemResponseFromService(item chats_service.ChatItem) ChatItemResponse {
-	response := ChatItemResponse{}
-	if item.Direct != nil {
-		response.Chat = chatResponseFromDomain(item.Direct.Chat.Chat)
+	response := ChatItemResponse{
+		Chat: chatResponseFromDomain(item.Chat),
+	}
+
+	if item.DirectPeer != nil {
 		response.Direct = &DirectChatResponse{
 			Peer: PeerResponse{
-				ID:        item.Direct.PeerID,
-				Username:  item.Direct.PeerProfile.Username(),
-				FirstName: item.Direct.PeerProfile.FirstName(),
-				LastName:  item.Direct.PeerProfile.LastName(),
-				DeletedAt: item.Direct.PeerDeletedAt,
+				ID:        item.DirectPeer.ID,
+				Username:  item.DirectPeer.Username,
+				FirstName: item.DirectPeer.FirstName,
+				LastName:  item.DirectPeer.LastName,
+				DeletedAt: item.DirectPeer.DeletedAt,
 			},
 		}
-	} else if item.Group != nil {
-		response.Chat = chatResponseFromDomain(item.Group.Chat)
-		response.Group = &GroupChatResponse{Title: item.Group.Title}
+	} else if item.GroupInfo != nil {
+		response.Group = &GroupChatResponse{Title: item.GroupInfo.Title}
 	}
 
 	if item.LastMessage != nil {
 		message := item.LastMessage.Message
 		response.LastMessage = &LastMessageResponse{
-			ID:             message.ID,
-			SenderID:       message.SenderID,
-			SenderUsername: item.LastMessage.SenderProfile.Username(),
-			Content:        message.Content,
-			CreatedAt:      message.CreatedAt,
-			UpdatedAt:      message.UpdatedAt,
+			ID:              message.ID,
+			SenderID:        message.SenderID,
+			SenderFirstName: item.LastMessage.SenderFirstName,
+			Content:         message.Content,
+			CreatedAt:       message.CreatedAt,
+			UpdatedAt:       message.UpdatedAt,
 		}
 	}
 	return response

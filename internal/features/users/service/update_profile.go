@@ -63,10 +63,10 @@ func applyProfileUpdate(
 	profile domain.UserProfile,
 	command UpdateProfileCommand,
 ) (domain.UserProfile, error) {
-	username := profile.Username()
-	firstName := profile.FirstName()
-	lastname := profile.LastName()
-	bio := profile.Bio()
+	username := profile.Username
+	firstName := profile.FirstName
+	lastname := profile.LastName
+	bio := profile.Bio
 	if command.Username != nil {
 		username = *command.Username
 	}

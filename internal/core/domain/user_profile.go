@@ -14,10 +14,10 @@ var (
 var ErrInvalidUserProfile = errors.New("invalid user profile")
 
 type UserProfile struct {
-	username  string
-	firstName string
-	lastName  *string
-	bio       *string
+	Username  string
+	FirstName string
+	LastName  *string
+	Bio       *string
 }
 
 func NewUserProfile(
@@ -27,10 +27,10 @@ func NewUserProfile(
 	bio *string,
 ) (UserProfile, error) {
 	profile := UserProfile{
-		username:  username,
-		firstName: firstName,
-		lastName:  lastName,
-		bio:       bio,
+		Username:  username,
+		FirstName: firstName,
+		LastName:  lastName,
+		Bio:       bio,
 	}
 	profile = profile.normalize()
 	if err := profile.Validate(); err != nil {
@@ -39,39 +39,21 @@ func NewUserProfile(
 	return profile, nil
 }
 
-func (p UserProfile) Username() string  { return p.username }
-func (p UserProfile) FirstName() string { return p.firstName }
-func (p UserProfile) LastName() *string {
-	if p.lastName == nil {
-		return nil
-	}
-
-	lastName := *p.lastName
-	return &lastName
-}
-func (p UserProfile) Bio() *string {
-	if p.bio == nil {
-		return nil
-	}
-	bio := *p.bio
-	return &bio
-}
-
 func (p UserProfile) normalize() UserProfile {
-	p.username = strings.TrimSpace(p.username)
-	p.firstName = strings.TrimSpace(p.firstName)
-	if p.lastName != nil {
-		if trimmed := strings.TrimSpace(*p.lastName); trimmed != "" {
-			p.lastName = &trimmed
+	p.Username = strings.TrimSpace(p.Username)
+	p.FirstName = strings.TrimSpace(p.FirstName)
+	if p.LastName != nil {
+		if trimmed := strings.TrimSpace(*p.LastName); trimmed != "" {
+			p.LastName = &trimmed
 		} else {
-			p.lastName = nil
+			p.LastName = nil
 		}
 	}
-	if p.bio != nil {
-		if trimmed := strings.TrimSpace(*p.bio); trimmed != "" {
-			p.bio = &trimmed
+	if p.Bio != nil {
+		if trimmed := strings.TrimSpace(*p.Bio); trimmed != "" {
+			p.Bio = &trimmed
 		} else {
-			p.bio = nil
+			p.Bio = nil
 		}
 	}
 
@@ -79,20 +61,20 @@ func (p UserProfile) normalize() UserProfile {
 }
 func (p UserProfile) Validate() error {
 	fields := make(map[string]string)
-	if !UsernamePattern.MatchString(p.username) {
+	if !UsernamePattern.MatchString(p.Username) {
 		fields["username"] = "must contain between 5 and 32 characters, and only ASCII letters, digits, and underscores"
 	}
-	if l := utf8.RuneCountInString(p.firstName); l < 1 || l > 64 {
+	if l := utf8.RuneCountInString(p.FirstName); l < 1 || l > 64 {
 		fields["first_name"] = "fists_name contain between 1 and 64 characters"
 	}
-	if p.lastName != nil {
-		if l := utf8.RuneCountInString(*p.lastName); l > 64 {
+	if p.LastName != nil {
+		if l := utf8.RuneCountInString(*p.LastName); l > 64 {
 			fields["last_name"] = "last_name must contain at most 64 characters"
 		}
 	}
 
-	if p.bio != nil {
-		if l := utf8.RuneCountInString(*p.bio); l > 70 {
+	if p.Bio != nil {
+		if l := utf8.RuneCountInString(*p.Bio); l > 70 {
 			fields["bio"] = "bio must contain at most 70 characters"
 		}
 	}

@@ -63,7 +63,7 @@ func TestGetUserByUsername(t *testing.T) {
 
 		actual, err := repository.GetUserByUsername(
 			t.Context(),
-			strings.ToLower(expected.Profile.Username()),
+			strings.ToLower(expected.Profile.Username),
 		)
 
 		require.NoError(t, err)
@@ -106,10 +106,10 @@ func TestDeleteUser(t *testing.T) {
 		require.NoError(t, err)
 		deleted, err := repository.GetUser(t.Context(), user.ID)
 		require.NoError(t, err)
-		require.True(t, strings.HasPrefix(deleted.Profile.Username(), "deleted_"))
-		require.Equal(t, "Deleted Account", deleted.Profile.FirstName())
-		require.Nil(t, deleted.Profile.LastName())
-		require.Nil(t, deleted.Profile.Bio())
+		require.True(t, strings.HasPrefix(deleted.Profile.Username, "deleted_"))
+		require.Equal(t, "Deleted Account", deleted.Profile.FirstName)
+		require.Nil(t, deleted.Profile.LastName)
+		require.Nil(t, deleted.Profile.Bio)
 		require.NotNil(t, deleted.DeletedAt)
 		require.Equal(t, user.PasswordHash, deleted.PasswordHash)
 
