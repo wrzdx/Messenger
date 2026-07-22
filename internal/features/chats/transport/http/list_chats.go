@@ -1,7 +1,6 @@
 package chats_transport_http
 
 import (
-	"fmt"
 	core_context "messenger/internal/core/context"
 	"messenger/internal/core/logger"
 	http_request "messenger/internal/core/transport/http/request"
@@ -31,7 +30,9 @@ func (h *ChatsHandler) ListChats(w http.ResponseWriter, r *http.Request) {
 	if limitString := queryParams.Get("limit"); limitString != "" {
 		limit, err = strconv.Atoi(limitString)
 		if err != nil {
-			sender.Error(fmt.Errorf("invalid limit query param: %w", http_request.ErrInvalidRequest))
+			sender.Error(http_request.NewFieldError(
+				map[string]string{"limit": "invalid limit query param"},
+			))
 			return
 		}
 	}

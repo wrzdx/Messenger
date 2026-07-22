@@ -72,9 +72,18 @@ func (p ChatParticipant) Validate() error {
 }
 
 func NewGroupParticipant(
-	participant ChatParticipant,
+	chatID, userID uuid.UUID,
+	lastReadMessageID *uuid.UUID,
+	joinedAt time.Time,
 	role GroupRole,
 ) (GroupParticipant, error) {
+	participant := ChatParticipant{
+		ChatID:            chatID,
+		UserID:            userID,
+		LastReadMessageID: lastReadMessageID,
+		JoinedAt:          joinedAt,
+	}
+
 	groupParticipant := GroupParticipant{
 		ChatParticipant: participant,
 		role:            role,

@@ -68,7 +68,7 @@ func TestDecodeAndValidateRequest(t *testing.T) {
 	})
 
 	t.Run("does not expose mutable validation fields", func(t *testing.T) {
-		err := newFieldError(map[string]string{"username": "required"})
+		err := NewFieldError(map[string]string{"username": "required"})
 		fields := err.Fields()
 		fields["username"] = "changed"
 

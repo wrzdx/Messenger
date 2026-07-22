@@ -110,11 +110,18 @@ func TestListChats(t *testing.T) {
 	})
 
 	testCases := []struct {
-		name  string
-		query string
+		name   string
+		query  string
+		fields map[string]string
 	}{
 		{name: "malformed cursor", query: "?cursor=%25%25%25"},
-		{name: "malformed limit", query: "?limit=many"},
+		{
+			name:  "malformed limit",
+			query: "?limit=many",
+			fields: map[string]string{
+				"limit": "invalid limit query param",
+			},
+		},
 	}
 	for _, testCase := range testCases {
 		t.Run("rejects "+testCase.name, func(t *testing.T) {
@@ -127,6 +134,7 @@ func TestListChats(t *testing.T) {
 			require.Equal(t, http_response.APIErrorDetail{
 				Code:    "invalid_request",
 				Message: "invalid request",
+				Fields:  testCase.fields,
 			}, decodeChatsTransportError(t, recorder))
 		})
 	}

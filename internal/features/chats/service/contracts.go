@@ -25,6 +25,18 @@ type ChatsRepository interface {
 		before *ChatCursor,
 		limit int,
 	) ([]ChatItem, error)
+
+
+	GetParticipantsStatus(
+		ctx context.Context,
+		userIDs []uuid.UUID,
+	) ([]ParticipantStatus, error)
+
+	CreateGroup(
+		ctx context.Context,
+		group domain.GroupChat,
+		participants []domain.GroupParticipant,
+	) error
 }
 
 type TXManager interface {

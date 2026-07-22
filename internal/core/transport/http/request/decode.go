@@ -54,6 +54,8 @@ func formatField(err validator.FieldError) (string, string) {
 	switch err.Tag() {
 	case "required":
 		msg = field + " is required"
+	case "uuid":
+		msg = "invalid uuid"
 	default:
 		msg = err.Tag()
 	}
@@ -67,7 +69,7 @@ func DecodeAndValidateRequest(r *http.Request, dest any) error {
 	}
 
 	if fields := Validate(dest); len(fields) != 0 {
-		return newFieldError(fields)
+		return NewFieldError(fields)
 	}
 	return nil
 }
