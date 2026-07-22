@@ -1,7 +1,6 @@
 package users_transport_http
 
 import (
-	"fmt"
 	"messenger/internal/core/logger"
 	http_request "messenger/internal/core/transport/http/request"
 	http_response "messenger/internal/core/transport/http/response"
@@ -22,9 +21,12 @@ func (h *UsersHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := uuid.Parse(idStr)
 	if err != nil {
-		sender.Error(fmt.Errorf("invalid user id: %w", http_request.ErrInvalidRequest))
+		sender.Error(http_request.NewFieldError(map[string]string{
+			"id": "invalid user uuid",
+		}))
 		return
 	}
+
 	user, err := h.usersService.GetUser(ctx, userID)
 	if err != nil {
 		sender.Error(err)

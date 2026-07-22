@@ -18,5 +18,6 @@ func NewChatsRepository(db postgres.DBTX, timeout time.Duration) *ChatsRepositor
 }
 
 const (
-	directsUK = "directs_unique_pair"
+	directsUK          = "directs_unique_pair"
+	chatParticipantsPK = "chat_participants_pkey"
 )

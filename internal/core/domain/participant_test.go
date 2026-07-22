@@ -96,7 +96,13 @@ func TestNewGroupParticipant(t *testing.T) {
 	roles := []GroupRole{MemberRole, AdminRole, OwnerRole}
 	for _, role := range roles {
 		t.Run(string(role), func(t *testing.T) {
-			groupParticipant, err := NewGroupParticipant(participant, role)
+			groupParticipant, err := NewGroupParticipant(
+				participant.ChatID,
+				participant.UserID,
+				participant.LastReadMessageID,
+				participant.JoinedAt,
+				role,
+			)
 
 			require.NoError(t, err)
 			require.Equal(t, participant, groupParticipant.ChatParticipant)
@@ -110,7 +116,13 @@ func TestNewGroupParticipantReturnsZeroValueWhenInvalid(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("invalid common participant", func(t *testing.T) {
-		groupParticipant, err := NewGroupParticipant(ChatParticipant{}, MemberRole)
+		groupParticipant, err := NewGroupParticipant(
+			uuid.Nil,
+			uuid.Nil,
+			nil,
+			time.Time{},
+			MemberRole,
+		)
 
 		require.ErrorIs(t, err, ErrInvalidChatParticipant)
 		require.NotErrorIs(t, err, ErrInvalidGroupParticipant)
@@ -118,7 +130,13 @@ func TestNewGroupParticipantReturnsZeroValueWhenInvalid(t *testing.T) {
 	})
 
 	t.Run("unknown group role", func(t *testing.T) {
-		groupParticipant, err := NewGroupParticipant(validParticipant, GroupRole("unknown"))
+		groupParticipant, err := NewGroupParticipant(
+			validParticipant.ChatID,
+			validParticipant.UserID,
+			validParticipant.LastReadMessageID,
+			validParticipant.JoinedAt,
+			GroupRole("unknown"),
+		)
 
 		require.ErrorIs(t, err, ErrInvalidGroupParticipant)
 		require.NotErrorIs(t, err, ErrInvalidChatParticipant)

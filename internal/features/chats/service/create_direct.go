@@ -23,12 +23,20 @@ func (s *ChatsService) CreateDirect(
 
 	participant1, err := domain.NewChatParticipant(direct.Chat.ID, direct.User1ID, nil, now)
 	if err != nil {
-		return domain.DirectChat{}, false, fmt.Errorf("new chat participant: %w", err)
+		return domain.DirectChat{}, false, fmt.Errorf(
+			"new chat participant: %w: %w",
+			err,
+			domain.ErrInvalidDirectChat,
+		)
 	}
 
 	participant2, err := domain.NewChatParticipant(direct.Chat.ID, direct.User2ID, nil, now)
 	if err != nil {
-		return domain.DirectChat{}, false, fmt.Errorf("new chat participant: %w", err)
+		return domain.DirectChat{}, false, fmt.Errorf(
+			"new chat participant: %w: %w",
+			err,
+			domain.ErrInvalidDirectChat,
+		)
 	}
 
 	err = s.txmanager.WithinTransaction(ctx, func(ctx context.Context) error {

@@ -110,6 +110,9 @@ func TestGetMessages(t *testing.T) {
 			response: http_response.APIErrorDetail{
 				Code:    "invalid_request",
 				Message: "invalid request",
+				Fields: map[string]string{
+					"chat_id": "invalid uuid",
+				},
 			},
 		},
 		{
@@ -119,6 +122,9 @@ func TestGetMessages(t *testing.T) {
 			response: http_response.APIErrorDetail{
 				Code:    "invalid_request",
 				Message: "invalid request",
+				Fields: map[string]string{
+					"limit": "invalid limit query param",
+				},
 			},
 		},
 		{

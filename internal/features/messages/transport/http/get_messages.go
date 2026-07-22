@@ -1,7 +1,6 @@
 package messages_transport_http
 
 import (
-	"fmt"
 	core_context "messenger/internal/core/context"
 	"messenger/internal/core/logger"
 	http_request "messenger/internal/core/transport/http/request"
@@ -24,7 +23,9 @@ func (h *MessagesHandler) GetMessages(w http.ResponseWriter, r *http.Request) {
 	chatID, err := uuid.Parse(chatIDStr)
 
 	if err != nil {
-		sender.Error(fmt.Errorf("invalid chat id: %w", http_request.ErrInvalidRequest))
+		sender.Error(http_request.NewFieldError(map[string]string{
+			"chat_id": "invalid uuid",
+		}))
 		return
 	}
 
@@ -41,9 +42,8 @@ func (h *MessagesHandler) GetMessages(w http.ResponseWriter, r *http.Request) {
 	if limitStr != "" {
 		limit, err = strconv.Atoi(limitStr)
 		if err != nil {
-			sender.Error(fmt.Errorf(
-				"invalid limit query param: %w",
-				http_request.ErrInvalidRequest,
+			sender.Error(http_request.NewFieldError(
+				map[string]string{"limit": "invalid limit query param"},
 			))
 			return
 		}

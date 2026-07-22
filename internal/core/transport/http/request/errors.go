@@ -11,7 +11,7 @@ type fieldError struct {
 	fields map[string]string
 }
 
-func newFieldError(fields map[string]string) fieldError {
+func NewFieldError(fields map[string]string) fieldError {
 	return fieldError{fields: maps.Clone(fields)}
 }
 

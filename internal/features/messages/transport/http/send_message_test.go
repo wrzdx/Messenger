@@ -85,6 +85,9 @@ func TestSendMessage(t *testing.T) {
 		require.Equal(t, http_response.APIErrorDetail{
 			Code:    "invalid_request",
 			Message: "invalid request",
+			Fields: map[string]string{
+				"chat_id": "invalid uuid",
+			},
 		}, decodeMessagesTransportError(t, recorder))
 	})
 

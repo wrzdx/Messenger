@@ -27,6 +27,14 @@ func errorMapper(err error) http_response.HTTPError {
 			Fields:     http_errmap.FieldsFrom(err),
 		}
 
+	case errors.Is(err, domain.ErrInvalidGroupChat):
+		return http_response.HTTPError{
+			StatusCode: http.StatusBadRequest,
+			Code:       "invalid_group_chat",
+			Message:    "invalid group chat",
+			Fields:     http_errmap.FieldsFrom(err),
+		}
+
 	case errors.Is(err, domain.ErrNotFound):
 		return http_response.HTTPError{
 			StatusCode: http.StatusNotFound,

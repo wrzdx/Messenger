@@ -1,7 +1,6 @@
 package messages_transport_http
 
 import (
-	"fmt"
 	core_context "messenger/internal/core/context"
 	"messenger/internal/core/logger"
 	http_request "messenger/internal/core/transport/http/request"
@@ -29,7 +28,9 @@ func (h *MessagesHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 	chatID, err := uuid.Parse(chatIDStr)
 
 	if err != nil {
-		sender.Error(fmt.Errorf("invalid chat id: %w", http_request.ErrInvalidRequest))
+		sender.Error(http_request.NewFieldError(map[string]string{
+			"chat_id": "invalid uuid",
+		}))
 		return
 	}
 
@@ -38,7 +39,7 @@ func (h *MessagesHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 		claims.UserID,
 		messages_service.SendMessageCommand{
 			ChatID:          chatID,
-			ClientMessageID: request.ClientMessageID,
+			ClientMessageID: uuid.MustParse(request.ClientMessageID),
 			Content:         request.Content,
 		},
 	)
@@ -56,8 +57,8 @@ func (h *MessagesHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 }
 
 type SendMessageRequest struct {
-	ClientMessageID uuid.UUID `json:"client_message_id" validate:"required"`
-	Content         string    `json:"content" validate:"required"`
+	ClientMessageID string `json:"client_message_id" validate:"required,uuid"`
+	Content         string `json:"content" validate:"required"`
 }
 
 type SendMessageResponse MessageResponse

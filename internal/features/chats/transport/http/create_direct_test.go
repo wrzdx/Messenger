@@ -100,6 +100,9 @@ func TestCreateDirect(t *testing.T) {
 		require.Equal(t, http_response.APIErrorDetail{
 			Code:    "invalid_request",
 			Message: "invalid request",
+			Fields: map[string]string{
+				"peer_id": "invalid uuid",
+			},
 		}, decodeChatsTransportError(t, recorder))
 	})
 

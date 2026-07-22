@@ -22,7 +22,11 @@ func (h *ChatsHandler) CreateDirect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	direct, isCreated, err := h.chatsService.CreateDirect(ctx, claims.UserID, request.PeerID)
+	direct, isCreated, err := h.chatsService.CreateDirect(
+		ctx,
+		claims.UserID,
+		uuid.MustParse(request.PeerID),
+	)
 	if err != nil {
 		sender.Error(err)
 		return
@@ -36,7 +40,7 @@ func (h *ChatsHandler) CreateDirect(w http.ResponseWriter, r *http.Request) {
 }
 
 type CreateDirectRequest struct {
-	PeerID uuid.UUID `json:"peer_id" validate:"required"`
+	PeerID string `json:"peer_id" validate:"required,uuid"`
 }
 
 type CreateDirectResponse ChatResponse
