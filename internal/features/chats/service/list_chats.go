@@ -22,6 +22,7 @@ func (s ChatsService) ListChats(
 	if err := query.validate(); err != nil {
 		return ChatPage{}, fmt.Errorf("validate query: %w", err)
 	}
+	
 
 	allChats, err := s.chatsRepo.ListChats(
 		ctx,

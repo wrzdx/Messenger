@@ -69,6 +69,9 @@ REFERENCES messages(id);
 CREATE INDEX idx_chat_participants_user
 ON chat_participants(user_id);
 
+CREATE INDEX idx_chat_participants_chat_joined
+ON chat_participants(chat_id, joined_at DESC, user_id DESC);
+
 CREATE INDEX idx_messages_chat_created
 ON messages(chat_id, created_at DESC, id DESC);
 

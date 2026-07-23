@@ -26,6 +26,17 @@ type ChatsRepository interface {
 		limit int,
 	) ([]ChatItem, error)
 
+	GetGroupParticipant(
+		ctx context.Context,
+		chatID, userID uuid.UUID,
+	) (domain.GroupParticipant, error)
+
+	ListGroupParticipants(
+		ctx context.Context,
+		chatID uuid.UUID,
+		before *GroupParticipantCursor,
+		limit int,
+	) ([]ParticipantInfo, error)
 
 	GetParticipantsStatus(
 		ctx context.Context,
