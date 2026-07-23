@@ -35,11 +35,19 @@ func errorMapper(err error) http_response.HTTPError {
 			Fields:     http_errmap.FieldsFrom(err),
 		}
 
+	case errors.Is(err, chats_service.ErrInvalidListGroupParticipantsQuery):
+		return http_response.HTTPError{
+			StatusCode: http.StatusBadRequest,
+			Code:       "invalid_list_group_participants_query",
+			Message:    "invalid list group participants query",
+			Fields:     http_errmap.FieldsFrom(err),
+		}
+
 	case errors.Is(err, domain.ErrNotFound):
 		return http_response.HTTPError{
 			StatusCode: http.StatusNotFound,
-			Code:       "peer_not_found",
-			Message:    "peer not found",
+			Code:       "not_found",
+			Message:    "not found",
 			Fields:     http_errmap.FieldsFrom(err),
 		}
 	default:

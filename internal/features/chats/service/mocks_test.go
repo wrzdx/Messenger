@@ -243,6 +243,78 @@ func (_c *MockChatsRepository_GetDirectByUsers_Call) RunAndReturn(run func(ctx c
 	return _c
 }
 
+// GetGroupParticipant provides a mock function for the type MockChatsRepository
+func (_mock *MockChatsRepository) GetGroupParticipant(ctx context.Context, chatID uuid.UUID, userID uuid.UUID) (domain.GroupParticipant, error) {
+	ret := _mock.Called(ctx, chatID, userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetGroupParticipant")
+	}
+
+	var r0 domain.GroupParticipant
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) (domain.GroupParticipant, error)); ok {
+		return returnFunc(ctx, chatID, userID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) domain.GroupParticipant); ok {
+		r0 = returnFunc(ctx, chatID, userID)
+	} else {
+		r0 = ret.Get(0).(domain.GroupParticipant)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, chatID, userID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockChatsRepository_GetGroupParticipant_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetGroupParticipant'
+type MockChatsRepository_GetGroupParticipant_Call struct {
+	*mock.Call
+}
+
+// GetGroupParticipant is a helper method to define mock.On call
+//   - ctx context.Context
+//   - chatID uuid.UUID
+//   - userID uuid.UUID
+func (_e *MockChatsRepository_Expecter) GetGroupParticipant(ctx any, chatID any, userID any) *MockChatsRepository_GetGroupParticipant_Call {
+	return &MockChatsRepository_GetGroupParticipant_Call{Call: _e.mock.On("GetGroupParticipant", ctx, chatID, userID)}
+}
+
+func (_c *MockChatsRepository_GetGroupParticipant_Call) Run(run func(ctx context.Context, chatID uuid.UUID, userID uuid.UUID)) *MockChatsRepository_GetGroupParticipant_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockChatsRepository_GetGroupParticipant_Call) Return(groupParticipant domain.GroupParticipant, err error) *MockChatsRepository_GetGroupParticipant_Call {
+	_c.Call.Return(groupParticipant, err)
+	return _c
+}
+
+func (_c *MockChatsRepository_GetGroupParticipant_Call) RunAndReturn(run func(ctx context.Context, chatID uuid.UUID, userID uuid.UUID) (domain.GroupParticipant, error)) *MockChatsRepository_GetGroupParticipant_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetParticipantsStatus provides a mock function for the type MockChatsRepository
 func (_mock *MockChatsRepository) GetParticipantsStatus(ctx context.Context, userIDs []uuid.UUID) ([]ParticipantStatus, error) {
 	ret := _mock.Called(ctx, userIDs)
@@ -387,6 +459,86 @@ func (_c *MockChatsRepository_ListChats_Call) Return(chatItems []ChatItem, err e
 }
 
 func (_c *MockChatsRepository_ListChats_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID, before *ChatCursor, limit int) ([]ChatItem, error)) *MockChatsRepository_ListChats_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListGroupParticipants provides a mock function for the type MockChatsRepository
+func (_mock *MockChatsRepository) ListGroupParticipants(ctx context.Context, chatID uuid.UUID, before *GroupParticipantCursor, limit int) ([]ParticipantInfo, error) {
+	ret := _mock.Called(ctx, chatID, before, limit)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListGroupParticipants")
+	}
+
+	var r0 []ParticipantInfo
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *GroupParticipantCursor, int) ([]ParticipantInfo, error)); ok {
+		return returnFunc(ctx, chatID, before, limit)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *GroupParticipantCursor, int) []ParticipantInfo); ok {
+		r0 = returnFunc(ctx, chatID, before, limit)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]ParticipantInfo)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, *GroupParticipantCursor, int) error); ok {
+		r1 = returnFunc(ctx, chatID, before, limit)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockChatsRepository_ListGroupParticipants_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListGroupParticipants'
+type MockChatsRepository_ListGroupParticipants_Call struct {
+	*mock.Call
+}
+
+// ListGroupParticipants is a helper method to define mock.On call
+//   - ctx context.Context
+//   - chatID uuid.UUID
+//   - before *GroupParticipantCursor
+//   - limit int
+func (_e *MockChatsRepository_Expecter) ListGroupParticipants(ctx any, chatID any, before any, limit any) *MockChatsRepository_ListGroupParticipants_Call {
+	return &MockChatsRepository_ListGroupParticipants_Call{Call: _e.mock.On("ListGroupParticipants", ctx, chatID, before, limit)}
+}
+
+func (_c *MockChatsRepository_ListGroupParticipants_Call) Run(run func(ctx context.Context, chatID uuid.UUID, before *GroupParticipantCursor, limit int)) *MockChatsRepository_ListGroupParticipants_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 *GroupParticipantCursor
+		if args[2] != nil {
+			arg2 = args[2].(*GroupParticipantCursor)
+		}
+		var arg3 int
+		if args[3] != nil {
+			arg3 = args[3].(int)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockChatsRepository_ListGroupParticipants_Call) Return(participantInfos []ParticipantInfo, err error) *MockChatsRepository_ListGroupParticipants_Call {
+	_c.Call.Return(participantInfos, err)
+	return _c
+}
+
+func (_c *MockChatsRepository_ListGroupParticipants_Call) RunAndReturn(run func(ctx context.Context, chatID uuid.UUID, before *GroupParticipantCursor, limit int) ([]ParticipantInfo, error)) *MockChatsRepository_ListGroupParticipants_Call {
 	_c.Call.Return(run)
 	return _c
 }

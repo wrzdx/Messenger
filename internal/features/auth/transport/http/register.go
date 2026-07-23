@@ -16,7 +16,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	log := logger.FromContext(ctx)
 	sender := http_response.NewHTTPSender(log, w, errorMapper)
 	var request RegisterRequest
-	if err := http_request.DecodeAndValidateRequest(r, &request); err != nil {
+	if err := http_request.DecodeAndValidateRequestBody(r, &request); err != nil {
 		sender.Error(err)
 		return
 	}

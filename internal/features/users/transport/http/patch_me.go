@@ -17,7 +17,7 @@ func (h *UsersHandler) PatchMe(w http.ResponseWriter, r *http.Request) {
 	sender := http_response.NewHTTPSender(log, w, errorMapper)
 
 	var request PatchProfileRequest
-	if err := http_request.DecodeAndValidateRequest(r, &request); err != nil {
+	if err := http_request.DecodeAndValidateRequestBody(r, &request); err != nil {
 		sender.Error(err)
 		return
 	}

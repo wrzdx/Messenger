@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -23,7 +24,7 @@ func TestDecodeAndValidateRequest(t *testing.T) {
 		)
 		var decoded request
 
-		err := DecodeAndValidateRequest(r, &decoded)
+		err := DecodeAndValidateRequestBody(r, &decoded)
 
 		require.NoError(t, err)
 		require.Equal(t, "Username_1", decoded.Username)
@@ -39,7 +40,7 @@ func TestDecodeAndValidateRequest(t *testing.T) {
 			Username string `json:"username"`
 		}
 
-		err := DecodeAndValidateRequest(r, &decoded)
+		err := DecodeAndValidateRequestBody(r, &decoded)
 
 		require.ErrorIs(t, err, ErrInvalidRequest)
 		require.Contains(t, err.Error(), "decode json")
@@ -54,7 +55,7 @@ func TestDecodeAndValidateRequest(t *testing.T) {
 			FirstName string `json:"first_name" validate:"required"`
 		}
 
-		err := DecodeAndValidateRequest(r, &decoded)
+		err := DecodeAndValidateRequestBody(r, &decoded)
 
 		require.ErrorIs(t, err, ErrInvalidRequest)
 		var withFields interface {
@@ -81,7 +82,7 @@ func TestDecodeAndValidateRequest(t *testing.T) {
 			ID uuid.UUID `json:"id" validate:"required"`
 		}
 
-		err := DecodeAndValidateRequest(r, &decoded)
+		err := DecodeAndValidateRequestBody(r, &decoded)
 
 		require.ErrorIs(t, err, ErrInvalidRequest)
 		var withFields interface {
@@ -89,5 +90,21 @@ func TestDecodeAndValidateRequest(t *testing.T) {
 		}
 		require.ErrorAs(t, err, &withFields)
 		require.Equal(t, "id is required", withFields.Fields()["id"])
+	})
+
+	t.Run("rejects required zero-value non-pointer struct", func(t *testing.T) {
+		r := httptest.NewRequest("POST", "/", bytes.NewBufferString(`{}`))
+		var decoded struct {
+			CreatedAt time.Time `json:"created_at" validate:"required"`
+		}
+
+		err := DecodeAndValidateRequestBody(r, &decoded)
+
+		require.ErrorIs(t, err, ErrInvalidRequest)
+		var withFields interface {
+			Fields() map[string]string
+		}
+		require.ErrorAs(t, err, &withFields)
+		require.Equal(t, "created_at is required", withFields.Fields()["created_at"])
 	})
 }

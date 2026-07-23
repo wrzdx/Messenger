@@ -3,15 +3,17 @@ package messages_transport_http
 import (
 	"encoding/json"
 	"errors"
-	"messenger/internal/core/domain"
-	"messenger/internal/core/logger"
-	http_response "messenger/internal/core/transport/http/response"
-	messages_service "messenger/internal/features/messages/service"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
 	"time"
+
+	"messenger/internal/core/domain"
+	"messenger/internal/core/logger"
+	http_cursor "messenger/internal/core/transport/http/cursor"
+	http_response "messenger/internal/core/transport/http/response"
+	messages_service "messenger/internal/features/messages/service"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
@@ -50,7 +52,10 @@ func TestGetMessages(t *testing.T) {
 			NextCursor: nextCursor,
 		}, nil)
 		router := newMessagesTransportRouter(service, currentUserID)
-		encodedCursor, err := encodeMessageCursor(cursor)
+		encodedCursor, err := http_cursor.Encode(&messageCursorPayload{
+			MessageID: cursor.MessageID.String(),
+			CreatedAt: cursor.CreatedAt,
+		})
 		require.NoError(t, err)
 		request := newGetMessagesRequest(
 			t,
@@ -71,9 +76,12 @@ func TestGetMessages(t *testing.T) {
 			SendMessageResponse(response.Messages[0]),
 		)
 		require.NotNil(t, response.NextCursor)
-		decodedNextCursor, err := decodeMessageCursor(*response.NextCursor)
+		decodedNextCursor, err := http_cursor.DecodeAndValidate[messageCursorPayload](
+			*response.NextCursor,
+		)
 		require.NoError(t, err)
-		require.Equal(t, nextCursor, decodedNextCursor)
+		require.Equal(t, nextCursor.MessageID.String(), decodedNextCursor.MessageID)
+		require.True(t, nextCursor.CreatedAt.Equal(decodedNextCursor.CreatedAt))
 	})
 
 	t.Run("returns empty final page with null cursor", func(t *testing.T) {

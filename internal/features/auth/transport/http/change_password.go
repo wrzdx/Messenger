@@ -23,7 +23,7 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 
 	var request ChangePasswordRequest
 
-	if err := http_request.DecodeAndValidateRequest(r, &request); err != nil {
+	if err := http_request.DecodeAndValidateRequestBody(r, &request); err != nil {
 		sender.Error(err)
 		return
 	}

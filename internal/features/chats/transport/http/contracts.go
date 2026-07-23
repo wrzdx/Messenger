@@ -26,4 +26,10 @@ type ChatsService interface {
 		creatorID uuid.UUID,
 		command chats_service.CreateGroupCommand,
 	) (domain.GroupChat, error)
+
+	ListGroupParticipants(
+		ctx context.Context,
+		requesterID uuid.UUID,
+		query chats_service.ListGroupParticipantsQuery,
+	) (chats_service.GroupParticipantPage, error)
 }
