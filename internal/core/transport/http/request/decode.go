@@ -12,7 +12,7 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-var requestValidator = validator.New()
+var requestValidator = validator.New(validator.WithRequiredStructEnabled())
 
 type validatable interface {
 	Validate() map[string]string
@@ -62,7 +62,7 @@ func formatField(err validator.FieldError) (string, string) {
 	return field, msg
 }
 
-func DecodeAndValidateRequest(r *http.Request, dest any) error {
+func DecodeAndValidateRequestBody(r *http.Request, dest any) error {
 	err := json.NewDecoder(r.Body).Decode(dest)
 	if err != nil && !errors.Is(err, io.EOF) {
 		return fmt.Errorf("%w: decode json: %w", ErrInvalidRequest, err)

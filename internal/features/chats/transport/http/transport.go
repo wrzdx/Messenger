@@ -22,5 +22,6 @@ func (h *ChatsHandler) Router(authMW http_middleware.Middleware) chi.Router {
 	router.Get("/", h.ListChats)
 	router.Post("/directs", h.CreateDirect)
 	router.Post("/groups", h.CreateGroup)
+	router.Get("/groups/{chat_id}/participants", h.ListGroupParticipants)
 	return router
 }

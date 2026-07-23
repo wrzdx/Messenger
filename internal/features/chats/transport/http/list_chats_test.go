@@ -12,6 +12,7 @@ import (
 	core_context "messenger/internal/core/context"
 	"messenger/internal/core/domain"
 	"messenger/internal/core/logger"
+	http_cursor "messenger/internal/core/transport/http/cursor"
 	http_middleware "messenger/internal/core/transport/http/middleware"
 	http_response "messenger/internal/core/transport/http/response"
 	chats_service "messenger/internal/features/chats/service"
@@ -48,7 +49,10 @@ func TestListChats(t *testing.T) {
 			NextCursor: next,
 		}, nil)
 		router := newListChatsTransportRouter(service, requesterID)
-		encodedBefore, err := encodeChatCursor(before)
+		encodedBefore, err := http_cursor.Encode(&chatCursorPayload{
+			ChatID:         before.ChatID.String(),
+			LastActivityAt: before.LastActivityAt,
+		})
 		require.NoError(t, err)
 		recorder := httptest.NewRecorder()
 
@@ -56,7 +60,6 @@ func TestListChats(t *testing.T) {
 			recorder,
 			newListChatsHTTPRequest(t, "?limit=2&cursor="+url.QueryEscape(*encodedBefore)),
 		)
-
 		require.Equal(t, http.StatusOK, recorder.Code)
 		require.Equal(t, "application/json", recorder.Header().Get("Content-Type"))
 		response := decodeListChatsHTTPResponse(t, recorder)
@@ -85,9 +88,12 @@ func TestListChats(t *testing.T) {
 		)
 
 		require.NotNil(t, response.NextCursor)
-		decodedNext, err := decodeChatCursor(*response.NextCursor)
+		decodedNext, err := http_cursor.DecodeAndValidate[chatCursorPayload](
+			*response.NextCursor,
+		)
 		require.NoError(t, err)
-		require.Equal(t, next, decodedNext)
+		require.Equal(t, next.ChatID.String(), decodedNext.ChatID)
+		require.True(t, next.LastActivityAt.Equal(decodedNext.LastActivityAt))
 	})
 
 	t.Run("returns non nil empty final page", func(t *testing.T) {

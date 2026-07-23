@@ -3,11 +3,13 @@ package messages_transport_http
 import (
 	core_context "messenger/internal/core/context"
 	"messenger/internal/core/logger"
+	http_cursor "messenger/internal/core/transport/http/cursor"
 	http_request "messenger/internal/core/transport/http/request"
 	http_response "messenger/internal/core/transport/http/response"
 	messages_service "messenger/internal/features/messages/service"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -30,11 +32,21 @@ func (h *MessagesHandler) GetMessages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	queryParams := r.URL.Query()
-	cursorStr := queryParams.Get("cursor")
-	cursor, err := decodeMessageCursor(cursorStr)
+	var cursor *messages_service.MessageCursor
+
+	cursorPayload, err := http_cursor.DecodeAndValidate[messageCursorPayload](
+		queryParams.Get("cursor"),
+	)
+
 	if err != nil {
 		sender.Error(err)
 		return
+	}
+	if cursorPayload != nil {
+		cursor = &messages_service.MessageCursor{
+			MessageID: uuid.MustParse(cursorPayload.MessageID),
+			CreatedAt: cursorPayload.CreatedAt,
+		}
 	}
 
 	var limit int
@@ -62,7 +74,15 @@ func (h *MessagesHandler) GetMessages(w http.ResponseWriter, r *http.Request) {
 		sender.Error(err)
 		return
 	}
-	nextCursor, err := encodeMessageCursor(page.NextCursor)
+	var responseCursorPayload *messageCursorPayload
+	if page.NextCursor != nil {
+		responseCursorPayload = &messageCursorPayload{
+			MessageID: page.NextCursor.MessageID.String(),
+			CreatedAt: page.NextCursor.CreatedAt,
+		}
+	}
+
+	nextCursor, err := http_cursor.Encode(responseCursorPayload)
 	if err != nil {
 		sender.Error(err)
 		return
@@ -76,4 +96,9 @@ func (h *MessagesHandler) GetMessages(w http.ResponseWriter, r *http.Request) {
 type GetMessagesResponse struct {
 	Messages   []MessageResponse `json:"messages"`
 	NextCursor *string           `json:"next_cursor"`
+}
+
+type messageCursorPayload struct {
+	MessageID string    `json:"message_id" validate:"required,uuid"`
+	CreatedAt time.Time `json:"created_at" validate:"required"`
 }

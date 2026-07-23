@@ -22,7 +22,7 @@ func TestMap(t *testing.T) {
 		}
 		r := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(nil))
 		var decoded request
-		err := http_request.DecodeAndValidateRequest(r, &decoded)
+		err := http_request.DecodeAndValidateRequestBody(r, &decoded)
 		require.Error(t, err)
 		err = fmt.Errorf("decode register request: %w", err)
 

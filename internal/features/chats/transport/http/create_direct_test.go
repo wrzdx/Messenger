@@ -121,8 +121,8 @@ func TestCreateDirect(t *testing.T) {
 
 		require.Equal(t, http.StatusNotFound, recorder.Code)
 		require.Equal(t, http_response.APIErrorDetail{
-			Code:    "peer_not_found",
-			Message: "peer not found",
+			Code:    "not_found",
+			Message: "not found",
 		}, decodeChatsTransportError(t, recorder))
 	})
 

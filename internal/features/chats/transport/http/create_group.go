@@ -18,7 +18,7 @@ func (h *ChatsHandler) CreateGroup(w http.ResponseWriter, r *http.Request) {
 	claims := core_context.ClaimsRequired(ctx)
 
 	var request CreateGroupRequest
-	if err := http_request.DecodeAndValidateRequest(r, &request); err != nil {
+	if err := http_request.DecodeAndValidateRequestBody(r, &request); err != nil {
 		sender.Error(err)
 		return
 	}

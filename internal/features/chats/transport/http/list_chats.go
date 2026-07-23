@@ -3,6 +3,7 @@ package chats_transport_http
 import (
 	core_context "messenger/internal/core/context"
 	"messenger/internal/core/logger"
+	http_cursor "messenger/internal/core/transport/http/cursor"
 	http_request "messenger/internal/core/transport/http/request"
 	http_response "messenger/internal/core/transport/http/response"
 	chats_service "messenger/internal/features/chats/service"
@@ -20,13 +21,25 @@ func (h *ChatsHandler) ListChats(w http.ResponseWriter, r *http.Request) {
 	claims := core_context.ClaimsRequired(ctx)
 
 	queryParams := r.URL.Query()
-	cursor, err := decodeChatCursor(queryParams.Get("cursor"))
+	var cursor *chats_service.ChatCursor
+
+	cursorPayload, err := http_cursor.DecodeAndValidate[chatCursorPayload](
+		queryParams.Get("cursor"),
+	)
+
 	if err != nil {
 		sender.Error(err)
 		return
 	}
+	if cursorPayload != nil {
+		cursor = &chats_service.ChatCursor{
+			ChatID:         uuid.MustParse(cursorPayload.ChatID),
+			LastActivityAt: cursorPayload.LastActivityAt,
+		}
+	}
 
 	var limit int
+
 	if limitString := queryParams.Get("limit"); limitString != "" {
 		limit, err = strconv.Atoi(limitString)
 		if err != nil {
@@ -47,7 +60,15 @@ func (h *ChatsHandler) ListChats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nextCursor, err := encodeChatCursor(page.NextCursor)
+	var responseCursorPayload *chatCursorPayload
+	if page.NextCursor != nil {
+		responseCursorPayload = &chatCursorPayload{
+			ChatID:         page.NextCursor.ChatID.String(),
+			LastActivityAt: page.NextCursor.LastActivityAt,
+		}
+	}
+
+	nextCursor, err := http_cursor.Encode(responseCursorPayload)
 	if err != nil {
 		sender.Error(err)
 		return
@@ -62,6 +83,11 @@ func (h *ChatsHandler) ListChats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sender.OK(http.StatusOK, response)
+}
+
+type chatCursorPayload struct {
+	ChatID         string    `json:"chat_id" validate:"required,uuid"`
+	LastActivityAt time.Time `json:"last_activity_at" validate:"required"`
 }
 
 type ListChatsResponse struct {
