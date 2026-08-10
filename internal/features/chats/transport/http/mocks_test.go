@@ -40,6 +40,74 @@ func (_m *MockChatsService) EXPECT() *MockChatsService_Expecter {
 	return &MockChatsService_Expecter{mock: &_m.Mock}
 }
 
+// AddGroupParticipants provides a mock function for the type MockChatsService
+func (_mock *MockChatsService) AddGroupParticipants(ctx context.Context, command chats_service.AddGroupParticipantsCommand) ([]chats_service.AddGroupParticipantResult, error) {
+	ret := _mock.Called(ctx, command)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AddGroupParticipants")
+	}
+
+	var r0 []chats_service.AddGroupParticipantResult
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, chats_service.AddGroupParticipantsCommand) ([]chats_service.AddGroupParticipantResult, error)); ok {
+		return returnFunc(ctx, command)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, chats_service.AddGroupParticipantsCommand) []chats_service.AddGroupParticipantResult); ok {
+		r0 = returnFunc(ctx, command)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]chats_service.AddGroupParticipantResult)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, chats_service.AddGroupParticipantsCommand) error); ok {
+		r1 = returnFunc(ctx, command)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockChatsService_AddGroupParticipants_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AddGroupParticipants'
+type MockChatsService_AddGroupParticipants_Call struct {
+	*mock.Call
+}
+
+// AddGroupParticipants is a helper method to define mock.On call
+//   - ctx context.Context
+//   - command chats_service.AddGroupParticipantsCommand
+func (_e *MockChatsService_Expecter) AddGroupParticipants(ctx any, command any) *MockChatsService_AddGroupParticipants_Call {
+	return &MockChatsService_AddGroupParticipants_Call{Call: _e.mock.On("AddGroupParticipants", ctx, command)}
+}
+
+func (_c *MockChatsService_AddGroupParticipants_Call) Run(run func(ctx context.Context, command chats_service.AddGroupParticipantsCommand)) *MockChatsService_AddGroupParticipants_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 chats_service.AddGroupParticipantsCommand
+		if args[1] != nil {
+			arg1 = args[1].(chats_service.AddGroupParticipantsCommand)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockChatsService_AddGroupParticipants_Call) Return(addGroupParticipantResults []chats_service.AddGroupParticipantResult, err error) *MockChatsService_AddGroupParticipants_Call {
+	_c.Call.Return(addGroupParticipantResults, err)
+	return _c
+}
+
+func (_c *MockChatsService_AddGroupParticipants_Call) RunAndReturn(run func(ctx context.Context, command chats_service.AddGroupParticipantsCommand) ([]chats_service.AddGroupParticipantResult, error)) *MockChatsService_AddGroupParticipants_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CreateDirect provides a mock function for the type MockChatsService
 func (_mock *MockChatsService) CreateDirect(ctx context.Context, currentUserID uuid.UUID, peerID uuid.UUID) (domain.DirectChat, bool, error) {
 	ret := _mock.Called(ctx, currentUserID, peerID)

@@ -48,6 +48,12 @@ type ChatsRepository interface {
 		group domain.GroupChat,
 		participants []domain.GroupParticipant,
 	) error
+
+	AddGroupParticipants(
+		ctx context.Context,
+		groupID uuid.UUID,
+		participants []domain.GroupParticipant,
+	) ([]bool, error)
 }
 
 type TXManager interface {

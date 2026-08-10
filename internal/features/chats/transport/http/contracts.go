@@ -32,4 +32,9 @@ type ChatsService interface {
 		requesterID uuid.UUID,
 		query chats_service.ListGroupParticipantsQuery,
 	) (chats_service.GroupParticipantPage, error)
+
+	AddGroupParticipants(
+		ctx context.Context,
+		command chats_service.AddGroupParticipantsCommand,
+	) ([]chats_service.AddGroupParticipantResult, error)
 }
