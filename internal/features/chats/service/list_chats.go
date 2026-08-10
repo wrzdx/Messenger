@@ -83,7 +83,7 @@ func (q ListChatsQuery) validate() error {
 	}
 	if len(fields) > 0 {
 		return domain.DetailedError{
-			Err:     ErrInvalidListChatsQuery,
+			Err:     fmt.Errorf("list chats: %w", ErrInvalidInput),
 			Details: fields,
 		}
 	}

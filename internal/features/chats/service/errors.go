@@ -3,10 +3,9 @@ package chats_service
 import "errors"
 
 var (
-	ErrInvalidListChatsQuery             = errors.New("invalid list chats query")
-	ErrInvalidChatItem                   = errors.New("invalid chat item")
-	ErrInvalidListGroupParticipantsQuery = errors.New("invalid group participant query")
-	ErrInvalidGroupParticipantItem       = errors.New("invalid group participant item")
-	ErrInvalidAddGroupParticipantsQuery  = errors.New("invalid add group participants query")
-	ErrNotEnoughRights                   = errors.New("not enough rights")
+	ErrInvalidInput                = errors.New("invalid input")
+	ErrInvalidChatItem             = errors.New("invalid chat item")
+	ErrInvalidGroupParticipantItem = errors.New("invalid group participant item")
+	ErrNotEnoughRights             = errors.New("not enough rights")
+	ErrOwnerCannotQuitGroup        = errors.New("owner cannot quit group")
 )

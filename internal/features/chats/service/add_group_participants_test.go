@@ -27,6 +27,7 @@ func TestAddGroupParticipants(t *testing.T) {
 		txCtx := context.WithValue(outerCtx, addGroupParticipantsTxContextKey{}, "transaction")
 		participantIDs := []uuid.UUID{memberID, unavailableID, memberID, existingID}
 		chatsRepository := NewMockChatsRepository(t)
+		expectActiveAddGroupRequester(chatsRepository, outerCtx, requesterID)
 		chatsRepository.EXPECT().
 			GetGroupParticipant(outerCtx, groupID, requesterID).
 			Return(newAddGroupRequester(t, groupID, requesterID, domain.OwnerRole), nil)
@@ -84,6 +85,7 @@ func TestAddGroupParticipants(t *testing.T) {
 		outerCtx := t.Context()
 		txCtx := context.WithValue(outerCtx, addGroupParticipantsTxContextKey{}, "transaction")
 		chatsRepository := NewMockChatsRepository(t)
+		expectActiveAddGroupRequester(chatsRepository, outerCtx, requesterID)
 		chatsRepository.EXPECT().
 			GetGroupParticipant(outerCtx, groupID, requesterID).
 			Return(newAddGroupRequester(t, groupID, requesterID, domain.AdminRole), nil)
@@ -109,6 +111,7 @@ func TestAddGroupParticipants(t *testing.T) {
 
 	t.Run("rejects requester without management role", func(t *testing.T) {
 		chatsRepository := NewMockChatsRepository(t)
+		expectActiveAddGroupRequester(chatsRepository, t.Context(), requesterID)
 		chatsRepository.EXPECT().
 			GetGroupParticipant(t.Context(), groupID, requesterID).
 			Return(newAddGroupRequester(t, groupID, requesterID, domain.MemberRole), nil)
@@ -173,7 +176,7 @@ func TestAddGroupParticipants(t *testing.T) {
 
 			actual, err := service.AddGroupParticipants(t.Context(), testCase.command)
 
-			require.ErrorIs(t, err, ErrInvalidAddGroupParticipantsQuery)
+			require.ErrorIs(t, err, ErrInvalidInput)
 			require.Nil(t, actual)
 		})
 	}
@@ -181,6 +184,7 @@ func TestAddGroupParticipants(t *testing.T) {
 	t.Run("returns requester lookup error", func(t *testing.T) {
 		lookupErr := errors.New("requester lookup failed")
 		chatsRepository := NewMockChatsRepository(t)
+		expectActiveAddGroupRequester(chatsRepository, t.Context(), requesterID)
 		chatsRepository.EXPECT().
 			GetGroupParticipant(t.Context(), groupID, requesterID).
 			Return(domain.GroupParticipant{}, lookupErr)
@@ -203,6 +207,7 @@ func TestAddGroupParticipants(t *testing.T) {
 	t.Run("returns participant status error", func(t *testing.T) {
 		statusErr := errors.New("status query failed")
 		chatsRepository := NewMockChatsRepository(t)
+		expectActiveAddGroupRequester(chatsRepository, t.Context(), requesterID)
 		chatsRepository.EXPECT().
 			GetGroupParticipant(t.Context(), groupID, requesterID).
 			Return(newAddGroupRequester(t, groupID, requesterID, domain.OwnerRole), nil)
@@ -230,6 +235,7 @@ func TestAddGroupParticipants(t *testing.T) {
 		outerCtx := t.Context()
 		txCtx := context.WithValue(outerCtx, addGroupParticipantsTxContextKey{}, "transaction")
 		chatsRepository := NewMockChatsRepository(t)
+		expectActiveAddGroupRequester(chatsRepository, outerCtx, requesterID)
 		chatsRepository.EXPECT().
 			GetGroupParticipant(outerCtx, groupID, requesterID).
 			Return(newAddGroupRequester(t, groupID, requesterID, domain.OwnerRole), nil)
@@ -257,6 +263,7 @@ func TestAddGroupParticipants(t *testing.T) {
 		outerCtx := t.Context()
 		txCtx := context.WithValue(outerCtx, addGroupParticipantsTxContextKey{}, "transaction")
 		chatsRepository := NewMockChatsRepository(t)
+		expectActiveAddGroupRequester(chatsRepository, outerCtx, requesterID)
 		chatsRepository.EXPECT().
 			GetGroupParticipant(outerCtx, groupID, requesterID).
 			Return(newAddGroupRequester(t, groupID, requesterID, domain.OwnerRole), nil)
@@ -283,6 +290,7 @@ func TestAddGroupParticipants(t *testing.T) {
 	t.Run("returns transaction manager error", func(t *testing.T) {
 		transactionErr := errors.New("cannot begin transaction")
 		chatsRepository := NewMockChatsRepository(t)
+		expectActiveAddGroupRequester(chatsRepository, t.Context(), requesterID)
 		chatsRepository.EXPECT().
 			GetGroupParticipant(t.Context(), groupID, requesterID).
 			Return(newAddGroupRequester(t, groupID, requesterID, domain.OwnerRole), nil)
@@ -304,6 +312,16 @@ func TestAddGroupParticipants(t *testing.T) {
 		require.ErrorIs(t, err, transactionErr)
 		require.Nil(t, actual)
 	})
+}
+
+func expectActiveAddGroupRequester(
+	repository *MockChatsRepository,
+	ctx context.Context,
+	requesterID uuid.UUID,
+) {
+	repository.EXPECT().
+		GetParticipantsStatus(ctx, []uuid.UUID{requesterID}).
+		Return([]ParticipantStatus{{UserID: requesterID, Found: true}}, nil)
 }
 
 func newAddGroupRequester(

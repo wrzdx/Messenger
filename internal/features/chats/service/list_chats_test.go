@@ -106,7 +106,7 @@ func TestListChats(t *testing.T) {
 
 			page, err := service.ListChats(t.Context(), requesterID, testCase.query)
 
-			require.ErrorIs(t, err, ErrInvalidListChatsQuery)
+			require.ErrorIs(t, err, ErrInvalidInput)
 			require.Empty(t, page)
 		})
 	}
