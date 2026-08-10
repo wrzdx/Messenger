@@ -25,10 +25,8 @@ func (r *ChatsRepository) GetGroupParticipant(
 	FROM chat_participants cp 
 	JOIN group_participants gp ON cp.chat_id=gp.chat_id 
 							  AND cp.user_id=gp.user_id
-	JOIN users ON cp.user_id=users.id
 	WHERE cp.chat_id=$1
-	  AND cp.user_id=$2
-	AND users.deleted_at IS NULL;
+	  AND cp.user_id=$2;
 	`
 	var participant domain.ChatParticipant
 	var role string

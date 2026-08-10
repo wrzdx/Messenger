@@ -2,6 +2,7 @@ package chats_service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"messenger/internal/core/domain"
 	"time"
@@ -23,7 +24,27 @@ func (s *ChatsService) ListGroupParticipants(
 		return GroupParticipantPage{}, fmt.Errorf("validate query: %w", err)
 	}
 
-	_, err := s.chatsRepo.GetGroupParticipant(ctx, query.ChatID, requesterID)
+	requesterStatus, err := s.chatsRepo.GetParticipantsStatus(
+		ctx,
+		[]uuid.UUID{requesterID},
+	)
+	if err != nil {
+		return GroupParticipantPage{}, fmt.Errorf(
+			"get requester status: %w",
+			err,
+		)
+	}
+	if len(requesterStatus) != 1 {
+		return GroupParticipantPage{}, errors.New("invalid get participant status len")
+	}
+	if !requesterStatus[0].Found {
+		return GroupParticipantPage{}, domain.DetailedError{
+			Err:     domain.ErrNotFound,
+			Details: map[string]string{"requester_id": "not found"},
+		}
+	}
+
+	_, err = s.chatsRepo.GetGroupParticipant(ctx, query.ChatID, requesterID)
 	if err != nil {
 		return GroupParticipantPage{}, fmt.Errorf("get chat participant: %w", err)
 	}
@@ -97,7 +118,7 @@ func (q ListGroupParticipantsQuery) validate() error {
 	}
 	if len(fields) > 0 {
 		return domain.DetailedError{
-			Err:     ErrInvalidListGroupParticipantsQuery,
+			Err:     fmt.Errorf("list group participants: %w", ErrInvalidInput),
 			Details: fields,
 		}
 	}

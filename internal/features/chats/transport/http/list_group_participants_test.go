@@ -203,7 +203,7 @@ func TestListGroupParticipants(t *testing.T) {
 			requesterID,
 			chats_service.ListGroupParticipantsQuery{ChatID: chatID, Limit: -1},
 		).Return(chats_service.GroupParticipantPage{}, domain.DetailedError{
-			Err: chats_service.ErrInvalidListGroupParticipantsQuery,
+			Err: chats_service.ErrInvalidInput,
 			Details: map[string]string{
 				"limit": "limit must be between 1 and 100",
 			},
@@ -218,8 +218,8 @@ func TestListGroupParticipants(t *testing.T) {
 
 		require.Equal(t, http.StatusBadRequest, recorder.Code)
 		require.Equal(t, http_response.APIErrorDetail{
-			Code:    "invalid_list_group_participants_query",
-			Message: "invalid list group participants query",
+			Code:    "invalid_input",
+			Message: "invalid input",
 			Fields: map[string]string{
 				"limit": "limit must be between 1 and 100",
 			},

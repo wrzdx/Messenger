@@ -54,6 +54,11 @@ type ChatsRepository interface {
 		groupID uuid.UUID,
 		participants []domain.GroupParticipant,
 	) ([]bool, error)
+
+	RemoveGroupParticipant(
+		ctx context.Context,
+		participant domain.GroupParticipant,
+	) error
 }
 
 type TXManager interface {

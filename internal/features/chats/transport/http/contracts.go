@@ -37,4 +37,9 @@ type ChatsService interface {
 		ctx context.Context,
 		command chats_service.AddGroupParticipantsCommand,
 	) ([]chats_service.AddGroupParticipantResult, error)
+
+	RemoveGroupParticipant(
+		ctx context.Context,
+		command chats_service.RemoveGroupParticipantCommand,
+	) error
 }

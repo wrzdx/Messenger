@@ -26,6 +26,25 @@ func (s *ChatsService) AddGroupParticipants(
 	if err := command.validate(); err != nil {
 		return nil, err
 	}
+	requesterStatus, err := s.chatsRepo.GetParticipantsStatus(
+		ctx,
+		[]uuid.UUID{command.RequesterID},
+	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"get requester participant status: %w",
+			err,
+		)
+	}
+	if len(requesterStatus) != 1 {
+		return nil, errors.New("invalid get participant status len")
+	}
+	if !requesterStatus[0].Found {
+		return nil, domain.DetailedError{
+			Err:     domain.ErrNotFound,
+			Details: map[string]string{"requester_id": "not found"},
+		}
+	}
 	requester, err := s.chatsRepo.GetGroupParticipant(
 		ctx,
 		command.GroupID,
@@ -130,21 +149,21 @@ type AddGroupParticipantResult struct {
 
 func (c AddGroupParticipantsCommand) validate() error {
 	if c.GroupID == uuid.Nil {
-		return fmt.Errorf("groupID is nil: %w", ErrInvalidAddGroupParticipantsQuery)
+		return fmt.Errorf("add group participant: groupID is nil: %w", ErrInvalidInput)
 	}
 	if c.RequesterID == uuid.Nil {
-		return fmt.Errorf("requesterID is nil: %w", ErrInvalidAddGroupParticipantsQuery)
+		return fmt.Errorf("add group participant: requesterID is nil: %w", ErrInvalidInput)
 	}
 	if slices.Contains(c.ParticipantIDs, uuid.Nil) {
 		return fmt.Errorf(
-			"nil id in participants list: %w",
-			ErrInvalidAddGroupParticipantsQuery,
+			"add group participant: nil id in participants list: %w",
+			ErrInvalidInput,
 		)
 	}
 	if len(c.ParticipantIDs) > 100 {
 		return fmt.Errorf(
-			"size of participants list is at most 100 per request: %w",
-			ErrInvalidAddGroupParticipantsQuery,
+			"add group participant: size of participants list is at most 100 per request: %w",
+			ErrInvalidInput,
 		)
 	}
 	return nil

@@ -24,5 +24,6 @@ func (h *ChatsHandler) Router(authMW http_middleware.Middleware) chi.Router {
 	router.Post("/groups", h.CreateGroup)
 	router.Get("/groups/{chat_id}/participants", h.ListGroupParticipants)
 	router.Post("/groups/{chat_id}/participants", h.AddGroupParticipants)
+	router.Delete("/groups/{chat_id}/participants", h.RemoveGroupParticipant)
 	return router
 }

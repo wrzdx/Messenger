@@ -45,17 +45,18 @@ func TestGetGroupParticipant(t *testing.T) {
 		require.Empty(t, participant)
 	})
 
-	t.Run("returns not found for deleted participant", func(t *testing.T) {
+	t.Run("restores deleted group participant", func(t *testing.T) {
 		fixture := newGroupParticipantsRepositoryFixture(t, pool, config.Timeout)
+		expected := fixture.participants[2]
 
-		participant, err := fixture.repository.GetGroupParticipant(
+		actual, err := fixture.repository.GetGroupParticipant(
 			t.Context(),
 			fixture.group.Chat.ID,
 			fixture.deletedUserID,
 		)
 
-		require.ErrorIs(t, err, domain.ErrNotFound)
-		require.Empty(t, participant)
+		require.NoError(t, err)
+		requireGroupParticipantEqual(t, expected, actual)
 	})
 
 	t.Run("returns not found for direct participant", func(t *testing.T) {

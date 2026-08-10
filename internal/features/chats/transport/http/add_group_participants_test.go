@@ -136,7 +136,7 @@ func TestAddGroupParticipants(t *testing.T) {
 		service := NewMockChatsService(t)
 		service.EXPECT().
 			AddGroupParticipants(mock.Anything, command).
-			Return(nil, chats_service.ErrInvalidAddGroupParticipantsQuery)
+			Return(nil, chats_service.ErrInvalidInput)
 		router := newListChatsTransportRouter(service, requesterID)
 		recorder := httptest.NewRecorder()
 
@@ -149,8 +149,8 @@ func TestAddGroupParticipants(t *testing.T) {
 
 		require.Equal(t, http.StatusBadRequest, recorder.Code)
 		require.Equal(t, http_response.APIErrorDetail{
-			Code:    "invalid_add_group_participants_query",
-			Message: "invalid add group participants query",
+			Code:    "invalid_input",
+			Message: "invalid input",
 		}, decodeChatsTransportError(t, recorder))
 	})
 

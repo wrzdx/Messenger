@@ -11,11 +11,11 @@ import (
 
 func errorMapper(err error) http_response.HTTPError {
 	switch {
-	case errors.Is(err, chats_service.ErrInvalidListChatsQuery):
+	case errors.Is(err, chats_service.ErrInvalidInput):
 		return http_response.HTTPError{
 			StatusCode: http.StatusBadRequest,
-			Code:       "invalid_list_chats_query",
-			Message:    "invalid list chats query",
+			Code:       "invalid_input",
+			Message:    "invalid input",
 			Fields:     http_errmap.FieldsFrom(err),
 		}
 
@@ -35,27 +35,18 @@ func errorMapper(err error) http_response.HTTPError {
 			Fields:     http_errmap.FieldsFrom(err),
 		}
 
-	case errors.Is(err, chats_service.ErrInvalidListGroupParticipantsQuery):
-		return http_response.HTTPError{
-			StatusCode: http.StatusBadRequest,
-			Code:       "invalid_list_group_participants_query",
-			Message:    "invalid list group participants query",
-			Fields:     http_errmap.FieldsFrom(err),
-		}
-
-	case errors.Is(err, chats_service.ErrInvalidAddGroupParticipantsQuery):
-		return http_response.HTTPError{
-			StatusCode: http.StatusBadRequest,
-			Code:       "invalid_add_group_participants_query",
-			Message:    "invalid add group participants query",
-			Fields:     http_errmap.FieldsFrom(err),
-		}
-
 	case errors.Is(err, chats_service.ErrNotEnoughRights):
 		return http_response.HTTPError{
 			StatusCode: http.StatusForbidden,
 			Code:       "not_enough_rights",
 			Message:    "not enough rights",
+		}
+
+	case errors.Is(err, chats_service.ErrOwnerCannotQuitGroup):
+		return http_response.HTTPError{
+			StatusCode: http.StatusForbidden,
+			Code:       "owner_cannot_quit_group",
+			Message:    "owner cannot quit group",
 		}
 
 	case errors.Is(err, domain.ErrNotFound):
