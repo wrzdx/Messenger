@@ -7,4 +7,6 @@ var (
 	ErrInvalidChatItem                   = errors.New("invalid chat item")
 	ErrInvalidListGroupParticipantsQuery = errors.New("invalid group participant query")
 	ErrInvalidGroupParticipantItem       = errors.New("invalid group participant item")
+	ErrInvalidAddGroupParticipantsQuery  = errors.New("invalid add group participants query")
+	ErrNotEnoughRights                   = errors.New("not enough rights")
 )

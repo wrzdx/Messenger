@@ -43,6 +43,21 @@ func errorMapper(err error) http_response.HTTPError {
 			Fields:     http_errmap.FieldsFrom(err),
 		}
 
+	case errors.Is(err, chats_service.ErrInvalidAddGroupParticipantsQuery):
+		return http_response.HTTPError{
+			StatusCode: http.StatusBadRequest,
+			Code:       "invalid_add_group_participants_query",
+			Message:    "invalid add group participants query",
+			Fields:     http_errmap.FieldsFrom(err),
+		}
+
+	case errors.Is(err, chats_service.ErrNotEnoughRights):
+		return http_response.HTTPError{
+			StatusCode: http.StatusForbidden,
+			Code:       "not_enough_rights",
+			Message:    "not enough rights",
+		}
+
 	case errors.Is(err, domain.ErrNotFound):
 		return http_response.HTTPError{
 			StatusCode: http.StatusNotFound,
@@ -50,6 +65,7 @@ func errorMapper(err error) http_response.HTTPError {
 			Message:    "not found",
 			Fields:     http_errmap.FieldsFrom(err),
 		}
+
 	default:
 		return http_errmap.Map(err)
 	}
