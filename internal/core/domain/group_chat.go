@@ -26,14 +26,14 @@ func NewGroupChat(id uuid.UUID, title string, createdAt time.Time) (GroupChat, e
 		Chat:  chat,
 		Title: title,
 	}
-	groupChat = groupChat.normalize()
+	groupChat = groupChat.Normalize()
 	if err := groupChat.Validate(); err != nil {
 		return GroupChat{}, err
 	}
 	return groupChat, nil
 }
 
-func (c GroupChat) normalize() GroupChat {
+func (c GroupChat) Normalize() GroupChat {
 	c.Title = strings.TrimSpace(c.Title)
 	return c
 }
@@ -59,4 +59,14 @@ func (c GroupChat) Validate() error {
 		}
 	}
 	return nil
+}
+
+func (c GroupChat) Update(title string) (GroupChat, error) {
+	c.Title = title
+	c = c.Normalize()
+	if err := c.Validate(); err != nil {
+		return GroupChat{}, err
+	}
+
+	return c, nil
 }

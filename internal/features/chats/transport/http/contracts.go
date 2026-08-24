@@ -42,4 +42,9 @@ type ChatsService interface {
 		ctx context.Context,
 		command chats_service.RemoveGroupParticipantCommand,
 	) error
+
+	UpdateGroup(
+		ctx context.Context,
+		command chats_service.UpdateGroupCommand,
+	) (domain.GroupChat, error)
 }

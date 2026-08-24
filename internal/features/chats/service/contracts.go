@@ -59,6 +59,16 @@ type ChatsRepository interface {
 		ctx context.Context,
 		participant domain.GroupParticipant,
 	) error
+
+	GetGroup(
+		ctx context.Context,
+		groupID uuid.UUID,
+	) (domain.GroupChat, error)
+
+	UpdateGroup(
+		ctx context.Context,
+		updated domain.GroupChat,
+	) error
 }
 
 type TXManager interface {

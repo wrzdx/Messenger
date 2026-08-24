@@ -92,3 +92,27 @@ func TestGroupChatValidate(t *testing.T) {
 		})
 	}
 }
+
+func TestGroupChatUpdate(t *testing.T) {
+	now := time.Date(2026, time.August, 24, 12, 0, 0, 0, time.UTC)
+	group, err := NewGroupChat(uuid.New(), "Old title", now)
+	require.NoError(t, err)
+
+	updated, err := group.Update("  New title  ")
+
+	require.NoError(t, err)
+	require.Equal(t, "New title", updated.Title)
+	require.Equal(t, group.Chat, updated.Chat)
+	require.Equal(t, "Old title", group.Title)
+}
+
+func TestGroupChatUpdateReturnsZeroWithoutChangingOriginal(t *testing.T) {
+	group, err := NewGroupChat(uuid.New(), "Old title", time.Now())
+	require.NoError(t, err)
+
+	updated, err := group.Update("   ")
+
+	require.ErrorIs(t, err, ErrInvalidGroupChat)
+	require.Zero(t, updated)
+	require.Equal(t, "Old title", group.Title)
+}
