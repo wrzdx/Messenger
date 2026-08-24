@@ -57,6 +57,7 @@ func TestCreateGroup(t *testing.T) {
 		require.Equal(t, group.Chat.LastMessageID, response.LastMessageID)
 		require.True(t, group.Chat.LastActivityAt.Equal(response.LastActivityAt))
 		require.True(t, group.Chat.CreatedAt.Equal(response.CreatedAt))
+		require.Equal(t, group.Title, response.Title)
 		require.NotContains(t, recorder.Body.String(), "participant_ids")
 	})
 

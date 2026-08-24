@@ -14,6 +14,10 @@ type ChatResponse struct {
 	LastActivityAt time.Time  `json:"last_activity_at"`
 	CreatedAt      time.Time  `json:"created_at"`
 }
+type GroupResponse struct {
+	ChatResponse
+	Title string `json:"title"`
+}
 
 func chatResponseFromDomain(chat domain.Chat) ChatResponse {
 	return ChatResponse{

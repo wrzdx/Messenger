@@ -39,11 +39,14 @@ func (h *ChatsHandler) CreateGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := CreateGroupResponse(chatResponseFromDomain(group.Chat))
+	response := CreateGroupResponse{
+		ChatResponse: chatResponseFromDomain(group.Chat),
+		Title:        group.Title,
+	}
 	sender.OK(http.StatusCreated, response)
 }
 
-type CreateGroupResponse ChatResponse
+type CreateGroupResponse GroupResponse
 
 type CreateGroupRequest struct {
 	Title          string   `json:"title" validate:"required"`
