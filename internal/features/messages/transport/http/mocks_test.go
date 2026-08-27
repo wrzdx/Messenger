@@ -235,6 +235,63 @@ func (_c *MockMessagesService_GetMessages_Call) RunAndReturn(run func(ctx contex
 	return _c
 }
 
+// MarkAsRead provides a mock function for the type MockMessagesService
+func (_mock *MockMessagesService) MarkAsRead(ctx context.Context, command messages_service.MarkAsReadCommand) error {
+	ret := _mock.Called(ctx, command)
+
+	if len(ret) == 0 {
+		panic("no return value specified for MarkAsRead")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, messages_service.MarkAsReadCommand) error); ok {
+		r0 = returnFunc(ctx, command)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockMessagesService_MarkAsRead_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'MarkAsRead'
+type MockMessagesService_MarkAsRead_Call struct {
+	*mock.Call
+}
+
+// MarkAsRead is a helper method to define mock.On call
+//   - ctx context.Context
+//   - command messages_service.MarkAsReadCommand
+func (_e *MockMessagesService_Expecter) MarkAsRead(ctx any, command any) *MockMessagesService_MarkAsRead_Call {
+	return &MockMessagesService_MarkAsRead_Call{Call: _e.mock.On("MarkAsRead", ctx, command)}
+}
+
+func (_c *MockMessagesService_MarkAsRead_Call) Run(run func(ctx context.Context, command messages_service.MarkAsReadCommand)) *MockMessagesService_MarkAsRead_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 messages_service.MarkAsReadCommand
+		if args[1] != nil {
+			arg1 = args[1].(messages_service.MarkAsReadCommand)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMessagesService_MarkAsRead_Call) Return(err error) *MockMessagesService_MarkAsRead_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockMessagesService_MarkAsRead_Call) RunAndReturn(run func(ctx context.Context, command messages_service.MarkAsReadCommand) error) *MockMessagesService_MarkAsRead_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // SendMessage provides a mock function for the type MockMessagesService
 func (_mock *MockMessagesService) SendMessage(ctx context.Context, command messages_service.SendMessageCommand) (domain.Message, bool, error) {
 	ret := _mock.Called(ctx, command)
