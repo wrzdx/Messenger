@@ -159,6 +159,63 @@ func (_c *MockMessagesRepository_CheckParticipant_Call) RunAndReturn(run func(ct
 	return _c
 }
 
+// DeleteMessage provides a mock function for the type MockMessagesRepository
+func (_mock *MockMessagesRepository) DeleteMessage(ctx context.Context, id uuid.UUID) error {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteMessage")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockMessagesRepository_DeleteMessage_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteMessage'
+type MockMessagesRepository_DeleteMessage_Call struct {
+	*mock.Call
+}
+
+// DeleteMessage is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id uuid.UUID
+func (_e *MockMessagesRepository_Expecter) DeleteMessage(ctx any, id any) *MockMessagesRepository_DeleteMessage_Call {
+	return &MockMessagesRepository_DeleteMessage_Call{Call: _e.mock.On("DeleteMessage", ctx, id)}
+}
+
+func (_c *MockMessagesRepository_DeleteMessage_Call) Run(run func(ctx context.Context, id uuid.UUID)) *MockMessagesRepository_DeleteMessage_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMessagesRepository_DeleteMessage_Call) Return(err error) *MockMessagesRepository_DeleteMessage_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockMessagesRepository_DeleteMessage_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID) error) *MockMessagesRepository_DeleteMessage_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetMessage provides a mock function for the type MockMessagesRepository
 func (_mock *MockMessagesRepository) GetMessage(ctx context.Context, id uuid.UUID) (domain.Message, error) {
 	ret := _mock.Called(ctx, id)
@@ -661,6 +718,69 @@ func (_c *MockChatsRepository_GetGroupSenderState_Call) Return(accountState Acco
 }
 
 func (_c *MockChatsRepository_GetGroupSenderState_Call) RunAndReturn(run func(ctx context.Context, chatID uuid.UUID, senderID uuid.UUID) (AccountState, error)) *MockChatsRepository_GetGroupSenderState_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateChatLastMsgID provides a mock function for the type MockChatsRepository
+func (_mock *MockChatsRepository) UpdateChatLastMsgID(ctx context.Context, chatID uuid.UUID, newLastMessageID *uuid.UUID) error {
+	ret := _mock.Called(ctx, chatID, newLastMessageID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateChatLastMsgID")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *uuid.UUID) error); ok {
+		r0 = returnFunc(ctx, chatID, newLastMessageID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockChatsRepository_UpdateChatLastMsgID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateChatLastMsgID'
+type MockChatsRepository_UpdateChatLastMsgID_Call struct {
+	*mock.Call
+}
+
+// UpdateChatLastMsgID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - chatID uuid.UUID
+//   - newLastMessageID *uuid.UUID
+func (_e *MockChatsRepository_Expecter) UpdateChatLastMsgID(ctx any, chatID any, newLastMessageID any) *MockChatsRepository_UpdateChatLastMsgID_Call {
+	return &MockChatsRepository_UpdateChatLastMsgID_Call{Call: _e.mock.On("UpdateChatLastMsgID", ctx, chatID, newLastMessageID)}
+}
+
+func (_c *MockChatsRepository_UpdateChatLastMsgID_Call) Run(run func(ctx context.Context, chatID uuid.UUID, newLastMessageID *uuid.UUID)) *MockChatsRepository_UpdateChatLastMsgID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 *uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(*uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockChatsRepository_UpdateChatLastMsgID_Call) Return(err error) *MockChatsRepository_UpdateChatLastMsgID_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockChatsRepository_UpdateChatLastMsgID_Call) RunAndReturn(run func(ctx context.Context, chatID uuid.UUID, newLastMessageID *uuid.UUID) error) *MockChatsRepository_UpdateChatLastMsgID_Call {
 	_c.Call.Return(run)
 	return _c
 }

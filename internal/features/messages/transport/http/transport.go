@@ -22,5 +22,6 @@ func (h *MessagesHandler) Router(authMW http_middleware.Middleware) chi.Router {
 	router.Get("/", h.GetMessages)
 	router.Post("/", h.SendMessage)
 	router.Patch("/{message_id}", h.EditMessage)
+	router.Delete("/{message_id}", h.DeleteMessage)
 	return router
 }
