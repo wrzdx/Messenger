@@ -785,6 +785,75 @@ func (_c *MockChatsRepository_UpdateChatLastMsgID_Call) RunAndReturn(run func(ct
 	return _c
 }
 
+// UpdateLastReadMessages provides a mock function for the type MockChatsRepository
+func (_mock *MockChatsRepository) UpdateLastReadMessages(ctx context.Context, chatID uuid.UUID, oldMessageID uuid.UUID, newMessageID *uuid.UUID) error {
+	ret := _mock.Called(ctx, chatID, oldMessageID, newMessageID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateLastReadMessages")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, *uuid.UUID) error); ok {
+		r0 = returnFunc(ctx, chatID, oldMessageID, newMessageID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockChatsRepository_UpdateLastReadMessages_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateLastReadMessages'
+type MockChatsRepository_UpdateLastReadMessages_Call struct {
+	*mock.Call
+}
+
+// UpdateLastReadMessages is a helper method to define mock.On call
+//   - ctx context.Context
+//   - chatID uuid.UUID
+//   - oldMessageID uuid.UUID
+//   - newMessageID *uuid.UUID
+func (_e *MockChatsRepository_Expecter) UpdateLastReadMessages(ctx any, chatID any, oldMessageID any, newMessageID any) *MockChatsRepository_UpdateLastReadMessages_Call {
+	return &MockChatsRepository_UpdateLastReadMessages_Call{Call: _e.mock.On("UpdateLastReadMessages", ctx, chatID, oldMessageID, newMessageID)}
+}
+
+func (_c *MockChatsRepository_UpdateLastReadMessages_Call) Run(run func(ctx context.Context, chatID uuid.UUID, oldMessageID uuid.UUID, newMessageID *uuid.UUID)) *MockChatsRepository_UpdateLastReadMessages_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		var arg3 *uuid.UUID
+		if args[3] != nil {
+			arg3 = args[3].(*uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockChatsRepository_UpdateLastReadMessages_Call) Return(err error) *MockChatsRepository_UpdateLastReadMessages_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockChatsRepository_UpdateLastReadMessages_Call) RunAndReturn(run func(ctx context.Context, chatID uuid.UUID, oldMessageID uuid.UUID, newMessageID *uuid.UUID) error) *MockChatsRepository_UpdateLastReadMessages_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewMockTXManager creates a new instance of MockTXManager. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockTXManager(t interface {
