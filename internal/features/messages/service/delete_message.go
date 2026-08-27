@@ -46,26 +46,43 @@ func (s *MessagesService) DeleteMessage(
 					"db inconsistency: chat has messages but no last message id",
 				)
 			}
+			msgs, err := s.messagesRepo.GetMessages(
+				ctx,
+				command.ChatID,
+				new(MessageCursor{
+					MessageID: existing.ID,
+					CreatedAt: existing.CreatedAt,
+				}),
+				1)
+			if err != nil {
+				return fmt.Errorf("get messages: %w", err)
+			}
+			var penultimateID *uuid.UUID
+			if len(msgs) == 0 {
+				penultimateID = nil
+			} else if len(msgs) == 1 {
+				penultimateID = new(msgs[0].ID)
+			} else {
+				return errors.New("invalid number of message from get messages query")
+			}
+			if err := s.chatsRepo.UpdateLastReadMessages(
+				ctx,
+				chat.ID,
+				existing.ID,
+				penultimateID,
+			); err != nil {
+				return fmt.Errorf("update last read messages: %w", err)
+			}
 			if *chat.LastMessageID == command.MessageID {
-				msgs, err := s.messagesRepo.GetMessages(ctx, command.ChatID, nil, 2)
-				if err != nil {
-					return fmt.Errorf("get messages: %w", err)
-				}
-				if len(msgs) == 1 {
-					chat.LastMessageID = nil
-				} else if len(msgs) == 2 {
-					chat.LastMessageID = new(msgs[1].ID)
-				} else {
-					return errors.New("invalid number of message from get messages query")
-				}
 				if err := s.chatsRepo.UpdateChatLastMsgID(
 					ctx,
 					chat.ID,
-					chat.LastMessageID,
+					penultimateID,
 				); err != nil {
 					return fmt.Errorf("update chat last message id: %w", err)
 				}
 			}
+
 			if err := s.messagesRepo.DeleteMessage(ctx, command.MessageID); err != nil {
 				return fmt.Errorf("delete message: %w", err)
 			}

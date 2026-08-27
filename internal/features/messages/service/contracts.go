@@ -67,6 +67,12 @@ type ChatsRepository interface {
 		chatID uuid.UUID,
 		newLastMessageID *uuid.UUID,
 	) error
+
+	UpdateLastReadMessages(
+		ctx context.Context,
+		chatID, oldMessageID uuid.UUID,
+		newMessageID *uuid.UUID,
+	) error
 }
 
 type TXManager interface {
