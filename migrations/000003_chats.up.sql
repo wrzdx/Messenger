@@ -37,7 +37,7 @@ CREATE TABLE messages (
 CREATE TABLE chat_participants (
     chat_id              UUID        REFERENCES chats(id) ON DELETE CASCADE,
     user_id              UUID        REFERENCES users(id) ON DELETE CASCADE,
-    last_read_message_id UUID        REFERENCES messages(id),
+    last_read_message_id UUID        REFERENCES messages(id) ON DELETE SET NULL,
     joined_at            TIMESTAMPTZ NOT NULL,
 
     CONSTRAINT chat_participants_pkey PRIMARY KEY(chat_id, user_id)

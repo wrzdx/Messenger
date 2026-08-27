@@ -153,6 +153,115 @@ func TestUpdateMessage(t *testing.T) {
 	})
 }
 
+func TestDeleteMessage(t *testing.T) {
+	config := postgres.NewConfigMust()
+	pool, err := postgres.NewPool(t.Context(), config)
+	require.NoError(t, err)
+	t.Cleanup(pool.Close)
+
+	t.Run("deletes message by server id", func(t *testing.T) {
+		repository, chat, senderID := newMessageRepositoryFixture(t, pool, config.Timeout)
+		message := newRepositoryTestMessage(t, chat.ID, senderID, uuid.New(), "message")
+		insertMessageRepositoryMessage(t, pool, message)
+
+		err := repository.DeleteMessage(t.Context(), message.ID)
+
+		require.NoError(t, err)
+		actual, err := repository.GetMessage(t.Context(), message.ID)
+		require.ErrorIs(t, err, domain.ErrNotFound)
+		require.Zero(t, actual)
+	})
+
+	t.Run("returns not found for unknown id", func(t *testing.T) {
+		repository := NewRepository(pool, config.Timeout)
+
+		err := repository.DeleteMessage(t.Context(), uuid.New())
+
+		require.ErrorIs(t, err, domain.ErrNotFound)
+	})
+
+	t.Run("clears participant read pointer", func(t *testing.T) {
+		repository, chat, senderID := newMessageRepositoryFixture(t, pool, config.Timeout)
+		message := newRepositoryTestMessage(t, chat.ID, senderID, uuid.New(), "read message")
+		insertMessageRepositoryMessage(t, pool, message)
+		_, err := pool.Exec(t.Context(), `
+			INSERT INTO chat_participants (
+				chat_id, user_id, last_read_message_id, joined_at
+			)
+			VALUES ($1, $2, $3, $4)
+		`, chat.ID, senderID, message.ID, repositoryTestTime())
+		require.NoError(t, err)
+
+		err = repository.DeleteMessage(t.Context(), message.ID)
+
+		require.NoError(t, err)
+		var lastReadMessageID *uuid.UUID
+		err = pool.QueryRow(t.Context(), `
+			SELECT last_read_message_id
+			FROM chat_participants
+			WHERE chat_id = $1 AND user_id = $2
+		`, chat.ID, senderID).Scan(&lastReadMessageID)
+		require.NoError(t, err)
+		require.Nil(t, lastReadMessageID)
+	})
+}
+
+func TestUpdateChatLastMsgID(t *testing.T) {
+	config := postgres.NewConfigMust()
+	pool, err := postgres.NewPool(t.Context(), config)
+	require.NoError(t, err)
+	t.Cleanup(pool.Close)
+
+	t.Run("sets and clears last message pointer", func(t *testing.T) {
+		repository, chat, senderID := newMessageRepositoryFixture(t, pool, config.Timeout)
+		message := newRepositoryTestMessage(t, chat.ID, senderID, uuid.New(), "last message")
+		insertMessageRepositoryMessage(t, pool, message)
+
+		err := repository.UpdateChatLastMsgID(t.Context(), chat.ID, &message.ID)
+		require.NoError(t, err)
+		requireMessageRepositoryLastMessageID(t, pool, chat.ID, &message.ID)
+
+		err = repository.UpdateChatLastMsgID(t.Context(), chat.ID, nil)
+		require.NoError(t, err)
+		requireMessageRepositoryLastMessageID(t, pool, chat.ID, nil)
+	})
+
+	t.Run("returns not found for unknown chat", func(t *testing.T) {
+		repository := NewRepository(pool, config.Timeout)
+
+		err := repository.UpdateChatLastMsgID(t.Context(), uuid.New(), nil)
+
+		require.ErrorIs(t, err, domain.ErrNotFound)
+	})
+
+	t.Run("participates in transaction rollback", func(t *testing.T) {
+		repository, chat, senderID := newMessageRepositoryFixture(t, pool, config.Timeout)
+		previous := newRepositoryTestMessage(t, chat.ID, senderID, uuid.New(), "previous")
+		last := newRepositoryTestMessage(t, chat.ID, senderID, uuid.New(), "last")
+		insertMessageRepositoryMessage(t, pool, previous)
+		insertMessageRepositoryMessage(t, pool, last)
+		require.NoError(t, repository.UpdateChatLastMsgID(t.Context(), chat.ID, &last.ID))
+		manager := postgres.NewTransactionManager(pool)
+		rollbackErr := errors.New("rollback delete transaction")
+
+		err := manager.WithinTransaction(t.Context(), func(ctx context.Context) error {
+			if err := repository.UpdateChatLastMsgID(ctx, chat.ID, &previous.ID); err != nil {
+				return err
+			}
+			if err := repository.DeleteMessage(ctx, last.ID); err != nil {
+				return err
+			}
+			return rollbackErr
+		})
+
+		require.ErrorIs(t, err, rollbackErr)
+		requireMessageRepositoryLastMessageID(t, pool, chat.ID, &last.ID)
+		actual, err := repository.GetMessage(t.Context(), last.ID)
+		require.NoError(t, err)
+		requireRepositoryMessageEqual(t, last, actual)
+	})
+}
+
 func TestGetChatForUpdate(t *testing.T) {
 	config := postgres.NewConfigMust()
 	pool, err := postgres.NewPool(t.Context(), config)
@@ -440,6 +549,21 @@ func requireMessageRepositoryInitialChatState(
 	require.NoError(t, err)
 	require.Nil(t, lastMessageID)
 	require.True(t, chat.LastActivityAt.Equal(lastActivity))
+}
+
+func requireMessageRepositoryLastMessageID(
+	t *testing.T,
+	pool *pgxpool.Pool,
+	chatID uuid.UUID,
+	expected *uuid.UUID,
+) {
+	t.Helper()
+	var actual *uuid.UUID
+	err := pool.QueryRow(t.Context(), `
+		SELECT last_message_id FROM chats WHERE id = $1
+	`, chatID).Scan(&actual)
+	require.NoError(t, err)
+	require.Equal(t, expected, actual)
 }
 
 func repositoryTestTime() time.Time {

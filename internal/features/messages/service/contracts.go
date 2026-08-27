@@ -39,6 +39,11 @@ type MessagesRepository interface {
 		ctx context.Context,
 		updated domain.Message,
 	) error
+
+	DeleteMessage(
+		ctx context.Context,
+		id uuid.UUID,
+	) error
 }
 
 type ChatsRepository interface {
@@ -56,6 +61,12 @@ type ChatsRepository interface {
 		ctx context.Context,
 		chatID, senderID uuid.UUID,
 	) (AccountState, error)
+
+	UpdateChatLastMsgID(
+		ctx context.Context,
+		chatID uuid.UUID,
+		newLastMessageID *uuid.UUID,
+	) error
 }
 
 type TXManager interface {

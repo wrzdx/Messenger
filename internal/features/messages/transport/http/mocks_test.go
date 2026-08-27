@@ -40,6 +40,63 @@ func (_m *MockMessagesService) EXPECT() *MockMessagesService_Expecter {
 	return &MockMessagesService_Expecter{mock: &_m.Mock}
 }
 
+// DeleteMessage provides a mock function for the type MockMessagesService
+func (_mock *MockMessagesService) DeleteMessage(ctx context.Context, command messages_service.DeleteMessageCommand) error {
+	ret := _mock.Called(ctx, command)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteMessage")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, messages_service.DeleteMessageCommand) error); ok {
+		r0 = returnFunc(ctx, command)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockMessagesService_DeleteMessage_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteMessage'
+type MockMessagesService_DeleteMessage_Call struct {
+	*mock.Call
+}
+
+// DeleteMessage is a helper method to define mock.On call
+//   - ctx context.Context
+//   - command messages_service.DeleteMessageCommand
+func (_e *MockMessagesService_Expecter) DeleteMessage(ctx any, command any) *MockMessagesService_DeleteMessage_Call {
+	return &MockMessagesService_DeleteMessage_Call{Call: _e.mock.On("DeleteMessage", ctx, command)}
+}
+
+func (_c *MockMessagesService_DeleteMessage_Call) Run(run func(ctx context.Context, command messages_service.DeleteMessageCommand)) *MockMessagesService_DeleteMessage_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 messages_service.DeleteMessageCommand
+		if args[1] != nil {
+			arg1 = args[1].(messages_service.DeleteMessageCommand)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMessagesService_DeleteMessage_Call) Return(err error) *MockMessagesService_DeleteMessage_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockMessagesService_DeleteMessage_Call) RunAndReturn(run func(ctx context.Context, command messages_service.DeleteMessageCommand) error) *MockMessagesService_DeleteMessage_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // EditMessage provides a mock function for the type MockMessagesService
 func (_mock *MockMessagesService) EditMessage(ctx context.Context, command messages_service.UpdateMessageCommand) (domain.Message, error) {
 	ret := _mock.Called(ctx, command)

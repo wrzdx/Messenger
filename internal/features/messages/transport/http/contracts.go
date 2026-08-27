@@ -24,4 +24,9 @@ type MessagesService interface {
 		ctx context.Context,
 		command messages_service.UpdateMessageCommand,
 	) (domain.Message, error)
+
+	DeleteMessage(
+		ctx context.Context,
+		command messages_service.DeleteMessageCommand,
+	) error
 }
