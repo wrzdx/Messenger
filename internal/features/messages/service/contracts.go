@@ -44,6 +44,11 @@ type MessagesRepository interface {
 		ctx context.Context,
 		id uuid.UUID,
 	) error
+
+	MarkAsRead(
+		ctx context.Context,
+		chatID, userID, messageID uuid.UUID,
+	) error
 }
 
 type ChatsRepository interface {

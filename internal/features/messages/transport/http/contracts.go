@@ -29,4 +29,9 @@ type MessagesService interface {
 		ctx context.Context,
 		command messages_service.DeleteMessageCommand,
 	) error
+
+	MarkAsRead(
+		ctx context.Context,
+		command messages_service.MarkAsReadCommand,
+	) error
 }
