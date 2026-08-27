@@ -29,6 +29,16 @@ type MessagesRepository interface {
 		before *MessageCursor,
 		limit int,
 	) ([]domain.Message, error)
+
+	GetMessage(
+		ctx context.Context,
+		id uuid.UUID,
+	) (domain.Message, error)
+
+	UpdateMessage(
+		ctx context.Context,
+		updated domain.Message,
+	) error
 }
 
 type ChatsRepository interface {

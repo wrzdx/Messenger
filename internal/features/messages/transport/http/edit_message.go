@@ -12,13 +12,13 @@ import (
 	"github.com/google/uuid"
 )
 
-func (h *MessagesHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
+func (h *MessagesHandler) EditMessage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := logger.FromContext(ctx)
 	sender := http_response.NewHTTPSender(log, w, errorMapper)
 	claims := core_context.ClaimsRequired(ctx)
 
-	var request SendMessageRequest
+	var request UpdateMessageRequest
 	if err := http_request.DecodeAndValidateRequestBody(r, &request); err != nil {
 		sender.Error(err)
 		return
@@ -33,32 +33,37 @@ func (h *MessagesHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 		}))
 		return
 	}
+	msgIDStr := chi.URLParam(r, "message_id")
+	msgID, err := uuid.Parse(msgIDStr)
 
-	message, isCreated, err := h.messagesService.SendMessage(
+	if err != nil {
+		sender.Error(http_request.NewFieldError(map[string]string{
+			"message_id": "invalid uuid",
+		}))
+		return
+	}
+
+	updated, err := h.messagesService.EditMessage(
 		ctx,
-		messages_service.SendMessageCommand{
-			SenderID:        claims.UserID,
-			ChatID:          chatID,
-			ClientMessageID: uuid.MustParse(request.ClientMessageID),
-			Content:         request.Content,
+		messages_service.UpdateMessageCommand{
+			SenderID:  claims.UserID,
+			ChatID:    chatID,
+			Content:   request.Content,
+			MessageID: msgID,
 		},
 	)
+
 	if err != nil {
 		sender.Error(err)
 		return
 	}
-	response := SendMessageResponse(messageResponseFromDomain(message))
-	status := http.StatusOK
-	if isCreated {
-		status = http.StatusCreated
-	}
 
-	sender.OK(status, response)
+	response := UpdateMessageResponse(messageResponseFromDomain(updated))
+	sender.OK(http.StatusOK, response)
 }
 
-type SendMessageRequest struct {
-	ClientMessageID string `json:"client_message_id" validate:"required,uuid"`
-	Content         string `json:"content" validate:"required"`
+type UpdateMessageRequest struct {
+	Content string `json:"content" validate:"required"`
 }
 
-type SendMessageResponse MessageResponse
+type UpdateMessageResponse MessageResponse

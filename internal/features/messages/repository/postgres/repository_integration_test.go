@@ -74,6 +74,85 @@ func TestGetMessageByClientID(t *testing.T) {
 	})
 }
 
+func TestGetMessage(t *testing.T) {
+	config := postgres.NewConfigMust()
+	pool, err := postgres.NewPool(t.Context(), config)
+	require.NoError(t, err)
+	t.Cleanup(pool.Close)
+
+	t.Run("restores message by server id", func(t *testing.T) {
+		repository, chat, senderID := newMessageRepositoryFixture(t, pool, config.Timeout)
+		expected := newRepositoryTestMessage(t, chat.ID, senderID, uuid.New(), "message")
+		insertMessageRepositoryMessage(t, pool, expected)
+
+		actual, err := repository.GetMessage(t.Context(), expected.ID)
+
+		require.NoError(t, err)
+		requireRepositoryMessageEqual(t, expected, actual)
+	})
+
+	t.Run("returns not found for unknown id", func(t *testing.T) {
+		repository := NewRepository(pool, config.Timeout)
+
+		message, err := repository.GetMessage(t.Context(), uuid.New())
+
+		require.ErrorIs(t, err, domain.ErrNotFound)
+		require.Zero(t, message)
+	})
+
+	t.Run("rejects invalid state restored from database", func(t *testing.T) {
+		repository, chat, senderID := newMessageRepositoryFixture(t, pool, config.Timeout)
+		messageID := uuid.New()
+		_, err := pool.Exec(t.Context(), `
+			INSERT INTO messages (
+				id, client_message_id, chat_id, sender_id, content, created_at
+			)
+			VALUES ($1, $2, $3, $4, '', $5)
+		`, messageID, uuid.New(), chat.ID, senderID, repositoryTestTime())
+		require.NoError(t, err)
+
+		message, err := repository.GetMessage(t.Context(), messageID)
+
+		require.Error(t, err)
+		require.NotErrorIs(t, err, domain.ErrInvalidMessage)
+		require.Zero(t, message)
+	})
+}
+
+func TestUpdateMessage(t *testing.T) {
+	config := postgres.NewConfigMust()
+	pool, err := postgres.NewPool(t.Context(), config)
+	require.NoError(t, err)
+	t.Cleanup(pool.Close)
+
+	t.Run("persists content and update time", func(t *testing.T) {
+		repository, chat, senderID := newMessageRepositoryFixture(t, pool, config.Timeout)
+		existing := newRepositoryTestMessage(t, chat.ID, senderID, uuid.New(), "old content")
+		insertMessageRepositoryMessage(t, pool, existing)
+		updatedAt := existing.CreatedAt.Add(time.Minute)
+		updated, err := existing.Update("new content", updatedAt)
+		require.NoError(t, err)
+
+		err = repository.UpdateMessage(t.Context(), updated)
+
+		require.NoError(t, err)
+		actual, err := repository.GetMessage(t.Context(), existing.ID)
+		require.NoError(t, err)
+		requireRepositoryMessageEqual(t, updated, actual)
+	})
+
+	t.Run("returns not found for unknown id", func(t *testing.T) {
+		repository := NewRepository(pool, config.Timeout)
+		updated := newRepositoryTestMessage(t, uuid.New(), uuid.New(), uuid.New(), "message")
+		updatedAt := updated.CreatedAt.Add(time.Minute)
+		updated.UpdatedAt = &updatedAt
+
+		err := repository.UpdateMessage(t.Context(), updated)
+
+		require.ErrorIs(t, err, domain.ErrNotFound)
+	})
+}
+
 func TestGetChatForUpdate(t *testing.T) {
 	config := postgres.NewConfigMust()
 	pool, err := postgres.NewPool(t.Context(), config)
