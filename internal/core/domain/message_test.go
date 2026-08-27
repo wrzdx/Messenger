@@ -173,3 +173,58 @@ func TestMessageValidate(t *testing.T) {
 		require.ErrorIs(t, message.Validate(), ErrInvalidMessage)
 	})
 }
+
+func TestMessageUpdate(t *testing.T) {
+	createdAt := time.Date(2026, time.August, 20, 12, 0, 0, 0, time.UTC)
+	message, err := NewMessage(
+		uuid.New(),
+		uuid.New(),
+		uuid.New(),
+		uuid.New(),
+		"old content",
+		createdAt,
+	)
+	require.NoError(t, err)
+
+	t.Run("normalizes content and records update time", func(t *testing.T) {
+		updatedAt := createdAt.Add(time.Minute)
+
+		updated, err := message.Update(" \n new content \t", updatedAt)
+
+		require.NoError(t, err)
+		require.Equal(t, "new content", updated.Content)
+		require.NotNil(t, updated.UpdatedAt)
+		require.True(t, updatedAt.Equal(*updated.UpdatedAt))
+		require.Equal(t, "old content", message.Content)
+		require.Nil(t, message.UpdatedAt)
+	})
+
+	for _, testCase := range []struct {
+		name      string
+		content   string
+		updatedAt time.Time
+	}{
+		{
+			name:      "rejects empty normalized content",
+			content:   " \n\t ",
+			updatedAt: createdAt.Add(time.Minute),
+		},
+		{
+			name:      "rejects content longer than limit",
+			content:   strings.Repeat("я", 4097),
+			updatedAt: createdAt.Add(time.Minute),
+		},
+		{
+			name:      "rejects update before creation",
+			content:   "new content",
+			updatedAt: createdAt.Add(-time.Second),
+		},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			updated, err := message.Update(testCase.content, testCase.updatedAt)
+
+			require.ErrorIs(t, err, ErrInvalidMessage)
+			require.Zero(t, updated)
+		})
+	}
+}

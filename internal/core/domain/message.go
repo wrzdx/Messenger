@@ -89,3 +89,14 @@ func (m Message) Validate() error {
 	}
 	return nil
 }
+
+func (m Message) Update(content string, updatedAt time.Time) (Message, error) {
+	m.Content = content
+	m.UpdatedAt = new(updatedAt)
+	m = m.normalize()
+	if err := m.Validate(); err != nil {
+		return Message{}, err
+	}
+
+	return m, nil
+}

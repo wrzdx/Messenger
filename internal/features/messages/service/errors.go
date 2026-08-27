@@ -6,5 +6,5 @@ var (
 	ErrMessageTargetUnavailable = errors.New("message target unavailable")
 	ErrMessageConflict          = errors.New("message conflict")
 	ErrInternalInconsistency    = errors.New("internal inconsistency")
-	ErrInvalidGetMessagesQuery  = errors.New("invalid get messages query")
+	ErrInvalidInput             = errors.New("invalid input")
 )

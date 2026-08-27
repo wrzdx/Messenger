@@ -12,14 +12,19 @@ import (
 
 func (s *MessagesService) SendMessage(
 	ctx context.Context,
-	senderID uuid.UUID,
 	command SendMessageCommand,
 ) (domain.Message, bool, error) {
+	if err := command.validate(); err != nil {
+		return domain.Message{}, false, fmt.Errorf(
+			"validate send message command: %w",
+			err,
+		)
+	}
 	newMessage, err := domain.NewMessage(
 		uuid.New(),
 		command.ClientMessageID,
 		command.ChatID,
-		senderID,
+		command.SenderID,
 		command.Content,
 		time.Now(),
 	)
@@ -124,7 +129,9 @@ func (s *MessagesService) SendMessage(
 			if newMessage.Content != existing.Content ||
 				newMessage.SenderID != existing.SenderID ||
 				newMessage.ChatID != existing.ChatID {
-				return domain.Message{}, false, fmt.Errorf("sent messages mismatch: %w", ErrMessageConflict)
+				return domain.Message{}, false, fmt.Errorf(
+					"sent messages mismatch: %w", ErrMessageConflict,
+				)
 			}
 			return existing, false, nil
 		}
@@ -135,9 +142,27 @@ func (s *MessagesService) SendMessage(
 }
 
 type SendMessageCommand struct {
+	SenderID        uuid.UUID
 	ChatID          uuid.UUID
 	ClientMessageID uuid.UUID
 	Content         string
+}
+
+func (c SendMessageCommand) validate() error {
+	details := make(map[string]string)
+	if c.SenderID == uuid.Nil {
+		details["sender_id"] = "sender id is nil"
+	}
+	if c.ChatID == uuid.Nil {
+		details["chat_id"] = "chat id is nil"
+	}
+	if len(details) > 0 {
+		return domain.DetailedError{
+			Err:     ErrInvalidInput,
+			Details: details,
+		}
+	}
+	return nil
 }
 
 type AccountState struct {

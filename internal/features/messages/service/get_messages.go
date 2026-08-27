@@ -91,7 +91,7 @@ func (q GetMessagesQuery) validate() error {
 	}
 	if len(fields) > 0 {
 		return domain.DetailedError{
-			Err:     ErrInvalidGetMessagesQuery,
+			Err:     ErrInvalidInput,
 			Details: fields,
 		}
 	}

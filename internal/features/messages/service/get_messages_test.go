@@ -179,7 +179,7 @@ func TestGetMessages(t *testing.T) {
 
 			page, err := service.GetMessages(t.Context(), requesterID, testCase.query)
 
-			require.ErrorIs(t, err, ErrInvalidGetMessagesQuery)
+			require.ErrorIs(t, err, ErrInvalidInput)
 			require.Zero(t, page)
 			var detailed domain.DetailedError
 			require.ErrorAs(t, err, &detailed)

@@ -19,11 +19,11 @@ func errorMapper(err error) http_response.HTTPError {
 			Fields:     http_errmap.FieldsFrom(err),
 		}
 
-	case errors.Is(err, messages_service.ErrInvalidGetMessagesQuery):
+	case errors.Is(err, messages_service.ErrInvalidInput):
 		return http_response.HTTPError{
 			StatusCode: http.StatusBadRequest,
-			Code:       "invalid_get_message_query",
-			Message:    "invalid get message query",
+			Code:       "invalid_input",
+			Message:    "invalid input",
 			Fields:     http_errmap.FieldsFrom(err),
 		}
 
@@ -44,8 +44,8 @@ func errorMapper(err error) http_response.HTTPError {
 	case errors.Is(err, domain.ErrNotFound):
 		return http_response.HTTPError{
 			StatusCode: http.StatusNotFound,
-			Code:       "chat_not_found",
-			Message:    "chat not found",
+			Code:       "not_found",
+			Message:    "not found",
 			Fields:     http_errmap.FieldsFrom(err),
 		}
 	default:

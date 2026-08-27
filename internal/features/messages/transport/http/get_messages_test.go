@@ -165,7 +165,7 @@ func TestGetMessages(t *testing.T) {
 			currentUserID,
 			messages_service.GetMessagesQuery{ChatID: chatID, Limit: -1},
 		).Return(messages_service.MessagePage{}, domain.DetailedError{
-			Err: messages_service.ErrInvalidGetMessagesQuery,
+			Err: messages_service.ErrInvalidInput,
 			Details: map[string]string{
 				"limit": "limit must be between 1 and 100",
 			},
@@ -178,8 +178,8 @@ func TestGetMessages(t *testing.T) {
 
 		require.Equal(t, http.StatusBadRequest, recorder.Code)
 		require.Equal(t, http_response.APIErrorDetail{
-			Code:    "invalid_get_message_query",
-			Message: "invalid get message query",
+			Code:    "invalid_input",
+			Message: "invalid input",
 			Fields: map[string]string{
 				"limit": "limit must be between 1 and 100",
 			},
@@ -201,8 +201,8 @@ func TestGetMessages(t *testing.T) {
 
 		require.Equal(t, http.StatusNotFound, recorder.Code)
 		require.Equal(t, http_response.APIErrorDetail{
-			Code:    "chat_not_found",
-			Message: "chat not found",
+			Code:    "not_found",
+			Message: "not found",
 		}, decodeMessagesTransportError(t, recorder))
 	})
 

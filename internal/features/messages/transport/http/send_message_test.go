@@ -27,6 +27,7 @@ func TestSendMessage(t *testing.T) {
 	chatID := uuid.MustParse("00000000-0000-0000-0000-000000000002")
 	clientMessageID := uuid.MustParse("00000000-0000-0000-0000-000000000003")
 	command := messages_service.SendMessageCommand{
+		SenderID:        currentUserID,
 		ChatID:          chatID,
 		ClientMessageID: clientMessageID,
 		Content:         "Hello",
@@ -36,7 +37,7 @@ func TestSendMessage(t *testing.T) {
 		message := newMessagesTransportMessage(t, currentUserID, command)
 		service := NewMockMessagesService(t)
 		service.EXPECT().
-			SendMessage(mock.Anything, currentUserID, command).
+			SendMessage(mock.Anything, command).
 			Return(message, true, nil)
 		router := newMessagesTransportRouter(service, currentUserID)
 		request := newSendMessageRequest(t, chatID.String(), map[string]any{
@@ -56,7 +57,7 @@ func TestSendMessage(t *testing.T) {
 		message := newMessagesTransportMessage(t, currentUserID, command)
 		service := NewMockMessagesService(t)
 		service.EXPECT().
-			SendMessage(mock.Anything, currentUserID, command).
+			SendMessage(mock.Anything, command).
 			Return(message, false, nil)
 		router := newMessagesTransportRouter(service, currentUserID)
 		request := newSendMessageRequest(t, chatID.String(), map[string]any{
@@ -131,11 +132,11 @@ func TestSendMessage(t *testing.T) {
 		message    string
 	}{
 		{
-			name:       "returns chat not found",
+			name:       "returns not found",
 			serviceErr: domain.ErrNotFound,
 			status:     http.StatusNotFound,
-			code:       "chat_not_found",
-			message:    "chat not found",
+			code:       "not_found",
+			message:    "not found",
 		},
 		{
 			name:       "returns idempotency conflict",
@@ -156,7 +157,7 @@ func TestSendMessage(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			service := NewMockMessagesService(t)
 			service.EXPECT().
-				SendMessage(mock.Anything, currentUserID, command).
+				SendMessage(mock.Anything, command).
 				Return(domain.Message{}, false, testCase.serviceErr)
 			router := newMessagesTransportRouter(service, currentUserID)
 			request := newSendMessageRequest(t, chatID.String(), map[string]any{
@@ -178,7 +179,7 @@ func TestSendMessage(t *testing.T) {
 	t.Run("returns detailed invalid message error", func(t *testing.T) {
 		service := NewMockMessagesService(t)
 		service.EXPECT().
-			SendMessage(mock.Anything, currentUserID, command).
+			SendMessage(mock.Anything, command).
 			Return(domain.Message{}, false, domain.DetailedError{
 				Err: domain.ErrInvalidMessage,
 				Details: map[string]string{
@@ -208,7 +209,7 @@ func TestSendMessage(t *testing.T) {
 		serviceErr := errors.New("database unavailable")
 		service := NewMockMessagesService(t)
 		service.EXPECT().
-			SendMessage(mock.Anything, currentUserID, command).
+			SendMessage(mock.Anything, command).
 			Return(domain.Message{}, false, serviceErr)
 		router := newMessagesTransportRouter(service, currentUserID)
 		request := newSendMessageRequest(t, chatID.String(), map[string]any{

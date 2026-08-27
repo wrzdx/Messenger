@@ -159,6 +159,72 @@ func (_c *MockMessagesRepository_CheckParticipant_Call) RunAndReturn(run func(ct
 	return _c
 }
 
+// GetMessage provides a mock function for the type MockMessagesRepository
+func (_mock *MockMessagesRepository) GetMessage(ctx context.Context, id uuid.UUID) (domain.Message, error) {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetMessage")
+	}
+
+	var r0 domain.Message
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) (domain.Message, error)); ok {
+		return returnFunc(ctx, id)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) domain.Message); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		r0 = ret.Get(0).(domain.Message)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockMessagesRepository_GetMessage_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetMessage'
+type MockMessagesRepository_GetMessage_Call struct {
+	*mock.Call
+}
+
+// GetMessage is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id uuid.UUID
+func (_e *MockMessagesRepository_Expecter) GetMessage(ctx any, id any) *MockMessagesRepository_GetMessage_Call {
+	return &MockMessagesRepository_GetMessage_Call{Call: _e.mock.On("GetMessage", ctx, id)}
+}
+
+func (_c *MockMessagesRepository_GetMessage_Call) Run(run func(ctx context.Context, id uuid.UUID)) *MockMessagesRepository_GetMessage_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMessagesRepository_GetMessage_Call) Return(message domain.Message, err error) *MockMessagesRepository_GetMessage_Call {
+	_c.Call.Return(message, err)
+	return _c
+}
+
+func (_c *MockMessagesRepository_GetMessage_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID) (domain.Message, error)) *MockMessagesRepository_GetMessage_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetMessageByClientID provides a mock function for the type MockMessagesRepository
 func (_mock *MockMessagesRepository) GetMessageByClientID(ctx context.Context, senderID uuid.UUID, clientMessageID uuid.UUID) (domain.Message, error) {
 	ret := _mock.Called(ctx, senderID, clientMessageID)
@@ -307,6 +373,63 @@ func (_c *MockMessagesRepository_GetMessages_Call) Return(messages []domain.Mess
 }
 
 func (_c *MockMessagesRepository_GetMessages_Call) RunAndReturn(run func(ctx context.Context, chatID uuid.UUID, before *MessageCursor, limit int) ([]domain.Message, error)) *MockMessagesRepository_GetMessages_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateMessage provides a mock function for the type MockMessagesRepository
+func (_mock *MockMessagesRepository) UpdateMessage(ctx context.Context, updated domain.Message) error {
+	ret := _mock.Called(ctx, updated)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateMessage")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.Message) error); ok {
+		r0 = returnFunc(ctx, updated)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockMessagesRepository_UpdateMessage_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateMessage'
+type MockMessagesRepository_UpdateMessage_Call struct {
+	*mock.Call
+}
+
+// UpdateMessage is a helper method to define mock.On call
+//   - ctx context.Context
+//   - updated domain.Message
+func (_e *MockMessagesRepository_Expecter) UpdateMessage(ctx any, updated any) *MockMessagesRepository_UpdateMessage_Call {
+	return &MockMessagesRepository_UpdateMessage_Call{Call: _e.mock.On("UpdateMessage", ctx, updated)}
+}
+
+func (_c *MockMessagesRepository_UpdateMessage_Call) Run(run func(ctx context.Context, updated domain.Message)) *MockMessagesRepository_UpdateMessage_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 domain.Message
+		if args[1] != nil {
+			arg1 = args[1].(domain.Message)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMessagesRepository_UpdateMessage_Call) Return(err error) *MockMessagesRepository_UpdateMessage_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockMessagesRepository_UpdateMessage_Call) RunAndReturn(run func(ctx context.Context, updated domain.Message) error) *MockMessagesRepository_UpdateMessage_Call {
 	_c.Call.Return(run)
 	return _c
 }

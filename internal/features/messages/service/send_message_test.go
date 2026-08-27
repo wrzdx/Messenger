@@ -22,6 +22,7 @@ func TestSendMessage(t *testing.T) {
 	chatID := uuid.New()
 	clientMessageID := uuid.New()
 	command := SendMessageCommand{
+		SenderID:        senderID,
 		ChatID:          chatID,
 		ClientMessageID: clientMessageID,
 		Content:         "  Hello  ",
@@ -34,7 +35,10 @@ func TestSendMessage(t *testing.T) {
 			NewMockTXManager(t),
 		)
 
-		actual, created, err := service.SendMessage(t.Context(), senderID, SendMessageCommand{})
+		actual, created, err := service.SendMessage(t.Context(), SendMessageCommand{
+			SenderID: senderID,
+			ChatID:   chatID,
+		})
 
 		require.ErrorIs(t, err, domain.ErrInvalidMessage)
 		require.False(t, created)
@@ -53,7 +57,7 @@ func TestSendMessage(t *testing.T) {
 			NewMockTXManager(t),
 		)
 
-		actual, created, err := service.SendMessage(t.Context(), senderID, command)
+		actual, created, err := service.SendMessage(t.Context(), command)
 
 		require.NoError(t, err)
 		require.False(t, created)
@@ -72,7 +76,7 @@ func TestSendMessage(t *testing.T) {
 			NewMockTXManager(t),
 		)
 
-		actual, created, err := service.SendMessage(t.Context(), senderID, command)
+		actual, created, err := service.SendMessage(t.Context(), command)
 
 		require.ErrorIs(t, err, ErrMessageConflict)
 		require.False(t, created)
@@ -91,7 +95,7 @@ func TestSendMessage(t *testing.T) {
 			NewMockTXManager(t),
 		)
 
-		actual, created, err := service.SendMessage(t.Context(), senderID, command)
+		actual, created, err := service.SendMessage(t.Context(), command)
 
 		require.ErrorIs(t, err, lookupErr)
 		require.False(t, created)
@@ -126,7 +130,7 @@ func TestSendMessage(t *testing.T) {
 		expectSendMessageTransaction(txManager, outerCtx, txCtx)
 		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
 
-		actual, created, err := service.SendMessage(outerCtx, senderID, command)
+		actual, created, err := service.SendMessage(outerCtx, command)
 
 		require.NoError(t, err)
 		require.True(t, created)
@@ -152,8 +156,9 @@ func TestSendMessage(t *testing.T) {
 		txManager := NewMockTXManager(t)
 		expectSendMessageTransaction(txManager, outerCtx, txCtx)
 		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
-
-		actual, created, err := service.SendMessage(outerCtx, outsiderID, command)
+		outsiderCommand := command
+		outsiderCommand.SenderID = outsiderID
+		actual, created, err := service.SendMessage(outerCtx, outsiderCommand)
 
 		require.ErrorIs(t, err, domain.ErrNotFound)
 		require.False(t, created)
@@ -181,7 +186,7 @@ func TestSendMessage(t *testing.T) {
 			expectSendMessageTransaction(txManager, outerCtx, txCtx)
 			service := NewMessagesService(messagesRepository, chatsRepository, txManager)
 
-			actual, created, err := service.SendMessage(outerCtx, senderID, command)
+			actual, created, err := service.SendMessage(outerCtx, command)
 
 			require.ErrorIs(t, err, ErrMessageTargetUnavailable)
 			require.False(t, created)
@@ -211,7 +216,7 @@ func TestSendMessage(t *testing.T) {
 		expectSendMessageTransaction(txManager, outerCtx, txCtx)
 		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
 
-		actual, created, err := service.SendMessage(outerCtx, senderID, command)
+		actual, created, err := service.SendMessage(outerCtx, command)
 
 		require.NoError(t, err)
 		require.True(t, created)
@@ -233,7 +238,7 @@ func TestSendMessage(t *testing.T) {
 		expectSendMessageTransaction(txManager, outerCtx, txCtx)
 		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
 
-		actual, created, err := service.SendMessage(outerCtx, senderID, command)
+		actual, created, err := service.SendMessage(outerCtx, command)
 
 		require.ErrorIs(t, err, ErrMessageTargetUnavailable)
 		require.False(t, created)
@@ -254,7 +259,7 @@ func TestSendMessage(t *testing.T) {
 		expectSendMessageTransaction(txManager, outerCtx, txCtx)
 		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
 
-		actual, created, err := service.SendMessage(outerCtx, senderID, command)
+		actual, created, err := service.SendMessage(outerCtx, command)
 
 		require.ErrorIs(t, err, lookupErr)
 		require.False(t, created)
@@ -276,7 +281,7 @@ func TestSendMessage(t *testing.T) {
 		expectSendMessageTransaction(txManager, outerCtx, txCtx)
 		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
 
-		actual, created, err := service.SendMessage(outerCtx, senderID, command)
+		actual, created, err := service.SendMessage(outerCtx, command)
 
 		require.ErrorIs(t, err, ErrInternalInconsistency)
 		require.NotErrorIs(t, err, domain.ErrNotFound)
@@ -301,7 +306,7 @@ func TestSendMessage(t *testing.T) {
 		expectSendMessageTransaction(txManager, outerCtx, txCtx)
 		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
 
-		actual, created, err := service.SendMessage(outerCtx, senderID, command)
+		actual, created, err := service.SendMessage(outerCtx, command)
 
 		require.ErrorIs(t, err, appendErr)
 		require.False(t, created)
@@ -324,7 +329,7 @@ func TestSendMessage(t *testing.T) {
 		expectSendMessageTransaction(txManager, outerCtx, txCtx)
 		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
 
-		actual, created, err := service.SendMessage(outerCtx, senderID, command)
+		actual, created, err := service.SendMessage(outerCtx, command)
 
 		require.Error(t, err)
 		require.NotErrorIs(t, err, domain.ErrNotFound)
@@ -353,7 +358,7 @@ func TestSendMessage(t *testing.T) {
 		expectSendMessageTransaction(txManager, outerCtx, txCtx)
 		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
 
-		actual, created, err := service.SendMessage(outerCtx, senderID, command)
+		actual, created, err := service.SendMessage(outerCtx, command)
 
 		require.NoError(t, err)
 		require.False(t, created)
@@ -380,7 +385,7 @@ func TestSendMessage(t *testing.T) {
 		expectSendMessageTransaction(txManager, outerCtx, txCtx)
 		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
 
-		actual, created, err := service.SendMessage(outerCtx, senderID, command)
+		actual, created, err := service.SendMessage(outerCtx, command)
 
 		require.ErrorIs(t, err, ErrMessageConflict)
 		require.False(t, created)
@@ -406,7 +411,7 @@ func TestSendMessage(t *testing.T) {
 		expectSendMessageTransaction(txManager, outerCtx, txCtx)
 		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
 
-		actual, created, err := service.SendMessage(outerCtx, senderID, command)
+		actual, created, err := service.SendMessage(outerCtx, command)
 
 		require.Error(t, err)
 		require.NotErrorIs(t, err, domain.ErrNotFound)
@@ -423,7 +428,7 @@ func TestSendMessage(t *testing.T) {
 		txManager.EXPECT().WithinTransaction(t.Context(), mock.Anything).Return(transactionErr)
 		service := NewMessagesService(messagesRepository, NewMockChatsRepository(t), txManager)
 
-		actual, created, err := service.SendMessage(t.Context(), senderID, command)
+		actual, created, err := service.SendMessage(t.Context(), command)
 
 		require.ErrorIs(t, err, transactionErr)
 		require.False(t, created)

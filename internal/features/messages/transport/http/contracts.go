@@ -17,7 +17,11 @@ type MessagesService interface {
 
 	SendMessage(
 		ctx context.Context,
-		senderID uuid.UUID,
 		command messages_service.SendMessageCommand,
 	) (domain.Message, bool, error)
+
+	EditMessage(
+		ctx context.Context,
+		command messages_service.UpdateMessageCommand,
+	) (domain.Message, error)
 }

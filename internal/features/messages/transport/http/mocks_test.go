@@ -40,6 +40,72 @@ func (_m *MockMessagesService) EXPECT() *MockMessagesService_Expecter {
 	return &MockMessagesService_Expecter{mock: &_m.Mock}
 }
 
+// EditMessage provides a mock function for the type MockMessagesService
+func (_mock *MockMessagesService) EditMessage(ctx context.Context, command messages_service.UpdateMessageCommand) (domain.Message, error) {
+	ret := _mock.Called(ctx, command)
+
+	if len(ret) == 0 {
+		panic("no return value specified for EditMessage")
+	}
+
+	var r0 domain.Message
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, messages_service.UpdateMessageCommand) (domain.Message, error)); ok {
+		return returnFunc(ctx, command)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, messages_service.UpdateMessageCommand) domain.Message); ok {
+		r0 = returnFunc(ctx, command)
+	} else {
+		r0 = ret.Get(0).(domain.Message)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, messages_service.UpdateMessageCommand) error); ok {
+		r1 = returnFunc(ctx, command)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockMessagesService_EditMessage_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'EditMessage'
+type MockMessagesService_EditMessage_Call struct {
+	*mock.Call
+}
+
+// EditMessage is a helper method to define mock.On call
+//   - ctx context.Context
+//   - command messages_service.UpdateMessageCommand
+func (_e *MockMessagesService_Expecter) EditMessage(ctx any, command any) *MockMessagesService_EditMessage_Call {
+	return &MockMessagesService_EditMessage_Call{Call: _e.mock.On("EditMessage", ctx, command)}
+}
+
+func (_c *MockMessagesService_EditMessage_Call) Run(run func(ctx context.Context, command messages_service.UpdateMessageCommand)) *MockMessagesService_EditMessage_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 messages_service.UpdateMessageCommand
+		if args[1] != nil {
+			arg1 = args[1].(messages_service.UpdateMessageCommand)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMessagesService_EditMessage_Call) Return(message domain.Message, err error) *MockMessagesService_EditMessage_Call {
+	_c.Call.Return(message, err)
+	return _c
+}
+
+func (_c *MockMessagesService_EditMessage_Call) RunAndReturn(run func(ctx context.Context, command messages_service.UpdateMessageCommand) (domain.Message, error)) *MockMessagesService_EditMessage_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetMessages provides a mock function for the type MockMessagesService
 func (_mock *MockMessagesService) GetMessages(ctx context.Context, requesterID uuid.UUID, query messages_service.GetMessagesQuery) (messages_service.MessagePage, error) {
 	ret := _mock.Called(ctx, requesterID, query)
@@ -113,8 +179,8 @@ func (_c *MockMessagesService_GetMessages_Call) RunAndReturn(run func(ctx contex
 }
 
 // SendMessage provides a mock function for the type MockMessagesService
-func (_mock *MockMessagesService) SendMessage(ctx context.Context, senderID uuid.UUID, command messages_service.SendMessageCommand) (domain.Message, bool, error) {
-	ret := _mock.Called(ctx, senderID, command)
+func (_mock *MockMessagesService) SendMessage(ctx context.Context, command messages_service.SendMessageCommand) (domain.Message, bool, error) {
+	ret := _mock.Called(ctx, command)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SendMessage")
@@ -123,21 +189,21 @@ func (_mock *MockMessagesService) SendMessage(ctx context.Context, senderID uuid
 	var r0 domain.Message
 	var r1 bool
 	var r2 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, messages_service.SendMessageCommand) (domain.Message, bool, error)); ok {
-		return returnFunc(ctx, senderID, command)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, messages_service.SendMessageCommand) (domain.Message, bool, error)); ok {
+		return returnFunc(ctx, command)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, messages_service.SendMessageCommand) domain.Message); ok {
-		r0 = returnFunc(ctx, senderID, command)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, messages_service.SendMessageCommand) domain.Message); ok {
+		r0 = returnFunc(ctx, command)
 	} else {
 		r0 = ret.Get(0).(domain.Message)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, messages_service.SendMessageCommand) bool); ok {
-		r1 = returnFunc(ctx, senderID, command)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, messages_service.SendMessageCommand) bool); ok {
+		r1 = returnFunc(ctx, command)
 	} else {
 		r1 = ret.Get(1).(bool)
 	}
-	if returnFunc, ok := ret.Get(2).(func(context.Context, uuid.UUID, messages_service.SendMessageCommand) error); ok {
-		r2 = returnFunc(ctx, senderID, command)
+	if returnFunc, ok := ret.Get(2).(func(context.Context, messages_service.SendMessageCommand) error); ok {
+		r2 = returnFunc(ctx, command)
 	} else {
 		r2 = ret.Error(2)
 	}
@@ -151,30 +217,24 @@ type MockMessagesService_SendMessage_Call struct {
 
 // SendMessage is a helper method to define mock.On call
 //   - ctx context.Context
-//   - senderID uuid.UUID
 //   - command messages_service.SendMessageCommand
-func (_e *MockMessagesService_Expecter) SendMessage(ctx any, senderID any, command any) *MockMessagesService_SendMessage_Call {
-	return &MockMessagesService_SendMessage_Call{Call: _e.mock.On("SendMessage", ctx, senderID, command)}
+func (_e *MockMessagesService_Expecter) SendMessage(ctx any, command any) *MockMessagesService_SendMessage_Call {
+	return &MockMessagesService_SendMessage_Call{Call: _e.mock.On("SendMessage", ctx, command)}
 }
 
-func (_c *MockMessagesService_SendMessage_Call) Run(run func(ctx context.Context, senderID uuid.UUID, command messages_service.SendMessageCommand)) *MockMessagesService_SendMessage_Call {
+func (_c *MockMessagesService_SendMessage_Call) Run(run func(ctx context.Context, command messages_service.SendMessageCommand)) *MockMessagesService_SendMessage_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 uuid.UUID
+		var arg1 messages_service.SendMessageCommand
 		if args[1] != nil {
-			arg1 = args[1].(uuid.UUID)
-		}
-		var arg2 messages_service.SendMessageCommand
-		if args[2] != nil {
-			arg2 = args[2].(messages_service.SendMessageCommand)
+			arg1 = args[1].(messages_service.SendMessageCommand)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
@@ -185,7 +245,7 @@ func (_c *MockMessagesService_SendMessage_Call) Return(message domain.Message, b
 	return _c
 }
 
-func (_c *MockMessagesService_SendMessage_Call) RunAndReturn(run func(ctx context.Context, senderID uuid.UUID, command messages_service.SendMessageCommand) (domain.Message, bool, error)) *MockMessagesService_SendMessage_Call {
+func (_c *MockMessagesService_SendMessage_Call) RunAndReturn(run func(ctx context.Context, command messages_service.SendMessageCommand) (domain.Message, bool, error)) *MockMessagesService_SendMessage_Call {
 	_c.Call.Return(run)
 	return _c
 }
