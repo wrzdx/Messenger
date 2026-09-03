@@ -96,10 +96,12 @@ type ListChatsResponse struct {
 }
 
 type ChatItemResponse struct {
-	Chat        ChatResponse         `json:"chat"`
-	Direct      *DirectChatResponse  `json:"direct,omitempty"`
-	Group       *GroupChatResponse   `json:"group,omitempty"`
-	LastMessage *LastMessageResponse `json:"last_message"`
+	Chat              ChatResponse         `json:"chat"`
+	Direct            *DirectChatResponse  `json:"direct,omitempty"`
+	Group             *GroupChatResponse   `json:"group,omitempty"`
+	LastMessage       *LastMessageResponse `json:"last_message"`
+	LastReadMessageID *uuid.UUID           `json:"last_read_message_id"`
+	UnreadCount       int                  `json:"unread_count"`
 }
 
 type DirectChatResponse struct {
@@ -129,7 +131,9 @@ type LastMessageResponse struct {
 
 func chatItemResponseFromService(item chats_service.ChatItem) ChatItemResponse {
 	response := ChatItemResponse{
-		Chat: chatResponseFromDomain(item.Chat),
+		Chat:              chatResponseFromDomain(item.Chat),
+		LastReadMessageID: item.LastReadMessageID,
+		UnreadCount:       item.UnreadCount,
 	}
 
 	if item.DirectPeer != nil {

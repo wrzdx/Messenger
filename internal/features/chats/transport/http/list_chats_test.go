@@ -31,6 +31,9 @@ func TestListChats(t *testing.T) {
 	t.Run("returns direct and group chat summaries", func(t *testing.T) {
 		direct := newListChatsTransportDirectItem(t, requesterID, peerID, activityAt)
 		group := newListChatsTransportGroupItem(t, requesterID, activityAt.Add(-time.Minute))
+		lastReadMessageID := uuid.New()
+		group.LastReadMessageID = &lastReadMessageID
+		group.UnreadCount = 3
 		before := &chats_service.ChatCursor{
 			ChatID:         uuid.New(),
 			LastActivityAt: activityAt.Add(time.Hour),
@@ -86,6 +89,10 @@ func TestListChats(t *testing.T) {
 			group.LastMessage.SenderFirstName,
 			groupResponse.LastMessage.SenderFirstName,
 		)
+		require.Equal(t, group.LastReadMessageID, groupResponse.LastReadMessageID)
+		require.Equal(t, group.UnreadCount, groupResponse.UnreadCount)
+		require.Nil(t, directResponse.LastReadMessageID)
+		require.Zero(t, directResponse.UnreadCount)
 
 		require.NotNil(t, response.NextCursor)
 		decodedNext, err := http_cursor.DecodeAndValidate[chatCursorPayload](
