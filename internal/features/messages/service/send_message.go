@@ -111,6 +111,14 @@ func (s *MessagesService) SendMessage(
 			return fmt.Errorf("append message: %w", err)
 		}
 
+		if err := s.messagesRepo.MarkAsRead(
+			ctx,
+			newMessage.ChatID,
+			newMessage.SenderID,
+			newMessage.ID,
+		); err != nil {
+			return fmt.Errorf("repo: mark as read: %w", err)
+		}
 		return nil
 	})
 	if err != nil {
