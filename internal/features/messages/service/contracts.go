@@ -28,6 +28,7 @@ type MessagesRepository interface {
 		chatID uuid.UUID,
 		before *MessageCursor,
 		limit int,
+		after bool,
 	) ([]domain.Message, error)
 
 	GetMessage(

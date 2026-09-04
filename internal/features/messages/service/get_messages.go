@@ -30,8 +30,9 @@ func (s *MessagesService) GetMessages(
 	allMessages, err := s.messagesRepo.GetMessages(
 		ctx,
 		query.ChatID,
-		query.Before,
+		query.Cursor,
 		query.Limit+1,
+		query.After,
 	)
 
 	if err != nil {
@@ -49,20 +50,23 @@ func (s *MessagesService) GetMessages(
 
 	page.Messages = allMessages
 
-	if hasMore {
+	if hasMore || (query.After && len(page.Messages) != 0) {
 		last := page.Messages[len(page.Messages)-1]
 		page.NextCursor = &MessageCursor{
 			MessageID: last.ID,
 			CreatedAt: last.CreatedAt,
 		}
+	} else if query.After {
+		page.NextCursor = query.Cursor
 	}
 	return page, nil
 }
 
 type GetMessagesQuery struct {
 	ChatID uuid.UUID
-	Before *MessageCursor
+	Cursor *MessageCursor
 	Limit  int
+	After  bool
 }
 
 func (q GetMessagesQuery) normalize() GetMessagesQuery {
@@ -81,13 +85,15 @@ func (q GetMessagesQuery) validate() error {
 		fields["limit"] = "limit must be between 1 and 100"
 	}
 
-	if q.Before != nil {
-		if q.Before.CreatedAt.IsZero() {
+	if q.Cursor != nil {
+		if q.Cursor.CreatedAt.IsZero() {
 			fields["created_at"] = "created_at of message cursor cannot be zero value"
 		}
-		if q.Before.MessageID == uuid.Nil {
+		if q.Cursor.MessageID == uuid.Nil {
 			fields["message_id"] = "message id of message cursor cannot be nil"
 		}
+	} else if q.After {
+		fields["after"] = "missing cursor for after"
 	}
 	if len(fields) > 0 {
 		return domain.DetailedError{

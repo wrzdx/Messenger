@@ -109,7 +109,7 @@ func TestDeleteMessage(t *testing.T) {
 		previous := newEditMessageTestMessage(t, uuid.New(), chatID, senderID, "previous")
 		repository := NewMockMessagesRepository(t)
 		expectDeleteMessagePrelude(repository, outerCtx, command, existing)
-		repository.EXPECT().GetMessages(txCtx, chatID, deleteMessageCursor(existing), 1).
+		repository.EXPECT().GetMessages(txCtx, chatID, deleteMessageCursor(existing), 1, false).
 			Return([]domain.Message{previous}, nil)
 		repository.EXPECT().DeleteMessage(txCtx, messageID).Return(nil)
 		chatsRepository := NewMockChatsRepository(t)
@@ -130,7 +130,7 @@ func TestDeleteMessage(t *testing.T) {
 		chat := newDeleteMessageTestChat(t, chatID, &messageID)
 		repository := NewMockMessagesRepository(t)
 		expectDeleteMessagePrelude(repository, outerCtx, command, existing)
-		repository.EXPECT().GetMessages(txCtx, chatID, deleteMessageCursor(existing), 1).
+		repository.EXPECT().GetMessages(txCtx, chatID, deleteMessageCursor(existing), 1, false).
 			Return(nil, nil)
 		repository.EXPECT().DeleteMessage(txCtx, messageID).Return(nil)
 		chatsRepository := NewMockChatsRepository(t)
@@ -153,7 +153,7 @@ func TestDeleteMessage(t *testing.T) {
 		previous := newEditMessageTestMessage(t, uuid.New(), chatID, senderID, "previous")
 		repository := NewMockMessagesRepository(t)
 		expectDeleteMessagePrelude(repository, outerCtx, command, existing)
-		repository.EXPECT().GetMessages(txCtx, chatID, deleteMessageCursor(existing), 1).
+		repository.EXPECT().GetMessages(txCtx, chatID, deleteMessageCursor(existing), 1, false).
 			Return([]domain.Message{previous}, nil)
 		repository.EXPECT().DeleteMessage(txCtx, messageID).Return(nil)
 		chatsRepository := NewMockChatsRepository(t)
@@ -217,7 +217,7 @@ func TestDeleteMessage(t *testing.T) {
 		chat := newDeleteMessageTestChat(t, chatID, &messageID)
 		repository := NewMockMessagesRepository(t)
 		expectDeleteMessagePrelude(repository, outerCtx, command, existing)
-		repository.EXPECT().GetMessages(txCtx, chatID, deleteMessageCursor(existing), 1).
+		repository.EXPECT().GetMessages(txCtx, chatID, deleteMessageCursor(existing), 1, false).
 			Return(nil, lookupErr)
 		chatsRepository := NewMockChatsRepository(t)
 		chatsRepository.EXPECT().GetChatForUpdate(txCtx, chatID).Return(chat, nil)
@@ -236,7 +236,7 @@ func TestDeleteMessage(t *testing.T) {
 		chat := newDeleteMessageTestChat(t, chatID, &messageID)
 		repository := NewMockMessagesRepository(t)
 		expectDeleteMessagePrelude(repository, outerCtx, command, existing)
-		repository.EXPECT().GetMessages(txCtx, chatID, deleteMessageCursor(existing), 1).
+		repository.EXPECT().GetMessages(txCtx, chatID, deleteMessageCursor(existing), 1, false).
 			Return(make([]domain.Message, 2), nil)
 		chatsRepository := NewMockChatsRepository(t)
 		chatsRepository.EXPECT().GetChatForUpdate(txCtx, chatID).Return(chat, nil)
@@ -257,7 +257,7 @@ func TestDeleteMessage(t *testing.T) {
 		chat := newDeleteMessageTestChat(t, chatID, &messageID)
 		repository := NewMockMessagesRepository(t)
 		expectDeleteMessagePrelude(repository, outerCtx, command, existing)
-		repository.EXPECT().GetMessages(txCtx, chatID, deleteMessageCursor(existing), 1).
+		repository.EXPECT().GetMessages(txCtx, chatID, deleteMessageCursor(existing), 1, false).
 			Return(nil, nil)
 		chatsRepository := NewMockChatsRepository(t)
 		chatsRepository.EXPECT().GetChatForUpdate(txCtx, chatID).Return(chat, nil)
@@ -285,7 +285,7 @@ func TestDeleteMessage(t *testing.T) {
 		chat := newDeleteMessageTestChat(t, chatID, &messageID)
 		repository := NewMockMessagesRepository(t)
 		expectDeleteMessagePrelude(repository, outerCtx, command, existing)
-		repository.EXPECT().GetMessages(txCtx, chatID, deleteMessageCursor(existing), 1).
+		repository.EXPECT().GetMessages(txCtx, chatID, deleteMessageCursor(existing), 1, false).
 			Return(nil, nil)
 		chatsRepository := NewMockChatsRepository(t)
 		chatsRepository.EXPECT().GetChatForUpdate(txCtx, chatID).Return(chat, nil)
@@ -309,7 +309,7 @@ func TestDeleteMessage(t *testing.T) {
 		chat := newDeleteMessageTestChat(t, chatID, &lastMessageID)
 		repository := NewMockMessagesRepository(t)
 		expectDeleteMessagePrelude(repository, outerCtx, command, existing)
-		repository.EXPECT().GetMessages(txCtx, chatID, deleteMessageCursor(existing), 1).
+		repository.EXPECT().GetMessages(txCtx, chatID, deleteMessageCursor(existing), 1, false).
 			Return(nil, nil)
 		repository.EXPECT().DeleteMessage(txCtx, messageID).Return(deleteErr)
 		chatsRepository := NewMockChatsRepository(t)

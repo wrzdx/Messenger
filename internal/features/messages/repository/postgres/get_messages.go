@@ -14,8 +14,9 @@ import (
 func (r *Repository) GetMessages(
 	ctx context.Context,
 	chatID uuid.UUID,
-	before *messages_service.MessageCursor,
+	cursor *messages_service.MessageCursor,
 	limit int,
+	after bool,
 ) ([]domain.Message, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.timeout)
 	defer cancel()
@@ -29,12 +30,20 @@ func (r *Repository) GetMessages(
 	ORDER BY created_at DESC, id DESC
 	LIMIT $2;
 	`
-	specifiedQuery := `
+	beforeQuery := `
 	SELECT id, client_message_id, chat_id, sender_id, content, created_at, updated_at
 	FROM messages
 	WHERE chat_id = $1
 	AND (created_at, id) < ($2, $3)
 	ORDER BY created_at DESC, id DESC
+	LIMIT $4;
+	`
+	afterQuery := `
+	SELECT id, client_message_id, chat_id, sender_id, content, created_at, updated_at
+	FROM messages
+	WHERE chat_id = $1
+	AND (created_at, id) > ($2, $3)
+	ORDER BY created_at, id
 	LIMIT $4;
 	`
 
@@ -44,13 +53,17 @@ func (r *Repository) GetMessages(
 		err      error
 	)
 
-	if before != nil {
+	if cursor != nil {
+		query := beforeQuery
+		if after {
+			query = afterQuery
+		}
 		rows, err = db.Query(
 			ctx,
-			specifiedQuery,
+			query,
 			chatID,
-			before.CreatedAt,
-			before.MessageID,
+			cursor.CreatedAt,
+			cursor.MessageID,
 			limit,
 		)
 	} else {

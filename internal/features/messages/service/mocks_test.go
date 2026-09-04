@@ -355,8 +355,8 @@ func (_c *MockMessagesRepository_GetMessageByClientID_Call) RunAndReturn(run fun
 }
 
 // GetMessages provides a mock function for the type MockMessagesRepository
-func (_mock *MockMessagesRepository) GetMessages(ctx context.Context, chatID uuid.UUID, before *MessageCursor, limit int) ([]domain.Message, error) {
-	ret := _mock.Called(ctx, chatID, before, limit)
+func (_mock *MockMessagesRepository) GetMessages(ctx context.Context, chatID uuid.UUID, before *MessageCursor, limit int, after bool) ([]domain.Message, error) {
+	ret := _mock.Called(ctx, chatID, before, limit, after)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetMessages")
@@ -364,18 +364,18 @@ func (_mock *MockMessagesRepository) GetMessages(ctx context.Context, chatID uui
 
 	var r0 []domain.Message
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *MessageCursor, int) ([]domain.Message, error)); ok {
-		return returnFunc(ctx, chatID, before, limit)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *MessageCursor, int, bool) ([]domain.Message, error)); ok {
+		return returnFunc(ctx, chatID, before, limit, after)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *MessageCursor, int) []domain.Message); ok {
-		r0 = returnFunc(ctx, chatID, before, limit)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *MessageCursor, int, bool) []domain.Message); ok {
+		r0 = returnFunc(ctx, chatID, before, limit, after)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]domain.Message)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, *MessageCursor, int) error); ok {
-		r1 = returnFunc(ctx, chatID, before, limit)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, *MessageCursor, int, bool) error); ok {
+		r1 = returnFunc(ctx, chatID, before, limit, after)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -392,11 +392,12 @@ type MockMessagesRepository_GetMessages_Call struct {
 //   - chatID uuid.UUID
 //   - before *MessageCursor
 //   - limit int
-func (_e *MockMessagesRepository_Expecter) GetMessages(ctx any, chatID any, before any, limit any) *MockMessagesRepository_GetMessages_Call {
-	return &MockMessagesRepository_GetMessages_Call{Call: _e.mock.On("GetMessages", ctx, chatID, before, limit)}
+//   - after bool
+func (_e *MockMessagesRepository_Expecter) GetMessages(ctx any, chatID any, before any, limit any, after any) *MockMessagesRepository_GetMessages_Call {
+	return &MockMessagesRepository_GetMessages_Call{Call: _e.mock.On("GetMessages", ctx, chatID, before, limit, after)}
 }
 
-func (_c *MockMessagesRepository_GetMessages_Call) Run(run func(ctx context.Context, chatID uuid.UUID, before *MessageCursor, limit int)) *MockMessagesRepository_GetMessages_Call {
+func (_c *MockMessagesRepository_GetMessages_Call) Run(run func(ctx context.Context, chatID uuid.UUID, before *MessageCursor, limit int, after bool)) *MockMessagesRepository_GetMessages_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -414,11 +415,16 @@ func (_c *MockMessagesRepository_GetMessages_Call) Run(run func(ctx context.Cont
 		if args[3] != nil {
 			arg3 = args[3].(int)
 		}
+		var arg4 bool
+		if args[4] != nil {
+			arg4 = args[4].(bool)
+		}
 		run(
 			arg0,
 			arg1,
 			arg2,
 			arg3,
+			arg4,
 		)
 	})
 	return _c
@@ -429,7 +435,7 @@ func (_c *MockMessagesRepository_GetMessages_Call) Return(messages []domain.Mess
 	return _c
 }
 
-func (_c *MockMessagesRepository_GetMessages_Call) RunAndReturn(run func(ctx context.Context, chatID uuid.UUID, before *MessageCursor, limit int) ([]domain.Message, error)) *MockMessagesRepository_GetMessages_Call {
+func (_c *MockMessagesRepository_GetMessages_Call) RunAndReturn(run func(ctx context.Context, chatID uuid.UUID, before *MessageCursor, limit int, after bool) ([]domain.Message, error)) *MockMessagesRepository_GetMessages_Call {
 	_c.Call.Return(run)
 	return _c
 }
