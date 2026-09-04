@@ -2,6 +2,7 @@ package messages_service
 
 import (
 	"errors"
+	"slices"
 	"testing"
 	"time"
 
@@ -18,7 +19,7 @@ func TestGetMessages(t *testing.T) {
 	t.Run("uses default limit and returns non-nil empty page", func(t *testing.T) {
 		repository := NewMockMessagesRepository(t)
 		repository.EXPECT().CheckParticipant(t.Context(), chatID, requesterID).Return(nil)
-		repository.EXPECT().GetMessages(t.Context(), chatID, (*MessageCursor)(nil), 51).Return(nil, nil)
+		repository.EXPECT().GetMessages(t.Context(), chatID, (*MessageCursor)(nil), 51, false).Return(nil, nil)
 		service := newGetMessagesTestService(t, repository)
 
 		page, err := service.GetMessages(t.Context(), requesterID, GetMessagesQuery{ChatID: chatID})
@@ -42,7 +43,7 @@ func TestGetMessages(t *testing.T) {
 			messages := newGetMessagesTestMessages(t, chatID, requesterID, testCase.resultSize)
 			repository := NewMockMessagesRepository(t)
 			repository.EXPECT().CheckParticipant(t.Context(), chatID, requesterID).Return(nil)
-			repository.EXPECT().GetMessages(t.Context(), chatID, (*MessageCursor)(nil), 3).
+			repository.EXPECT().GetMessages(t.Context(), chatID, (*MessageCursor)(nil), 3, false).
 				Return(messages, nil)
 			service := newGetMessagesTestService(t, repository)
 
@@ -69,6 +70,57 @@ func TestGetMessages(t *testing.T) {
 		})
 	}
 
+	for _, testCase := range []struct {
+		name       string
+		resultSize int
+		nilResult  bool
+	}{
+		{name: "preserves cursor for nil result", nilResult: true},
+		{name: "preserves cursor for empty result"},
+		{name: "advances cursor on partial final page", resultSize: 1},
+		{name: "advances cursor on full final page", resultSize: 2},
+		{name: "excludes lookahead from messages and cursor", resultSize: 3},
+	} {
+		t.Run("after "+testCase.name, func(t *testing.T) {
+			cursor := &MessageCursor{
+				MessageID: uuid.New(),
+				CreatedAt: time.Date(2026, time.July, 19, 11, 0, 0, 0, time.UTC),
+			}
+			messages := newGetMessagesTestMessages(t, chatID, requesterID, testCase.resultSize)
+			slices.Reverse(messages)
+			if testCase.nilResult {
+				messages = nil
+			}
+			repository := NewMockMessagesRepository(t)
+			repository.EXPECT().CheckParticipant(t.Context(), chatID, requesterID).Return(nil)
+			repository.EXPECT().GetMessages(t.Context(), chatID, cursor, 3, true).
+				Return(messages, nil)
+			service := newGetMessagesTestService(t, repository)
+
+			page, err := service.GetMessages(t.Context(), requesterID, GetMessagesQuery{
+				ChatID: chatID,
+				Cursor: cursor,
+				Limit:  2,
+				After:  true,
+			})
+
+			require.NoError(t, err)
+			require.NotNil(t, page.Messages)
+			expectedSize := min(testCase.resultSize, 2)
+			if expectedSize == 0 {
+				require.Empty(t, page.Messages)
+				require.Equal(t, cursor, page.NextCursor)
+				return
+			}
+			require.Equal(t, messages[:expectedSize], page.Messages)
+			last := messages[expectedSize-1]
+			require.Equal(t, &MessageCursor{
+				MessageID: last.ID,
+				CreatedAt: last.CreatedAt,
+			}, page.NextCursor)
+		})
+	}
+
 	t.Run("forwards cursor to repository", func(t *testing.T) {
 		before := &MessageCursor{
 			MessageID: uuid.New(),
@@ -76,13 +128,13 @@ func TestGetMessages(t *testing.T) {
 		}
 		repository := NewMockMessagesRepository(t)
 		repository.EXPECT().CheckParticipant(t.Context(), chatID, requesterID).Return(nil)
-		repository.EXPECT().GetMessages(t.Context(), chatID, before, 11).
+		repository.EXPECT().GetMessages(t.Context(), chatID, before, 11, false).
 			Return([]domain.Message{}, nil)
 		service := newGetMessagesTestService(t, repository)
 
 		page, err := service.GetMessages(t.Context(), requesterID, GetMessagesQuery{
 			ChatID: chatID,
-			Before: before,
+			Cursor: before,
 			Limit:  10,
 		})
 
@@ -110,7 +162,7 @@ func TestGetMessages(t *testing.T) {
 		loadErr := errors.New("message lookup failed")
 		repository := NewMockMessagesRepository(t)
 		repository.EXPECT().CheckParticipant(t.Context(), chatID, requesterID).Return(nil)
-		repository.EXPECT().GetMessages(t.Context(), chatID, (*MessageCursor)(nil), 11).
+		repository.EXPECT().GetMessages(t.Context(), chatID, (*MessageCursor)(nil), 11, false).
 			Return(nil, loadErr)
 		service := newGetMessagesTestService(t, repository)
 
@@ -141,6 +193,13 @@ func TestGetMessages(t *testing.T) {
 		expectedFields map[string]string
 	}{
 		{
+			name:  "rejects after without cursor",
+			query: GetMessagesQuery{ChatID: chatID, After: true},
+			expectedFields: map[string]string{
+				"after": "missing cursor for after",
+			},
+		},
+		{
 			name:  "rejects nil chat id",
 			query: GetMessagesQuery{Limit: 10},
 			expectedFields: map[string]string{
@@ -166,7 +225,7 @@ func TestGetMessages(t *testing.T) {
 			query: GetMessagesQuery{
 				ChatID: chatID,
 				Limit:  10,
-				Before: &MessageCursor{},
+				Cursor: &MessageCursor{},
 			},
 			expectedFields: map[string]string{
 				"created_at": "created_at of message cursor cannot be zero value",

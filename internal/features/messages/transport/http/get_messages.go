@@ -61,13 +61,26 @@ func (h *MessagesHandler) GetMessages(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	var after bool
+	afterStr := queryParams.Get("after")
+	if afterStr != "" {
+		after, err = strconv.ParseBool(afterStr)
+		if err != nil {
+			sender.Error(http_request.NewFieldError(
+				map[string]string{"after": "invalid after query param: bool value"},
+			))
+			return
+		}
+	}
+
 	page, err := h.messagesService.GetMessages(
 		ctx,
 		claims.UserID,
 		messages_service.GetMessagesQuery{
 			ChatID: chatID,
-			Before: cursor,
+			Cursor: cursor,
 			Limit:  limit,
+			After:  after,
 		},
 	)
 	if err != nil {

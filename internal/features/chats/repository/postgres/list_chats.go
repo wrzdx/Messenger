@@ -21,7 +21,7 @@ func (r *ChatsRepository) ListChats(
 	ctx, cancel := context.WithTimeout(ctx, r.timeout)
 	defer cancel()
 
-	chats, err := r.getUserChats(ctx, userID, before, limit)
+	chats, lastReadMessageIDs, err := r.getUserChats(ctx, userID, before, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +30,7 @@ func (r *ChatsRepository) ListChats(
 
 	batch := &pgx.Batch{}
 
-	for _, chat := range chats {
+	for i, chat := range chats {
 		switch chat.Type {
 		case domain.ChatTypeDirect:
 			batch.Queue(`
@@ -62,6 +62,19 @@ func (r *ChatsRepository) ListChats(
 			JOIN users s ON m.sender_id = s.id
 			WHERE m.id=$1
 			`, chat.LastMessageID)
+			batch.Queue(`
+			SELECT count(*) 
+			FROM messages m
+			WHERE m.chat_id = $2
+			AND (
+				$1::uuid IS NULL
+				OR (m.created_at, m.id) > (
+					SELECT created_at, id
+					FROM messages
+					WHERE id = $1
+				)
+			)
+			`, lastReadMessageIDs[i], chat.ID)
 		}
 	}
 	chatItems = make([]chats_service.ChatItem, 0, len(chats))
@@ -73,7 +86,7 @@ func (r *ChatsRepository) ListChats(
 		}
 	}()
 
-	for _, chat := range chats {
+	for i, chat := range chats {
 		chatItem := chats_service.ChatItem{Chat: chat}
 		switch chat.Type {
 		case domain.ChatTypeDirect:
@@ -138,6 +151,14 @@ func (r *ChatsRepository) ListChats(
 				return nil, err
 			}
 			chatItem.LastMessage = &lm
+
+			chatItem.LastReadMessageID = lastReadMessageIDs[i]
+
+			if err := result.QueryRow().Scan(
+				&chatItem.UnreadCount,
+			); err != nil {
+				return nil, fmt.Errorf("unread count: %w", err)
+			}
 		}
 		if err := chatItem.Validate(); err != nil {
 			return nil, err
@@ -153,14 +174,14 @@ func (r *ChatsRepository) getUserChats(
 	userID uuid.UUID,
 	before *chats_service.ChatCursor,
 	limit int,
-) ([]domain.Chat, error) {
+) ([]domain.Chat, []*uuid.UUID, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.timeout)
 	defer cancel()
 
 	db := postgres.GetExecutor(ctx, r.db)
 
 	query := `
-	SELECT c.id, c.type, c.last_message_id, c.last_activity_at, c.created_at
+	SELECT c.id, c.type, c.last_message_id, c.last_activity_at, c.created_at, cp.last_read_message_id
 	FROM chat_participants cp
 	JOIN chats c ON c.id = cp.chat_id
 	WHERE cp.user_id = $1
@@ -183,28 +204,32 @@ func (r *ChatsRepository) getUserChats(
 
 	rows, err := db.Query(ctx, query, userID, beforeActivity, beforeChatID, limit)
 	if err != nil {
-		return nil, fmt.Errorf("list chats: %w", err)
+		return nil, nil, fmt.Errorf("list chats: %w", err)
 	}
 	defer rows.Close()
 
 	var chats []domain.Chat
+	var lastReadMessageIDs []*uuid.UUID
 	for rows.Next() {
 		var chat domain.Chat
+		var lastReadMessageID *uuid.UUID
 		if err := rows.Scan(
 			&chat.ID,
 			&chat.Type,
 			&chat.LastMessageID,
 			&chat.LastActivityAt,
 			&chat.CreatedAt,
+			&lastReadMessageID,
 		); err != nil {
-			return nil, fmt.Errorf("scan chat: %w", err)
+			return nil, nil, fmt.Errorf("scan chat: %w", err)
 		}
 
 		chats = append(chats, chat)
+		lastReadMessageIDs = append(lastReadMessageIDs, lastReadMessageID)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate chat list: %w", err)
+		return nil, nil, fmt.Errorf("iterate chat list: %w", err)
 	}
 
-	return chats, nil
+	return chats, lastReadMessageIDs, nil
 }

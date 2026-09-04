@@ -44,7 +44,7 @@ func TestGetMessages(t *testing.T) {
 			currentUserID,
 			messages_service.GetMessagesQuery{
 				ChatID: chatID,
-				Before: cursor,
+				Cursor: cursor,
 				Limit:  25,
 			},
 		).Return(messages_service.MessagePage{
@@ -84,6 +84,84 @@ func TestGetMessages(t *testing.T) {
 		require.True(t, nextCursor.CreatedAt.Equal(decodedNextCursor.CreatedAt))
 	})
 
+	for _, empty := range []bool{false, true} {
+		name := "returns after page with continuation cursor"
+		if empty {
+			name = "preserves continuation cursor on empty after page"
+		}
+		t.Run(name, func(t *testing.T) {
+			page := messages_service.MessagePage{
+				Messages:   []domain.Message{},
+				NextCursor: cursor,
+			}
+			if !empty {
+				message := newMessagesTransportMessage(t, currentUserID, messages_service.SendMessageCommand{
+					ChatID: chatID, ClientMessageID: uuid.New(), Content: "New message",
+				})
+				page.Messages = append(page.Messages, message)
+				page.NextCursor = &messages_service.MessageCursor{
+					MessageID: message.ID, CreatedAt: message.CreatedAt,
+				}
+			}
+			service := NewMockMessagesService(t)
+			service.EXPECT().GetMessages(mock.Anything, currentUserID, messages_service.GetMessagesQuery{
+				ChatID: chatID, Cursor: cursor, After: true,
+			}).Return(page, nil)
+			router := newMessagesTransportRouter(service, currentUserID)
+			encoded, err := http_cursor.Encode(&messageCursorPayload{
+				MessageID: cursor.MessageID.String(), CreatedAt: cursor.CreatedAt,
+			})
+			require.NoError(t, err)
+			recorder := httptest.NewRecorder()
+
+			router.ServeHTTP(recorder, newGetMessagesRequest(t, chatID.String(),
+				"?after=true&cursor="+url.QueryEscape(*encoded)))
+
+			require.Equal(t, http.StatusOK, recorder.Code)
+			response := decodeGetMessagesResponse(t, recorder)
+			require.NotNil(t, response.Messages)
+			require.Len(t, response.Messages, len(page.Messages))
+			require.NotNil(t, response.NextCursor)
+			decoded, err := http_cursor.DecodeAndValidate[messageCursorPayload](*response.NextCursor)
+			require.NoError(t, err)
+			require.Equal(t, page.NextCursor.MessageID.String(), decoded.MessageID)
+			require.True(t, page.NextCursor.CreatedAt.Equal(decoded.CreatedAt))
+		})
+	}
+
+	t.Run("accepts explicit after false without cursor", func(t *testing.T) {
+		service := NewMockMessagesService(t)
+		service.EXPECT().GetMessages(mock.Anything, currentUserID,
+			messages_service.GetMessagesQuery{ChatID: chatID}).
+			Return(messages_service.MessagePage{Messages: []domain.Message{}}, nil)
+		router := newMessagesTransportRouter(service, currentUserID)
+		recorder := httptest.NewRecorder()
+
+		router.ServeHTTP(recorder, newGetMessagesRequest(t, chatID.String(), "?after=false"))
+
+		require.Equal(t, http.StatusOK, recorder.Code)
+		require.Nil(t, decodeGetMessagesResponse(t, recorder).NextCursor)
+	})
+
+	t.Run("maps missing cursor for after from service", func(t *testing.T) {
+		fields := map[string]string{"after": "missing cursor for after"}
+		service := NewMockMessagesService(t)
+		service.EXPECT().GetMessages(mock.Anything, currentUserID,
+			messages_service.GetMessagesQuery{ChatID: chatID, After: true}).
+			Return(messages_service.MessagePage{}, domain.DetailedError{
+				Err: messages_service.ErrInvalidInput, Details: fields,
+			})
+		router := newMessagesTransportRouter(service, currentUserID)
+		recorder := httptest.NewRecorder()
+
+		router.ServeHTTP(recorder, newGetMessagesRequest(t, chatID.String(), "?after=true"))
+
+		require.Equal(t, http.StatusBadRequest, recorder.Code)
+		require.Equal(t, http_response.APIErrorDetail{
+			Code: "invalid_input", Message: "invalid input", Fields: fields,
+		}, decodeMessagesTransportError(t, recorder))
+	})
+
 	t.Run("returns empty final page with null cursor", func(t *testing.T) {
 		service := NewMockMessagesService(t)
 		service.EXPECT().GetMessages(
@@ -112,6 +190,15 @@ func TestGetMessages(t *testing.T) {
 		query    string
 		response http_response.APIErrorDetail
 	}{
+		{
+			name:   "rejects malformed after",
+			chatID: chatID.String(),
+			query:  "?after=maybe",
+			response: http_response.APIErrorDetail{
+				Code: "invalid_request", Message: "invalid request",
+				Fields: map[string]string{"after": "invalid after query param: bool value"},
+			},
+		},
 		{
 			name:   "rejects malformed chat id",
 			chatID: "not-a-uuid",

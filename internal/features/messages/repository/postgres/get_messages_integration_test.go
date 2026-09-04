@@ -74,7 +74,7 @@ func TestGetMessagesPage(t *testing.T) {
 	t.Run("returns empty result for chat without messages", func(t *testing.T) {
 		repository, chat, _ := newMessageHistoryFixture(t, pool, config.Timeout)
 
-		messages, err := repository.GetMessages(t.Context(), chat.ID, nil, 10)
+		messages, err := repository.GetMessages(t.Context(), chat.ID, nil, 10, false)
 
 		require.NoError(t, err)
 		require.Empty(t, messages)
@@ -115,7 +115,7 @@ func TestGetMessagesPage(t *testing.T) {
 			insertMessageRepositoryMessage(t, pool, message)
 		}
 
-		messages, err := repository.GetMessages(t.Context(), chat.ID, nil, 10)
+		messages, err := repository.GetMessages(t.Context(), chat.ID, nil, 10, false)
 
 		require.NoError(t, err)
 		requireMessageHistoryIDs(t, messages, newest.ID, tieHigh.ID, tieLow.ID, oldest.ID)
@@ -133,7 +133,7 @@ func TestGetMessagesPage(t *testing.T) {
 			insertMessageRepositoryMessage(t, pool, message)
 		}
 
-		actual, err := repository.GetMessages(t.Context(), chat.ID, nil, 2)
+		actual, err := repository.GetMessages(t.Context(), chat.ID, nil, 2, false)
 
 		require.NoError(t, err)
 		requireMessageHistoryIDs(t, actual, messages[0].ID, messages[1].ID)
@@ -165,10 +165,60 @@ func TestGetMessagesPage(t *testing.T) {
 			CreatedAt: cursorMessage.CreatedAt,
 		}
 
-		messages, err := repository.GetMessages(t.Context(), chat.ID, cursor, 10)
+		messages, err := repository.GetMessages(t.Context(), chat.ID, cursor, 10, false)
 
 		require.NoError(t, err)
 		requireMessageHistoryIDs(t, messages, tieLow.ID, older.ID)
+	})
+
+	t.Run("pages strictly after cursor in ascending order without skipping newer messages", func(t *testing.T) {
+		repository, chat, senderID := newMessageHistoryFixture(t, pool, config.Timeout)
+		_, otherChat, otherSenderID := newMessageHistoryFixture(t, pool, config.Timeout)
+		base := repositoryTestTime().Add(time.Hour)
+		older := newMessageHistoryMessage(t,
+			uuid.MustParse("00000000-0000-0000-0000-000000000010"), chat.ID, senderID, base)
+		boundary := newMessageHistoryMessage(t,
+			uuid.MustParse("00000000-0000-0000-0000-000000000020"), chat.ID, senderID, base)
+		tieHigher := newMessageHistoryMessage(t,
+			uuid.MustParse("00000000-0000-0000-0000-000000000030"), chat.ID, senderID, base)
+		later := newMessageHistoryMessage(t,
+			uuid.MustParse("00000000-0000-0000-0000-000000000005"), chat.ID, senderID, base.Add(time.Minute))
+		latest := newMessageHistoryMessage(t, uuid.New(), chat.ID, senderID, base.Add(2*time.Minute))
+		other := newMessageHistoryMessage(t, uuid.New(), otherChat.ID, otherSenderID, base.Add(time.Second))
+		for _, message := range []domain.Message{latest, boundary, older, later, tieHigher, other} {
+			insertMessageRepositoryMessage(t, pool, message)
+		}
+		cursor := &messages_service.MessageCursor{MessageID: boundary.ID, CreatedAt: boundary.CreatedAt}
+
+		first, err := repository.GetMessages(t.Context(), chat.ID, cursor, 2, true)
+
+		require.NoError(t, err)
+		requireMessageHistoryIDs(t, first, tieHigher.ID, later.ID)
+		cursor = &messages_service.MessageCursor{MessageID: later.ID, CreatedAt: later.CreatedAt}
+		second, err := repository.GetMessages(t.Context(), chat.ID, cursor, 2, true)
+		require.NoError(t, err)
+		requireMessageHistoryIDs(t, second, latest.ID)
+		cursor = &messages_service.MessageCursor{MessageID: latest.ID, CreatedAt: latest.CreatedAt}
+		last, err := repository.GetMessages(t.Context(), chat.ID, cursor, 2, true)
+		require.NoError(t, err)
+		require.Empty(t, last)
+	})
+
+	t.Run("after cursor does not require boundary message to still exist", func(t *testing.T) {
+		repository, chat, senderID := newMessageHistoryFixture(t, pool, config.Timeout)
+		base := repositoryTestTime().Add(time.Hour)
+		boundary := newMessageHistoryMessage(t, uuid.New(), chat.ID, senderID, base)
+		newer := newMessageHistoryMessage(t, uuid.New(), chat.ID, senderID, base.Add(time.Minute))
+		insertMessageRepositoryMessage(t, pool, boundary)
+		insertMessageRepositoryMessage(t, pool, newer)
+		_, err := pool.Exec(t.Context(), `DELETE FROM messages WHERE id = $1`, boundary.ID)
+		require.NoError(t, err)
+
+		messages, err := repository.GetMessages(t.Context(), chat.ID,
+			&messages_service.MessageCursor{MessageID: boundary.ID, CreatedAt: boundary.CreatedAt}, 10, true)
+
+		require.NoError(t, err)
+		requireMessageHistoryIDs(t, messages, newer.ID)
 	})
 
 	t.Run("does not return messages from another chat", func(t *testing.T) {
@@ -185,7 +235,7 @@ func TestGetMessagesPage(t *testing.T) {
 		insertMessageRepositoryMessage(t, pool, expected)
 		insertMessageRepositoryMessage(t, pool, other)
 
-		messages, err := repository.GetMessages(t.Context(), chat.ID, nil, 10)
+		messages, err := repository.GetMessages(t.Context(), chat.ID, nil, 10, false)
 
 		require.NoError(t, err)
 		requireMessageHistoryIDs(t, messages, expected.ID)
@@ -201,7 +251,7 @@ func TestGetMessagesPage(t *testing.T) {
 		`, uuid.New(), uuid.New(), chat.ID, senderID, repositoryTestTime())
 		require.NoError(t, err)
 
-		messages, err := repository.GetMessages(t.Context(), chat.ID, nil, 10)
+		messages, err := repository.GetMessages(t.Context(), chat.ID, nil, 10, false)
 
 		require.ErrorIs(t, err, domain.ErrInvalidMessage)
 		require.Nil(t, messages)
@@ -233,7 +283,7 @@ func TestGetMessagesPage(t *testing.T) {
 			if err != nil {
 				return err
 			}
-			inside, err = repository.GetMessages(ctx, chat.ID, nil, 10)
+			inside, err = repository.GetMessages(ctx, chat.ID, nil, 10, false)
 			if err != nil {
 				return err
 			}
@@ -242,7 +292,7 @@ func TestGetMessagesPage(t *testing.T) {
 
 		require.ErrorIs(t, err, rollbackErr)
 		requireMessageHistoryIDs(t, inside, message.ID)
-		after, err := repository.GetMessages(t.Context(), chat.ID, nil, 10)
+		after, err := repository.GetMessages(t.Context(), chat.ID, nil, 10, false)
 		require.NoError(t, err)
 		require.Empty(t, after)
 	})

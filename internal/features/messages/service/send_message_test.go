@@ -109,12 +109,18 @@ func TestSendMessage(t *testing.T) {
 		messagesRepository := NewMockMessagesRepository(t)
 		expectMessageNotFound(messagesRepository, outerCtx, senderID, clientMessageID)
 		var appended domain.Message
-		messagesRepository.EXPECT().
+		appendCall := messagesRepository.EXPECT().
 			AppendMessage(txCtx, mock.Anything).
 			Run(func(_ context.Context, message domain.Message) {
 				appended = message
 			}).
 			Return(nil)
+		markCall := messagesRepository.EXPECT().
+			MarkAsRead(txCtx, chatID, senderID, mock.MatchedBy(func(messageID uuid.UUID) bool {
+				return appended.ID != uuid.Nil && messageID == appended.ID
+			})).
+			Return(nil)
+		mock.InOrder(appendCall.Call, markCall.Call)
 		chatsRepository := NewMockChatsRepository(t)
 		var chatLockedAt time.Time
 		chatsRepository.EXPECT().
@@ -201,12 +207,18 @@ func TestSendMessage(t *testing.T) {
 		messagesRepository := NewMockMessagesRepository(t)
 		expectMessageNotFound(messagesRepository, outerCtx, senderID, clientMessageID)
 		var appended domain.Message
-		messagesRepository.EXPECT().
+		appendCall := messagesRepository.EXPECT().
 			AppendMessage(txCtx, mock.Anything).
 			Run(func(_ context.Context, message domain.Message) {
 				appended = message
 			}).
 			Return(nil)
+		markCall := messagesRepository.EXPECT().
+			MarkAsRead(txCtx, chatID, senderID, mock.MatchedBy(func(messageID uuid.UUID) bool {
+				return appended.ID != uuid.Nil && messageID == appended.ID
+			})).
+			Return(nil)
+		mock.InOrder(appendCall.Call, markCall.Call)
 		chatsRepository := NewMockChatsRepository(t)
 		expectLockedChat(chatsRepository, txCtx, groupChat.Chat)
 		chatsRepository.EXPECT().
@@ -309,6 +321,42 @@ func TestSendMessage(t *testing.T) {
 		actual, created, err := service.SendMessage(outerCtx, command)
 
 		require.ErrorIs(t, err, appendErr)
+		require.False(t, created)
+		require.Zero(t, actual)
+	})
+
+	t.Run("returns mark as read error", func(t *testing.T) {
+		markErr := errors.New("mark as read failed")
+		outerCtx := t.Context()
+		txCtx := context.WithValue(outerCtx, sendMessageTxContextKey{}, "transaction")
+		direct := newSendMessageTestDirect(t, chatID, senderID, peerID)
+		messagesRepository := NewMockMessagesRepository(t)
+		expectMessageNotFound(messagesRepository, outerCtx, senderID, clientMessageID)
+		var appended domain.Message
+		appendCall := messagesRepository.EXPECT().
+			AppendMessage(txCtx, mock.Anything).
+			Run(func(_ context.Context, message domain.Message) {
+				appended = message
+			}).
+			Return(nil)
+		markCall := messagesRepository.EXPECT().
+			MarkAsRead(txCtx, chatID, senderID, mock.MatchedBy(func(messageID uuid.UUID) bool {
+				return appended.ID != uuid.Nil && messageID == appended.ID
+			})).
+			Return(markErr)
+		mock.InOrder(appendCall.Call, markCall.Call)
+		chatsRepository := NewMockChatsRepository(t)
+		expectLockedChat(chatsRepository, txCtx, direct.Chat)
+		chatsRepository.EXPECT().
+			GetDirectMessageState(txCtx, chatID).
+			Return(activeDirectMessageState(direct), nil)
+		txManager := NewMockTXManager(t)
+		expectSendMessageTransaction(txManager, outerCtx, txCtx)
+		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
+
+		actual, created, err := service.SendMessage(outerCtx, command)
+
+		require.ErrorIs(t, err, markErr)
 		require.False(t, created)
 		require.Zero(t, actual)
 	})

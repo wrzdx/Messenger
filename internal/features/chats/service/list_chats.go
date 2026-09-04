@@ -92,10 +92,12 @@ func (q ListChatsQuery) validate() error {
 }
 
 type ChatItem struct {
-	Chat        domain.Chat
-	DirectPeer  *directPeer
-	GroupInfo   *groupInfo
-	LastMessage *lastMessageItem
+	Chat              domain.Chat
+	DirectPeer        *directPeer
+	GroupInfo         *groupInfo
+	LastMessage       *lastMessageItem
+	LastReadMessageID *uuid.UUID
+	UnreadCount       int
 }
 
 func (i ChatItem) Validate() error {

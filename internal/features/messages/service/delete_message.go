@@ -53,7 +53,8 @@ func (s *MessagesService) DeleteMessage(
 					MessageID: existing.ID,
 					CreatedAt: existing.CreatedAt,
 				}),
-				1)
+				1,
+				false)
 			if err != nil {
 				return fmt.Errorf("get messages: %w", err)
 			}
