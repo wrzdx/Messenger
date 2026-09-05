@@ -31,6 +31,11 @@ type AccessTokenClaims struct {
 	UserID uuid.UUID `json:"user_id"`
 }
 
+type ParsedAccessToken struct {
+	AccessTokenClaims
+	ExpiresAt time.Time `json:"expires_at"`
+}
+
 func (c RefreshTokenClaims) Validate() error {
 	if c.SessionID == uuid.Nil ||
 		c.TokenID == uuid.Nil {

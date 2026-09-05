@@ -87,20 +87,23 @@ func (s *TokenProvider) GenerateRefreshToken(
 	return refreshToken, nil
 }
 
-func (s *TokenProvider) ParseAccessToken(tokenStr string) (auth.AccessTokenClaims, error) {
+func (s *TokenProvider) ParseAccessToken(tokenStr string) (auth.ParsedAccessToken, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &accessClaims{}, func(token *jwt.Token) (any, error) {
 		return s.config.Secret, nil
 	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}), jwt.WithExpirationRequired())
 	if err != nil || !token.Valid {
-		return auth.AccessTokenClaims{}, auth.ErrInvalidToken
+		return auth.ParsedAccessToken{}, auth.ErrInvalidToken
 	}
 
 	claims, ok := token.Claims.(*accessClaims)
 	if !ok || claims.Type != tokenTypeAccess || claims.Validate() != nil {
-		return auth.AccessTokenClaims{}, auth.ErrInvalidToken
+		return auth.ParsedAccessToken{}, auth.ErrInvalidToken
 	}
 
-	return claims.AccessTokenClaims, nil
+	return auth.ParsedAccessToken{
+		AccessTokenClaims: claims.AccessTokenClaims,
+		ExpiresAt:         claims.ExpiresAt.Time,
+	}, nil
 }
 
 func (s *TokenProvider) ParseRefreshToken(tokenStr string) (auth.RefreshTokenClaims, error) {

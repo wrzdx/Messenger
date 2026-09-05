@@ -24,7 +24,8 @@ func TestGenerateAndParseAccessToken(t *testing.T) {
 
 	got, err := provider.ParseAccessToken(token)
 	require.NoError(t, err)
-	require.Equal(t, want, got)
+	require.Equal(t, want, got.AccessTokenClaims)
+	require.WithinDuration(t, now.Add(time.Hour), got.ExpiresAt, time.Second)
 }
 
 func TestGenerateAndParseRefreshToken(t *testing.T) {
