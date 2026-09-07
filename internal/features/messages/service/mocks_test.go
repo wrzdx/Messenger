@@ -1085,3 +1085,101 @@ func (_c *MockNotifier_MessageCreated_Call) RunAndReturn(run func(ctx context.Co
 	_c.Run(run)
 	return _c
 }
+
+// MessageDeleted provides a mock function for the type MockNotifier
+func (_mock *MockNotifier) MessageDeleted(ctx context.Context, chatID uuid.UUID, messageID uuid.UUID) {
+	_mock.Called(ctx, chatID, messageID)
+	return
+}
+
+// MockNotifier_MessageDeleted_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'MessageDeleted'
+type MockNotifier_MessageDeleted_Call struct {
+	*mock.Call
+}
+
+// MessageDeleted is a helper method to define mock.On call
+//   - ctx context.Context
+//   - chatID uuid.UUID
+//   - messageID uuid.UUID
+func (_e *MockNotifier_Expecter) MessageDeleted(ctx any, chatID any, messageID any) *MockNotifier_MessageDeleted_Call {
+	return &MockNotifier_MessageDeleted_Call{Call: _e.mock.On("MessageDeleted", ctx, chatID, messageID)}
+}
+
+func (_c *MockNotifier_MessageDeleted_Call) Run(run func(ctx context.Context, chatID uuid.UUID, messageID uuid.UUID)) *MockNotifier_MessageDeleted_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockNotifier_MessageDeleted_Call) Return() *MockNotifier_MessageDeleted_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockNotifier_MessageDeleted_Call) RunAndReturn(run func(ctx context.Context, chatID uuid.UUID, messageID uuid.UUID)) *MockNotifier_MessageDeleted_Call {
+	_c.Run(run)
+	return _c
+}
+
+// MessageEdited provides a mock function for the type MockNotifier
+func (_mock *MockNotifier) MessageEdited(ctx context.Context, message domain.Message) {
+	_mock.Called(ctx, message)
+	return
+}
+
+// MockNotifier_MessageEdited_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'MessageEdited'
+type MockNotifier_MessageEdited_Call struct {
+	*mock.Call
+}
+
+// MessageEdited is a helper method to define mock.On call
+//   - ctx context.Context
+//   - message domain.Message
+func (_e *MockNotifier_Expecter) MessageEdited(ctx any, message any) *MockNotifier_MessageEdited_Call {
+	return &MockNotifier_MessageEdited_Call{Call: _e.mock.On("MessageEdited", ctx, message)}
+}
+
+func (_c *MockNotifier_MessageEdited_Call) Run(run func(ctx context.Context, message domain.Message)) *MockNotifier_MessageEdited_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 domain.Message
+		if args[1] != nil {
+			arg1 = args[1].(domain.Message)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockNotifier_MessageEdited_Call) Return() *MockNotifier_MessageEdited_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockNotifier_MessageEdited_Call) RunAndReturn(run func(ctx context.Context, message domain.Message)) *MockNotifier_MessageEdited_Call {
+	_c.Run(run)
+	return _c
+}

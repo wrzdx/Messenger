@@ -2,9 +2,11 @@ package realtime_transport_ws
 
 import (
 	"context"
-	"go.uber.org/zap"
 	"messenger/internal/core/domain"
 	"messenger/internal/core/logger"
+
+	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 type Notifier struct {
@@ -27,26 +29,34 @@ func (p *Notifier) MessageCreated(
 	ctx context.Context,
 	message domain.Message,
 ) {
-	log := p.log.With(zap.String("chat_id", message.ChatID.String()), zap.String("message_id", message.ID.String()))
-	recipientIDs, err := p.participants.GetParticipants(ctx, message.ChatID)
+	p.notify(ctx, message.ChatID, message.ID, Event{Type: msgCreated, Data: messageDTO(message)})
+}
+
+func (p *Notifier) MessageEdited(ctx context.Context, message domain.Message) {
+	p.notify(ctx, message.ChatID, message.ID, Event{Type: msgEdited, Data: messageDTO(message)})
+}
+
+func (p *Notifier) MessageDeleted(ctx context.Context, chatID, messageID uuid.UUID) {
+	p.notify(ctx, chatID, messageID, Event{Type: msgDeleted, Data: DeletedMessage{ID: messageID, ChatID: chatID}})
+}
+
+func (p *Notifier) notify(ctx context.Context, chatID, messageID uuid.UUID, event Event) {
+	log := p.log.With(zap.String("chat_id", chatID.String()), zap.String("message_id", messageID.String()), zap.String("event_type", event.Type))
+	recipientIDs, err := p.participants.GetParticipants(ctx, chatID)
 	if err != nil {
 		log.Error("get message notification recipients", zap.Error(err))
 		return
 	}
-	event := Event{
-		Type: msgCreated,
-		Data: Message{
-			ID:        message.ID,
-			ChatID:    message.ChatID,
-			SenderID:  message.SenderID,
-			Content:   message.Content,
-			CreatedAt: message.CreatedAt,
-			UpdatedAt: message.UpdatedAt,
-		},
-	}
 	for _, id := range recipientIDs {
 		if err := p.hub.Publish(id, event); err != nil {
-			log.Error("publish message created", zap.Error(err), zap.String("recipient_id", id.String()))
+			log.Error("publish message event", zap.Error(err), zap.String("recipient_id", id.String()))
 		}
+	}
+}
+
+func messageDTO(message domain.Message) Message {
+	return Message{
+		ID: message.ID, ChatID: message.ChatID, SenderID: message.SenderID,
+		Content: message.Content, CreatedAt: message.CreatedAt, UpdatedAt: message.UpdatedAt,
 	}
 }

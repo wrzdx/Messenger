@@ -9,7 +9,9 @@ import (
 const (
 	authReqType = "authenticate"
 	authResType = "authenticated"
-	msgCreated = "message_created"
+	msgCreated  = "message_created"
+	msgEdited   = "message_edited"
+	msgDeleted  = "message_deleted"
 )
 
 type AuthRequest struct {
@@ -29,10 +31,15 @@ type Event struct {
 }
 
 type Message struct {
-	ID              uuid.UUID  `json:"id"`
-	ChatID          uuid.UUID  `json:"chat_id"`
-	SenderID        uuid.UUID  `json:"sender_id"`
-	Content         string     `json:"content"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       *time.Time `json:"updated_at"`
+	ID        uuid.UUID  `json:"id"`
+	ChatID    uuid.UUID  `json:"chat_id"`
+	SenderID  uuid.UUID  `json:"sender_id"`
+	Content   string     `json:"content"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt *time.Time `json:"updated_at"`
+}
+
+type DeletedMessage struct {
+	ID     uuid.UUID `json:"id"`
+	ChatID uuid.UUID `json:"chat_id"`
 }

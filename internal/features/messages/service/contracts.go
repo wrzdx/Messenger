@@ -91,4 +91,6 @@ type Notifier interface {
 		ctx context.Context,
 		message domain.Message,
 	)
+	MessageEdited(ctx context.Context, message domain.Message)
+	MessageDeleted(ctx context.Context, chatID, messageID uuid.UUID)
 }

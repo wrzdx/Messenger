@@ -94,6 +94,7 @@ func (s *MessagesService) DeleteMessage(
 		return fmt.Errorf("transaction: %w", err)
 	}
 
+	s.notifier.MessageDeleted(ctx, existing.ChatID, existing.ID)
 	return nil
 }
 

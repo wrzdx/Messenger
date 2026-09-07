@@ -56,7 +56,13 @@ func TestEditMessage(t *testing.T) {
 				persisted = updated
 			}).
 			Return(nil)
-		service := NewMessagesService(repository, NewMockChatsRepository(t), NewMockTXManager(t), NewMockNotifier(t))
+		notifier := NewMockNotifier(t)
+		notifier.EXPECT().MessageEdited(t.Context(), mock.Anything).
+			Run(func(_ context.Context, message domain.Message) {
+				require.NotZero(t, persisted.ID, "notify only after persistence")
+				require.Equal(t, persisted, message)
+			}).Once()
+		service := NewMessagesService(repository, NewMockChatsRepository(t), NewMockTXManager(t), notifier)
 		startedAt := time.Now()
 
 		actual, err := service.EditMessage(t.Context(), command)

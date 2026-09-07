@@ -45,6 +45,7 @@ func (s *MessagesService) EditMessage(
 		return domain.Message{}, fmt.Errorf("update message in db: %w", err)
 	}
 
+	s.notifier.MessageEdited(ctx, updated)
 	return updated, nil
 }
 
