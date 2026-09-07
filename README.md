@@ -4,10 +4,16 @@ Production-oriented messenger backend written in Go as a learning project. The
 codebase focuses on explicit domain invariants, transaction boundaries,
 concurrency safety, and integration-tested PostgreSQL repositories.
 
-> [!NOTE]
-> Authentication and user account management are implemented. Chats and
-> messages are under active development; their database schema is still being
-> finalized before the direct-chat use case is implemented.
+The **v1 functional scope** is implemented: accounts, direct and group chats,
+text messages, read state, and live message notifications. This is an educational
+MVP, not a claim of production readiness or a published version tag.
+
+## Documentation
+
+- [HTTP API](docs/http-api.md): routes, request bodies, responses, and pagination.
+- [WebSocket protocol](docs/websocket.md): authentication, events, and a browser example.
+- [Database](docs/database.md): constraints and application-owned invariants.
+- [Development](docs/development.md): configuration, setup, tests, and generation.
 
 ## Implemented
 
@@ -19,15 +25,23 @@ concurrency safety, and integration-tested PostgreSQL repositories.
 - Account anonymization with atomic session revocation.
 - Row-level locking for profile updates, account deletion, and the final login
   check.
-- Unit tests and PostgreSQL integration tests.
+- One direct chat per user pair; group creation, title updates, participant
+  listing, addition, removal, and non-owner departure.
+- Text message sending with a client-generated retry key; author-only editing
+  and deletion; cursor-paginated history in both directions.
+- Read markers, unread counts, and chat previews with the last message.
+- Authenticated WebSockets, multiple connections per user, and notifications
+  for message creation, editing, and deletion.
+- Unit tests, real WebSocket connection tests, and PostgreSQL integration tests.
 
 ## Stack
 
-- Go 1.26
+- Go 1.26.4
 - Chi
 - PostgreSQL 18
 - pgx
 - JWT access tokens and stateful refresh sessions
+- coder/websocket
 - Docker Compose
 - Zap
 - Testify and Mockery
@@ -51,8 +65,10 @@ blocks and domain types live under `internal/core`.
 │   └── features
 │       ├── auth           # credentials and session lifecycle
 │       ├── users          # profiles and account lifecycle
-│       └── chats          # chats and messages (in progress)
-├── docs                   # editable and rendered diagrams
+│       ├── chats          # direct/group chats and participants
+│       ├── messages       # history, sending, editing, deletion, read state
+│       └── realtime       # WebSocket connections, hub, and notifications
+├── docs                   # API documentation and database diagram
 ├── migrations             # ordered PostgreSQL migrations
 ├── docker-compose.yaml
 ├── Makefile
@@ -61,15 +77,15 @@ blocks and domain types live under `internal/core`.
 
 Repository interfaces are declared by the consuming service. Transactions are
 orchestrated by use cases and propagated to repositories through `context.Context`.
+HTTP performs commands and queries. WebSocket notifications are sent after
+successful persistence, outside the transaction.
 
 ## Database
 
 ![Messenger database schema](docs/database.svg)
 
-The direct/group subtype invariant, direct participant membership, and
-same-chat constraints for `last_message_id` and `last_read_message_id` are not
-yet enforced by the current migration. They will be resolved before chat
-creation is considered complete.
+The [schema notes](docs/database.md) explain composite uniqueness and which
+cross-table rules are maintained by application code rather than SQL constraints.
 
 ## HTTP API
 
@@ -86,27 +102,43 @@ All routes are mounted under `/api/v1`.
 | `GET` | `/users/{id}` | Access token | Get an active user |
 | `PATCH` | `/users/me` | Access token | Partially update the profile |
 | `DELETE` | `/users/me` | Access token | Anonymize the account and revoke sessions |
+| `GET` | `/chats/` | Access token | List chat previews and unread counts |
+| `POST` | `/chats/directs` | Access token | Create or return a direct chat |
+| `POST` | `/chats/groups` | Access token | Create a group |
+| `PUT` | `/chats/groups/{chat_id}` | Access token | Update group title |
+| `GET` | `/chats/groups/{chat_id}/participants` | Access token | List participants |
+| `POST` | `/chats/groups/{chat_id}/participants` | Access token | Add participants |
+| `DELETE` | `/chats/groups/{chat_id}/participants` | Access token | Remove participant / leave |
+| `GET` | `/chats/{chat_id}/messages/` | Access token | Page through messages |
+| `POST` | `/chats/{chat_id}/messages/` | Access token | Send a message |
+| `PATCH` | `/chats/{chat_id}/messages/{message_id}` | Access token | Edit own message |
+| `DELETE` | `/chats/{chat_id}/messages/{message_id}` | Access token | Delete own message |
+| `PUT` | `/chats/{chat_id}/messages/read` | Access token | Advance read marker |
+| `GET` | `/ws` | First WebSocket message | Upgrade to a notification connection |
 
 Refresh tokens are stored in an `HttpOnly` cookie. Access tokens are returned
 in the response body and supplied through the authorization middleware.
 
 ## Running locally
 
-The Makefile reads configuration from `.env`. Start PostgreSQL, expose it to
-the host, apply migrations, and run the API:
+Requires Go 1.26.4, Docker Compose, GNU Make, and a POSIX-compatible shell
+(for example Git Bash on Windows). The Makefile reads and exports `.env`:
 
 ```sh
+cp .env.example .env
+# Edit .env: replace the example JWT secret and database password.
 make env-up
 make env-port-forward
 make migrate-up
 make run
 ```
 
-To run the application container instead:
+With the example configuration, the API is at `http://localhost:5050/api/v1`.
+There is no bundled frontend. The application does not read `.env` itself;
+export configuration first when running Go directly.
 
-```sh
-make deploy
-```
+See [development notes](docs/development.md) before using `make deploy`: the
+current application container configuration does not pass all required settings.
 
 ## Tests
 
@@ -114,6 +146,7 @@ Run the unit suite:
 
 ```sh
 make test-unit
+go test -race ./internal/features/messages/service ./internal/features/realtime/transport/ws
 ```
 
 Run PostgreSQL integration tests against the dedicated test database:
@@ -129,3 +162,22 @@ make test-env-down
 
 Integration tests use the `integration` build tag and execute against real
 PostgreSQL constraints, transactions, and row locks.
+
+Use a dedicated disposable test database: `make test-env-down` drops it with
+`FORCE`. Passing unit tests does not substitute for testing migrations and the
+complete running application.
+
+## v1 boundaries
+
+- WebSocket delivery is best effort, in-memory, and single-instance. There is no
+  durable event log, replay, delivery acknowledgement, broker, or outbox.
+- Only message create/edit/delete events are published. Read receipts, group
+  changes, typing, presence, and online status have no live events yet.
+- Refresh sessions are revocable; already-issued access JWTs are not immediately
+  revoked. Existing sockets are bounded by access-token expiry, not logout.
+- Role changes, ownership transfer, group deletion, attachments, and search are
+  outside the current scope.
+- Some permission/account-state checks intentionally allow concurrent changes;
+  not every authorization decision is strictly serialized.
+- Production deployment, rate limiting, monitoring, backup/restore, and load
+  testing remain separate work. The container setup is not a production recipe.
