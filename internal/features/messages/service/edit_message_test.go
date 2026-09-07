@@ -29,7 +29,7 @@ func TestEditMessage(t *testing.T) {
 		service := NewMessagesService(
 			NewMockMessagesRepository(t),
 			NewMockChatsRepository(t),
-			NewMockTXManager(t),
+			NewMockTXManager(t), NewMockNotifier(t),
 		)
 
 		actual, err := service.EditMessage(t.Context(), UpdateMessageCommand{})
@@ -56,7 +56,13 @@ func TestEditMessage(t *testing.T) {
 				persisted = updated
 			}).
 			Return(nil)
-		service := NewMessagesService(repository, NewMockChatsRepository(t), NewMockTXManager(t))
+		notifier := NewMockNotifier(t)
+		notifier.EXPECT().MessageEdited(t.Context(), mock.Anything).
+			Run(func(_ context.Context, message domain.Message) {
+				require.NotZero(t, persisted.ID, "notify only after persistence")
+				require.Equal(t, persisted, message)
+			}).Once()
+		service := NewMessagesService(repository, NewMockChatsRepository(t), NewMockTXManager(t), notifier)
 		startedAt := time.Now()
 
 		actual, err := service.EditMessage(t.Context(), command)
@@ -73,7 +79,7 @@ func TestEditMessage(t *testing.T) {
 		repository := NewMockMessagesRepository(t)
 		repository.EXPECT().CheckParticipant(t.Context(), chatID, senderID).Return(nil)
 		repository.EXPECT().GetMessage(t.Context(), messageID).Return(existing, nil)
-		service := NewMessagesService(repository, NewMockChatsRepository(t), NewMockTXManager(t))
+		service := NewMessagesService(repository, NewMockChatsRepository(t), NewMockTXManager(t), NewMockNotifier(t))
 		noOp := command
 		noOp.Content = "  old content  "
 
@@ -87,7 +93,7 @@ func TestEditMessage(t *testing.T) {
 		participantErr := errors.New("participant lookup failed")
 		repository := NewMockMessagesRepository(t)
 		repository.EXPECT().CheckParticipant(t.Context(), chatID, senderID).Return(participantErr)
-		service := NewMessagesService(repository, NewMockChatsRepository(t), NewMockTXManager(t))
+		service := NewMessagesService(repository, NewMockChatsRepository(t), NewMockTXManager(t), NewMockNotifier(t))
 
 		actual, err := service.EditMessage(t.Context(), command)
 
@@ -100,7 +106,7 @@ func TestEditMessage(t *testing.T) {
 		repository := NewMockMessagesRepository(t)
 		repository.EXPECT().CheckParticipant(t.Context(), chatID, senderID).Return(nil)
 		repository.EXPECT().GetMessage(t.Context(), messageID).Return(domain.Message{}, lookupErr)
-		service := NewMessagesService(repository, NewMockChatsRepository(t), NewMockTXManager(t))
+		service := NewMessagesService(repository, NewMockChatsRepository(t), NewMockTXManager(t), NewMockNotifier(t))
 
 		actual, err := service.EditMessage(t.Context(), command)
 
@@ -133,7 +139,7 @@ func TestEditMessage(t *testing.T) {
 			repository := NewMockMessagesRepository(t)
 			repository.EXPECT().CheckParticipant(t.Context(), chatID, senderID).Return(nil)
 			repository.EXPECT().GetMessage(t.Context(), messageID).Return(testCase.existing, nil)
-			service := NewMessagesService(repository, NewMockChatsRepository(t), NewMockTXManager(t))
+			service := NewMessagesService(repository, NewMockChatsRepository(t), NewMockTXManager(t), NewMockNotifier(t))
 
 			actual, err := service.EditMessage(t.Context(), command)
 
@@ -146,7 +152,7 @@ func TestEditMessage(t *testing.T) {
 		repository := NewMockMessagesRepository(t)
 		repository.EXPECT().CheckParticipant(t.Context(), chatID, senderID).Return(nil)
 		repository.EXPECT().GetMessage(t.Context(), messageID).Return(existing, nil)
-		service := NewMessagesService(repository, NewMockChatsRepository(t), NewMockTXManager(t))
+		service := NewMessagesService(repository, NewMockChatsRepository(t), NewMockTXManager(t), NewMockNotifier(t))
 		invalid := command
 		invalid.Content = "   "
 
@@ -162,7 +168,7 @@ func TestEditMessage(t *testing.T) {
 		repository.EXPECT().CheckParticipant(t.Context(), chatID, senderID).Return(nil)
 		repository.EXPECT().GetMessage(t.Context(), messageID).Return(existing, nil)
 		repository.EXPECT().UpdateMessage(t.Context(), mock.Anything).Return(updateErr)
-		service := NewMessagesService(repository, NewMockChatsRepository(t), NewMockTXManager(t))
+		service := NewMessagesService(repository, NewMockChatsRepository(t), NewMockTXManager(t), NewMockNotifier(t))
 
 		actual, err := service.EditMessage(t.Context(), command)
 

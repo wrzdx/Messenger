@@ -30,7 +30,7 @@ func TestDeleteMessage(t *testing.T) {
 		service := NewMessagesService(
 			NewMockMessagesRepository(t),
 			NewMockChatsRepository(t),
-			NewMockTXManager(t),
+			NewMockTXManager(t), NewMockNotifier(t),
 		)
 
 		err := service.DeleteMessage(t.Context(), DeleteMessageCommand{})
@@ -49,7 +49,7 @@ func TestDeleteMessage(t *testing.T) {
 		participantErr := errors.New("participant lookup failed")
 		repository := NewMockMessagesRepository(t)
 		repository.EXPECT().CheckParticipant(t.Context(), chatID, senderID).Return(participantErr)
-		service := NewMessagesService(repository, NewMockChatsRepository(t), NewMockTXManager(t))
+		service := NewMessagesService(repository, NewMockChatsRepository(t), NewMockTXManager(t), NewMockNotifier(t))
 
 		err := service.DeleteMessage(t.Context(), command)
 
@@ -61,7 +61,7 @@ func TestDeleteMessage(t *testing.T) {
 		repository := NewMockMessagesRepository(t)
 		repository.EXPECT().CheckParticipant(t.Context(), chatID, senderID).Return(nil)
 		repository.EXPECT().GetMessage(t.Context(), messageID).Return(domain.Message{}, lookupErr)
-		service := NewMessagesService(repository, NewMockChatsRepository(t), NewMockTXManager(t))
+		service := NewMessagesService(repository, NewMockChatsRepository(t), NewMockTXManager(t), NewMockNotifier(t))
 
 		err := service.DeleteMessage(t.Context(), command)
 
@@ -93,7 +93,7 @@ func TestDeleteMessage(t *testing.T) {
 			repository := NewMockMessagesRepository(t)
 			repository.EXPECT().CheckParticipant(t.Context(), chatID, senderID).Return(nil)
 			repository.EXPECT().GetMessage(t.Context(), messageID).Return(testCase.existing, nil)
-			service := NewMessagesService(repository, NewMockChatsRepository(t), NewMockTXManager(t))
+			service := NewMessagesService(repository, NewMockChatsRepository(t), NewMockTXManager(t), NewMockNotifier(t))
 
 			err := service.DeleteMessage(t.Context(), command)
 
@@ -116,8 +116,8 @@ func TestDeleteMessage(t *testing.T) {
 		chatsRepository.EXPECT().GetChatForUpdate(txCtx, chatID).Return(chat, nil)
 		expectLastReadMessageUpdate(chatsRepository, txCtx, chatID, messageID, &previous.ID, nil)
 		txManager := NewMockTXManager(t)
-		expectDeleteMessageTransaction(txManager, outerCtx, txCtx)
-		service := NewMessagesService(repository, chatsRepository, txManager)
+		notifier := expectCommittedDeletionNotification(t, txManager, outerCtx, txCtx, chatID, messageID)
+		service := NewMessagesService(repository, chatsRepository, txManager, notifier)
 
 		err := service.DeleteMessage(outerCtx, command)
 
@@ -138,8 +138,8 @@ func TestDeleteMessage(t *testing.T) {
 		expectLastReadMessageUpdate(chatsRepository, txCtx, chatID, messageID, nil, nil)
 		chatsRepository.EXPECT().UpdateChatLastMsgID(txCtx, chatID, (*uuid.UUID)(nil)).Return(nil)
 		txManager := NewMockTXManager(t)
-		expectDeleteMessageTransaction(txManager, outerCtx, txCtx)
-		service := NewMessagesService(repository, chatsRepository, txManager)
+		notifier := expectCommittedDeletionNotification(t, txManager, outerCtx, txCtx, chatID, messageID)
+		service := NewMessagesService(repository, chatsRepository, txManager, notifier)
 
 		err := service.DeleteMessage(outerCtx, command)
 
@@ -167,8 +167,8 @@ func TestDeleteMessage(t *testing.T) {
 			}),
 		).Return(nil)
 		txManager := NewMockTXManager(t)
-		expectDeleteMessageTransaction(txManager, outerCtx, txCtx)
-		service := NewMessagesService(repository, chatsRepository, txManager)
+		notifier := expectCommittedDeletionNotification(t, txManager, outerCtx, txCtx, chatID, messageID)
+		service := NewMessagesService(repository, chatsRepository, txManager, notifier)
 
 		err := service.DeleteMessage(outerCtx, command)
 
@@ -185,7 +185,7 @@ func TestDeleteMessage(t *testing.T) {
 		chatsRepository.EXPECT().GetChatForUpdate(txCtx, chatID).Return(domain.Chat{}, lookupErr)
 		txManager := NewMockTXManager(t)
 		expectDeleteMessageTransaction(txManager, outerCtx, txCtx)
-		service := NewMessagesService(repository, chatsRepository, txManager)
+		service := NewMessagesService(repository, chatsRepository, txManager, NewMockNotifier(t))
 
 		err := service.DeleteMessage(outerCtx, command)
 
@@ -202,7 +202,7 @@ func TestDeleteMessage(t *testing.T) {
 		chatsRepository.EXPECT().GetChatForUpdate(txCtx, chatID).Return(chat, nil)
 		txManager := NewMockTXManager(t)
 		expectDeleteMessageTransaction(txManager, outerCtx, txCtx)
-		service := NewMessagesService(repository, chatsRepository, txManager)
+		service := NewMessagesService(repository, chatsRepository, txManager, NewMockNotifier(t))
 
 		err := service.DeleteMessage(outerCtx, command)
 
@@ -223,7 +223,7 @@ func TestDeleteMessage(t *testing.T) {
 		chatsRepository.EXPECT().GetChatForUpdate(txCtx, chatID).Return(chat, nil)
 		txManager := NewMockTXManager(t)
 		expectDeleteMessageTransaction(txManager, outerCtx, txCtx)
-		service := NewMessagesService(repository, chatsRepository, txManager)
+		service := NewMessagesService(repository, chatsRepository, txManager, NewMockNotifier(t))
 
 		err := service.DeleteMessage(outerCtx, command)
 
@@ -242,7 +242,7 @@ func TestDeleteMessage(t *testing.T) {
 		chatsRepository.EXPECT().GetChatForUpdate(txCtx, chatID).Return(chat, nil)
 		txManager := NewMockTXManager(t)
 		expectDeleteMessageTransaction(txManager, outerCtx, txCtx)
-		service := NewMessagesService(repository, chatsRepository, txManager)
+		service := NewMessagesService(repository, chatsRepository, txManager, NewMockNotifier(t))
 
 		err := service.DeleteMessage(outerCtx, command)
 
@@ -271,7 +271,7 @@ func TestDeleteMessage(t *testing.T) {
 		)
 		txManager := NewMockTXManager(t)
 		expectDeleteMessageTransaction(txManager, outerCtx, txCtx)
-		service := NewMessagesService(repository, chatsRepository, txManager)
+		service := NewMessagesService(repository, chatsRepository, txManager, NewMockNotifier(t))
 
 		err := service.DeleteMessage(outerCtx, command)
 
@@ -294,7 +294,7 @@ func TestDeleteMessage(t *testing.T) {
 			Return(updateErr)
 		txManager := NewMockTXManager(t)
 		expectDeleteMessageTransaction(txManager, outerCtx, txCtx)
-		service := NewMessagesService(repository, chatsRepository, txManager)
+		service := NewMessagesService(repository, chatsRepository, txManager, NewMockNotifier(t))
 
 		err := service.DeleteMessage(outerCtx, command)
 
@@ -317,7 +317,7 @@ func TestDeleteMessage(t *testing.T) {
 		expectLastReadMessageUpdate(chatsRepository, txCtx, chatID, messageID, nil, nil)
 		txManager := NewMockTXManager(t)
 		expectDeleteMessageTransaction(txManager, outerCtx, txCtx)
-		service := NewMessagesService(repository, chatsRepository, txManager)
+		service := NewMessagesService(repository, chatsRepository, txManager, NewMockNotifier(t))
 
 		err := service.DeleteMessage(outerCtx, command)
 
@@ -330,12 +330,57 @@ func TestDeleteMessage(t *testing.T) {
 		expectDeleteMessagePrelude(repository, t.Context(), command, existing)
 		txManager := NewMockTXManager(t)
 		txManager.EXPECT().WithinTransaction(t.Context(), mock.Anything).Return(transactionErr)
-		service := NewMessagesService(repository, NewMockChatsRepository(t), txManager)
+		service := NewMessagesService(repository, NewMockChatsRepository(t), txManager, NewMockNotifier(t))
 
 		err := service.DeleteMessage(t.Context(), command)
 
 		require.ErrorIs(t, err, transactionErr)
 	})
+}
+
+func expectCommittedDeletionNotification(t *testing.T, tx *MockTXManager, outerCtx, txCtx context.Context, chatID, messageID uuid.UUID) *MockNotifier {
+	t.Helper()
+	committed := false
+	tx.EXPECT().WithinTransaction(outerCtx, mock.Anything).
+		RunAndReturn(func(_ context.Context, fn func(context.Context) error) error {
+			if err := fn(txCtx); err != nil {
+				return err
+			}
+			committed = true
+			return nil
+		}).Once()
+	notifier := NewMockNotifier(t)
+	notifier.EXPECT().MessageDeleted(outerCtx, chatID, messageID).
+		Run(func(context.Context, uuid.UUID, uuid.UUID) {
+			require.True(t, committed, "notification must follow commit")
+		}).Once()
+	return notifier
+}
+
+func TestDeleteMessageDoesNotNotifyWhenCommitFails(t *testing.T) {
+	ctx := t.Context()
+	txCtx := context.WithValue(ctx, deleteMessageTxContextKey{}, "transaction")
+	command := DeleteMessageCommand{ChatID: uuid.New(), SenderID: uuid.New(), MessageID: uuid.New()}
+	existing := newEditMessageTestMessage(t, command.MessageID, command.ChatID, command.SenderID, "message")
+	lastID := uuid.New()
+	chat := newDeleteMessageTestChat(t, command.ChatID, &lastID)
+	repo := NewMockMessagesRepository(t)
+	chats := NewMockChatsRepository(t)
+	tx := NewMockTXManager(t)
+	notifier := NewMockNotifier(t)
+	expectDeleteMessagePrelude(repo, ctx, command, existing)
+	chats.EXPECT().GetChatForUpdate(txCtx, command.ChatID).Return(chat, nil).Once()
+	repo.EXPECT().GetMessages(txCtx, command.ChatID, deleteMessageCursor(existing), 1, false).Return(nil, nil).Once()
+	expectLastReadMessageUpdate(chats, txCtx, command.ChatID, command.MessageID, nil, nil)
+	repo.EXPECT().DeleteMessage(txCtx, command.MessageID).Return(nil).Once()
+	commitErr := errors.New("commit failed")
+	tx.EXPECT().WithinTransaction(ctx, mock.Anything).
+		RunAndReturn(func(_ context.Context, fn func(context.Context) error) error {
+			require.NoError(t, fn(txCtx))
+			return commitErr
+		}).Once()
+	err := NewMessagesService(repo, chats, tx, notifier).DeleteMessage(ctx, command)
+	require.ErrorIs(t, err, commitErr)
 }
 
 func expectDeleteMessagePrelude(

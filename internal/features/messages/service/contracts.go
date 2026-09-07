@@ -84,3 +84,13 @@ type ChatsRepository interface {
 type TXManager interface {
 	WithinTransaction(ctx context.Context, fn func(ctx context.Context) error) error
 }
+
+// Notifier handles notification failures internally. Call only after commit.
+type Notifier interface {
+	MessageCreated(
+		ctx context.Context,
+		message domain.Message,
+	)
+	MessageEdited(ctx context.Context, message domain.Message)
+	MessageDeleted(ctx context.Context, chatID, messageID uuid.UUID)
+}

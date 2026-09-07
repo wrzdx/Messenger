@@ -21,6 +21,7 @@ import (
 	messages_postgres_repository "messenger/internal/features/messages/repository/postgres"
 	messages_service "messenger/internal/features/messages/service"
 	messages_transport_http "messenger/internal/features/messages/transport/http"
+	realtime_transport_ws "messenger/internal/features/realtime/transport/ws"
 	users_postgres_repository "messenger/internal/features/users/repository/postgres"
 	users_service "messenger/internal/features/users/service"
 	users_transport_http "messenger/internal/features/users/transport/http"
@@ -105,6 +106,10 @@ func main() {
 		authService, cookieManager,
 	)
 
+	logger.Debug("initializing feature", zap.String("feature", "realtime"))
+	realtimeHub := realtime_transport_ws.NewHub()
+	realtimeWS := realtime_transport_ws.NewWSHandler(ctx, jwtProvider, realtimeHub)
+
 	logger.Debug("initializing feature", zap.String("feature", "users"))
 	usersService := users_service.NewUsersService(
 		usersRepository,
@@ -130,10 +135,12 @@ func main() {
 		pool,
 		postgresConfig.Timeout,
 	)
+	notifier := realtime_transport_ws.NewNotifier(realtimeHub, messagesRepository, logger)
 	messagesService := messages_service.NewMessagesService(
 		messagesRepository,
 		messagesRepository,
 		txManager,
+		notifier,
 	)
 	messagesHTTP := messages_transport_http.NewMessagesHandler(messagesService)
 
@@ -157,6 +164,8 @@ func main() {
 		"/chats/{chat_id}/messages",
 		messagesHTTP.Router(authMW),
 	)
+
+	routerV1.Get("/ws", realtimeWS.ServeHTTP)
 
 	router.Mount("/api/v1", routerV1)
 	httpServer := http_server.NewHTTPServer(

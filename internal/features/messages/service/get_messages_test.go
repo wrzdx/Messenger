@@ -255,7 +255,7 @@ func newGetMessagesTestService(
 	return NewMessagesService(
 		repository,
 		NewMockChatsRepository(t),
-		NewMockTXManager(t),
+		NewMockTXManager(t), NewMockNotifier(t),
 	)
 }
 

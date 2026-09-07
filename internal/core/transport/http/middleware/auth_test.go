@@ -20,9 +20,13 @@ func TestAuth(t *testing.T) {
 	t.Run("passes authenticated user claims to next handler", func(t *testing.T) {
 		userID := uuid.New()
 		provider := &tokenProviderStub{
-			parse: func(token string) (auth.AccessTokenClaims, error) {
+			parse: func(token string) (auth.ParsedAccessToken, error) {
 				require.Equal(t, "access-token", token)
-				return auth.AccessTokenClaims{UserID: userID}, nil
+				return auth.ParsedAccessToken{
+					AccessTokenClaims: auth.AccessTokenClaims{
+						UserID: userID,
+					},
+				}, nil
 			},
 		}
 		nextCalls := 0
@@ -45,9 +49,13 @@ func TestAuth(t *testing.T) {
 
 	t.Run("accepts case-insensitive bearer scheme", func(t *testing.T) {
 		provider := &tokenProviderStub{
-			parse: func(token string) (auth.AccessTokenClaims, error) {
+			parse: func(token string) (auth.ParsedAccessToken, error) {
 				require.Equal(t, "access-token", token)
-				return auth.AccessTokenClaims{UserID: uuid.New()}, nil
+				return auth.ParsedAccessToken{
+					AccessTokenClaims: auth.AccessTokenClaims{
+						UserID: uuid.New(),
+					},
+				}, nil
 			},
 		}
 		nextCalls := 0
@@ -75,9 +83,9 @@ func TestAuth(t *testing.T) {
 	for _, test := range invalidHeaders {
 		t.Run("rejects "+test.name, func(t *testing.T) {
 			provider := &tokenProviderStub{
-				parse: func(string) (auth.AccessTokenClaims, error) {
+				parse: func(string) (auth.ParsedAccessToken, error) {
 					t.Fatal("token provider must not be called for malformed authorization header")
-					return auth.AccessTokenClaims{}, nil
+					return auth.ParsedAccessToken{}, nil
 				},
 			}
 			nextCalls := 0
@@ -101,8 +109,8 @@ func TestAuth(t *testing.T) {
 
 	t.Run("returns unauthorized when provider rejects token", func(t *testing.T) {
 		provider := &tokenProviderStub{
-			parse: func(string) (auth.AccessTokenClaims, error) {
-				return auth.AccessTokenClaims{}, auth.ErrInvalidToken
+			parse: func(string) (auth.ParsedAccessToken, error) {
+				return auth.ParsedAccessToken{}, auth.ErrInvalidToken
 			},
 		}
 		nextCalls := 0
@@ -126,8 +134,8 @@ func TestAuth(t *testing.T) {
 	t.Run("does not expose unexpected provider error", func(t *testing.T) {
 		providerErr := errors.New("key storage unavailable")
 		provider := &tokenProviderStub{
-			parse: func(string) (auth.AccessTokenClaims, error) {
-				return auth.AccessTokenClaims{}, providerErr
+			parse: func(string) (auth.ParsedAccessToken, error) {
+				return auth.ParsedAccessToken{}, providerErr
 			},
 		}
 		nextCalls := 0
@@ -151,11 +159,11 @@ func TestAuth(t *testing.T) {
 }
 
 type tokenProviderStub struct {
-	parse func(token string) (auth.AccessTokenClaims, error)
+	parse func(token string) (auth.ParsedAccessToken, error)
 	calls int
 }
 
-func (s *tokenProviderStub) ParseAccessToken(token string) (auth.AccessTokenClaims, error) {
+func (s *tokenProviderStub) ParseAccessToken(token string) (auth.ParsedAccessToken, error) {
 	s.calls++
 	return s.parse(token)
 }

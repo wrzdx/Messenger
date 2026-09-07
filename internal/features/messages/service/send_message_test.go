@@ -32,7 +32,7 @@ func TestSendMessage(t *testing.T) {
 		service := NewMessagesService(
 			NewMockMessagesRepository(t),
 			NewMockChatsRepository(t),
-			NewMockTXManager(t),
+			NewMockTXManager(t), NewMockNotifier(t),
 		)
 
 		actual, created, err := service.SendMessage(t.Context(), SendMessageCommand{
@@ -54,7 +54,7 @@ func TestSendMessage(t *testing.T) {
 		service := NewMessagesService(
 			messagesRepository,
 			NewMockChatsRepository(t),
-			NewMockTXManager(t),
+			NewMockTXManager(t), NewMockNotifier(t),
 		)
 
 		actual, created, err := service.SendMessage(t.Context(), command)
@@ -73,7 +73,7 @@ func TestSendMessage(t *testing.T) {
 		service := NewMessagesService(
 			messagesRepository,
 			NewMockChatsRepository(t),
-			NewMockTXManager(t),
+			NewMockTXManager(t), NewMockNotifier(t),
 		)
 
 		actual, created, err := service.SendMessage(t.Context(), command)
@@ -92,7 +92,7 @@ func TestSendMessage(t *testing.T) {
 		service := NewMessagesService(
 			messagesRepository,
 			NewMockChatsRepository(t),
-			NewMockTXManager(t),
+			NewMockTXManager(t), NewMockNotifier(t),
 		)
 
 		actual, created, err := service.SendMessage(t.Context(), command)
@@ -133,8 +133,8 @@ func TestSendMessage(t *testing.T) {
 			GetDirectMessageState(txCtx, chatID).
 			Return(activeDirectMessageState(direct), nil)
 		txManager := NewMockTXManager(t)
-		expectSendMessageTransaction(txManager, outerCtx, txCtx)
-		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
+		notifier := expectCommittedMessageNotification(t, txManager, outerCtx, txCtx, &appended)
+		service := NewMessagesService(messagesRepository, chatsRepository, txManager, notifier)
 
 		actual, created, err := service.SendMessage(outerCtx, command)
 
@@ -161,7 +161,7 @@ func TestSendMessage(t *testing.T) {
 			Return(activeDirectMessageState(direct), nil)
 		txManager := NewMockTXManager(t)
 		expectSendMessageTransaction(txManager, outerCtx, txCtx)
-		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
+		service := NewMessagesService(messagesRepository, chatsRepository, txManager, NewMockNotifier(t))
 		outsiderCommand := command
 		outsiderCommand.SenderID = outsiderID
 		actual, created, err := service.SendMessage(outerCtx, outsiderCommand)
@@ -190,7 +190,7 @@ func TestSendMessage(t *testing.T) {
 				Return(state, nil)
 			txManager := NewMockTXManager(t)
 			expectSendMessageTransaction(txManager, outerCtx, txCtx)
-			service := NewMessagesService(messagesRepository, chatsRepository, txManager)
+			service := NewMessagesService(messagesRepository, chatsRepository, txManager, NewMockNotifier(t))
 
 			actual, created, err := service.SendMessage(outerCtx, command)
 
@@ -225,8 +225,8 @@ func TestSendMessage(t *testing.T) {
 			GetGroupSenderState(txCtx, chatID, senderID).
 			Return(AccountState{UserID: senderID}, nil)
 		txManager := NewMockTXManager(t)
-		expectSendMessageTransaction(txManager, outerCtx, txCtx)
-		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
+		notifier := expectCommittedMessageNotification(t, txManager, outerCtx, txCtx, &appended)
+		service := NewMessagesService(messagesRepository, chatsRepository, txManager, notifier)
 
 		actual, created, err := service.SendMessage(outerCtx, command)
 
@@ -248,7 +248,7 @@ func TestSendMessage(t *testing.T) {
 			Return(AccountState{UserID: senderID, Deleted: true}, nil)
 		txManager := NewMockTXManager(t)
 		expectSendMessageTransaction(txManager, outerCtx, txCtx)
-		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
+		service := NewMessagesService(messagesRepository, chatsRepository, txManager, NewMockNotifier(t))
 
 		actual, created, err := service.SendMessage(outerCtx, command)
 
@@ -269,7 +269,7 @@ func TestSendMessage(t *testing.T) {
 			Return(domain.Chat{}, lookupErr)
 		txManager := NewMockTXManager(t)
 		expectSendMessageTransaction(txManager, outerCtx, txCtx)
-		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
+		service := NewMessagesService(messagesRepository, chatsRepository, txManager, NewMockNotifier(t))
 
 		actual, created, err := service.SendMessage(outerCtx, command)
 
@@ -291,7 +291,7 @@ func TestSendMessage(t *testing.T) {
 			Return(DirectMessageState{}, domain.ErrNotFound)
 		txManager := NewMockTXManager(t)
 		expectSendMessageTransaction(txManager, outerCtx, txCtx)
-		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
+		service := NewMessagesService(messagesRepository, chatsRepository, txManager, NewMockNotifier(t))
 
 		actual, created, err := service.SendMessage(outerCtx, command)
 
@@ -316,7 +316,7 @@ func TestSendMessage(t *testing.T) {
 			Return(activeDirectMessageState(direct), nil)
 		txManager := NewMockTXManager(t)
 		expectSendMessageTransaction(txManager, outerCtx, txCtx)
-		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
+		service := NewMessagesService(messagesRepository, chatsRepository, txManager, NewMockNotifier(t))
 
 		actual, created, err := service.SendMessage(outerCtx, command)
 
@@ -352,7 +352,7 @@ func TestSendMessage(t *testing.T) {
 			Return(activeDirectMessageState(direct), nil)
 		txManager := NewMockTXManager(t)
 		expectSendMessageTransaction(txManager, outerCtx, txCtx)
-		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
+		service := NewMessagesService(messagesRepository, chatsRepository, txManager, NewMockNotifier(t))
 
 		actual, created, err := service.SendMessage(outerCtx, command)
 
@@ -375,7 +375,7 @@ func TestSendMessage(t *testing.T) {
 			Return(activeDirectMessageState(direct), nil)
 		txManager := NewMockTXManager(t)
 		expectSendMessageTransaction(txManager, outerCtx, txCtx)
-		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
+		service := NewMessagesService(messagesRepository, chatsRepository, txManager, NewMockNotifier(t))
 
 		actual, created, err := service.SendMessage(outerCtx, command)
 
@@ -404,7 +404,7 @@ func TestSendMessage(t *testing.T) {
 			Return(activeDirectMessageState(direct), nil)
 		txManager := NewMockTXManager(t)
 		expectSendMessageTransaction(txManager, outerCtx, txCtx)
-		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
+		service := NewMessagesService(messagesRepository, chatsRepository, txManager, NewMockNotifier(t))
 
 		actual, created, err := service.SendMessage(outerCtx, command)
 
@@ -431,7 +431,7 @@ func TestSendMessage(t *testing.T) {
 			Return(activeDirectMessageState(direct), nil)
 		txManager := NewMockTXManager(t)
 		expectSendMessageTransaction(txManager, outerCtx, txCtx)
-		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
+		service := NewMessagesService(messagesRepository, chatsRepository, txManager, NewMockNotifier(t))
 
 		actual, created, err := service.SendMessage(outerCtx, command)
 
@@ -457,7 +457,7 @@ func TestSendMessage(t *testing.T) {
 			Return(activeDirectMessageState(direct), nil)
 		txManager := NewMockTXManager(t)
 		expectSendMessageTransaction(txManager, outerCtx, txCtx)
-		service := NewMessagesService(messagesRepository, chatsRepository, txManager)
+		service := NewMessagesService(messagesRepository, chatsRepository, txManager, NewMockNotifier(t))
 
 		actual, created, err := service.SendMessage(outerCtx, command)
 
@@ -474,7 +474,7 @@ func TestSendMessage(t *testing.T) {
 		expectMessageNotFound(messagesRepository, t.Context(), senderID, clientMessageID)
 		txManager := NewMockTXManager(t)
 		txManager.EXPECT().WithinTransaction(t.Context(), mock.Anything).Return(transactionErr)
-		service := NewMessagesService(messagesRepository, NewMockChatsRepository(t), txManager)
+		service := NewMessagesService(messagesRepository, NewMockChatsRepository(t), txManager, NewMockNotifier(t))
 
 		actual, created, err := service.SendMessage(t.Context(), command)
 
@@ -482,6 +482,58 @@ func TestSendMessage(t *testing.T) {
 		require.False(t, created)
 		require.Zero(t, actual)
 	})
+}
+
+func expectCommittedMessageNotification(
+	t *testing.T,
+	txManager *MockTXManager,
+	outerCtx, txCtx context.Context,
+	appended *domain.Message,
+) *MockNotifier {
+	t.Helper()
+	committed := false
+	txManager.EXPECT().WithinTransaction(outerCtx, mock.Anything).
+		RunAndReturn(func(_ context.Context, fn func(context.Context) error) error {
+			if err := fn(txCtx); err != nil {
+				return err
+			}
+			committed = true
+			return nil
+		}).Once()
+	notifier := NewMockNotifier(t)
+	notifier.EXPECT().MessageCreated(outerCtx, mock.Anything).
+		Run(func(_ context.Context, message domain.Message) {
+			require.True(t, committed, "notification must happen after commit")
+			require.Equal(t, *appended, message)
+		}).Once()
+	return notifier
+}
+
+func TestSendMessageDoesNotNotifyWhenCommitFails(t *testing.T) {
+	ctx := t.Context()
+	txCtx := context.WithValue(ctx, sendMessageTxContextKey{}, "transaction")
+	command := SendMessageCommand{SenderID: uuid.New(), ChatID: uuid.New(), ClientMessageID: uuid.New(), Content: "hello"}
+	group := newSendMessageTestGroup(t, command.ChatID)
+	messages := NewMockMessagesRepository(t)
+	chats := NewMockChatsRepository(t)
+	tx := NewMockTXManager(t)
+	notifier := NewMockNotifier(t) // No call is permitted, even after successful INSERT.
+	expectMessageNotFound(messages, ctx, command.SenderID, command.ClientMessageID)
+	expectLockedChat(chats, txCtx, group.Chat)
+	chats.EXPECT().GetGroupSenderState(txCtx, command.ChatID, command.SenderID).
+		Return(AccountState{UserID: command.SenderID}, nil).Once()
+	messages.EXPECT().AppendMessage(txCtx, mock.Anything).Return(nil).Once()
+	messages.EXPECT().MarkAsRead(txCtx, command.ChatID, command.SenderID, mock.Anything).Return(nil).Once()
+	commitErr := errors.New("commit failed")
+	tx.EXPECT().WithinTransaction(ctx, mock.Anything).
+		RunAndReturn(func(_ context.Context, fn func(context.Context) error) error {
+			require.NoError(t, fn(txCtx))
+			return commitErr
+		}).Once()
+	message, created, err := NewMessagesService(messages, chats, tx, notifier).SendMessage(ctx, command)
+	require.ErrorIs(t, err, commitErr)
+	require.False(t, created)
+	require.Zero(t, message)
 }
 
 func expectSendMessageTransaction(

@@ -44,7 +44,7 @@ func authErrorMapper(err error) http_response.HTTPError {
 }
 
 type TokenProvider interface {
-	ParseAccessToken(tokenStr string) (auth.AccessTokenClaims, error)
+	ParseAccessToken(tokenStr string) (auth.ParsedAccessToken, error)
 }
 
 func Auth(jwt TokenProvider) Middleware {
