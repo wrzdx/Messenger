@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"messenger/internal/core/auth"
+	"messenger/internal/core/logger"
+	http_middleware "messenger/internal/core/transport/http/middleware"
 
 	"github.com/coder/websocket"
 	"github.com/google/uuid"
@@ -29,10 +31,13 @@ func deliveryServer(t *testing.T, userID uuid.UUID) (*Hub, func() *websocket.Con
 		}, nil
 	}}
 	handler := NewWSHandler(ctx, provider, hub)
+	wrapped := http_middleware.Logging(logger.NewTestLogger())(
+		http_middleware.Trace()(handler),
+	)
 	done := make(chan struct{}, 8)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() { done <- struct{}{} }()
-		handler.ServeHTTP(w, r)
+		wrapped.ServeHTTP(w, r)
 	}))
 	t.Cleanup(func() { cancel(); server.Close() })
 	dial := func() *websocket.Conn {

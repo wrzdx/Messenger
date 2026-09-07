@@ -1,0 +1,78 @@
+name: messenger
+
+services:
+  app:
+    image: messenger:${RELEASE_ID:?required}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      HTTP_ADDR: :5050
+      HTTP_SHUTDOWN_TIMEOUT: 30s
+      HTTP_ALLOWED_ORIGINS: ${APP_ORIGIN:?required}
+      ENVIRONMENT: production
+      TIME_ZONE: UTC
+      AUTH_ACCESS_TOKEN_TTL: 15m
+      AUTH_SESSION_TTL: 24h
+      JWT_SECRET: ${JWT_SECRET:?required}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: messenger
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+      POSTGRES_DB: messenger
+      POSTGRES_TIMEOUT: 10s
+      LOGGER_LEVEL: INFO
+      LOGGER_FOLDER: /app/logs
+      GOMEMLIMIT: 192MiB
+      GOMAXPROCS: "2"
+    ports:
+      - "127.0.0.1:5051:5050"
+    volumes:
+      - ${MESSENGER_ROOT:?required}/logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    stop_grace_period: 35s
+    mem_limit: 256m
+    cpus: 1.0
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  db:
+    image: postgres:18-bookworm
+    environment:
+      POSTGRES_USER: messenger
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+      POSTGRES_DB: messenger
+    command: [postgres, -c, max_connections=50, -c, shared_buffers=64MB]
+    volumes:
+      - ${MESSENGER_ROOT:?required}/data:/var/lib/postgresql
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U messenger -d messenger']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    mem_limit: 384m
+    cpus: 1.0
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  migrate:
+    image: migrate/migrate:v4.19.1
+    profiles: [tools]
+    volumes:
+      - ./migrations:/migrations:ro
+    entrypoint: [migrate, -path, /migrations, -database, 'postgres://messenger:${POSTGRES_PASSWORD:?required}@db:5432/messenger?sslmode=disable']
+    command: [up]
+    mem_limit: 128m

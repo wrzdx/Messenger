@@ -8,6 +8,28 @@ The **v1 functional scope** is implemented: accounts, direct and group chats,
 text messages, read state, and live message notifications. This is an educational
 MVP, not a claim of production readiness or a published version tag.
 
+## Live deployment
+
+- **HTTP API:** https://messenger.wrzdx.tech/api/v1
+- **WebSocket:** `wss://messenger.wrzdx.tech/api/v1/ws`
+
+The deployment serves the backend only; there is no web UI at the domain root.
+Protected HTTP routes require a Bearer access token. WebSocket authentication
+uses the first message, as described in the [protocol](docs/websocket.md).
+
+To check that the API is reachable:
+
+```sh
+curl -i https://messenger.wrzdx.tech/api/v1/users/me
+```
+
+Without a token, the expected response is `401 Unauthorized` with error code
+`invalid_token`, not a profile page.
+
+The service runs in Docker behind Nginx with HTTPS. PostgreSQL is not exposed
+publicly. This is a learning/demo deployment; do not use it for sensitive data
+or rely on it for durable storage of important conversations.
+
 ## Documentation
 
 - [HTTP API](docs/http-api.md): routes, request bodies, responses, and pagination.
