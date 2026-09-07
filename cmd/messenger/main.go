@@ -106,6 +106,10 @@ func main() {
 		authService, cookieManager,
 	)
 
+	logger.Debug("initializing feature", zap.String("feature", "realtime"))
+	realtimeHub := realtime_transport_ws.NewHub()
+	realtimeWS := realtime_transport_ws.NewWSHandler(ctx, jwtProvider, realtimeHub)
+
 	logger.Debug("initializing feature", zap.String("feature", "users"))
 	usersService := users_service.NewUsersService(
 		usersRepository,
@@ -131,16 +135,14 @@ func main() {
 		pool,
 		postgresConfig.Timeout,
 	)
+	notifier := realtime_transport_ws.NewNotifier(realtimeHub, messagesRepository, logger)
 	messagesService := messages_service.NewMessagesService(
 		messagesRepository,
 		messagesRepository,
 		txManager,
+		notifier,
 	)
 	messagesHTTP := messages_transport_http.NewMessagesHandler(messagesService)
-
-	logger.Debug("initializing feature", zap.String("feature", "realtime"))
-	realtimeHub := realtime_transport_ws.NewHub()
-	realtimeWS := realtime_transport_ws.NewWSHandler(ctx, jwtProvider, realtimeHub)
 
 	logger.Debug("initializing HTTP server")
 	httpConfig := http_server.NewConfigMust()

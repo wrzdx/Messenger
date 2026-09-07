@@ -1,6 +1,14 @@
 package realtime_transport_ws
 
-import "messenger/internal/core/auth"
+import (
+	"context"
+	"github.com/google/uuid"
+	"messenger/internal/core/auth"
+)
+
+type ParticipantsRepository interface {
+	GetParticipants(ctx context.Context, chatID uuid.UUID) ([]uuid.UUID, error)
+}
 
 type TokenProvider interface {
 	ParseAccessToken(tokenStr string) (auth.ParsedAccessToken, error)

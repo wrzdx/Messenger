@@ -145,7 +145,7 @@ func (s *MessagesService) SendMessage(
 		}
 		return domain.Message{}, false, fmt.Errorf("transaction: %w", err)
 	}
-
+	s.notifier.MessageCreated(ctx, newMessage)
 	return newMessage, true, nil
 }
 

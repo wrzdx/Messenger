@@ -29,7 +29,7 @@ func TestMarkAsRead(t *testing.T) {
 		service := NewMessagesService(
 			NewMockMessagesRepository(t),
 			NewMockChatsRepository(t),
-			NewMockTXManager(t),
+			NewMockTXManager(t), NewMockNotifier(t),
 		)
 
 		err := service.MarkAsRead(t.Context(), MarkAsReadCommand{})
@@ -52,7 +52,7 @@ func TestMarkAsRead(t *testing.T) {
 		service := NewMessagesService(
 			repository,
 			NewMockChatsRepository(t),
-			NewMockTXManager(t),
+			NewMockTXManager(t), NewMockNotifier(t),
 		)
 
 		err := service.MarkAsRead(t.Context(), command)
@@ -73,7 +73,7 @@ func TestMarkAsRead(t *testing.T) {
 		mock.InOrder(lockCall.Call, markCall.Call)
 		txManager := NewMockTXManager(t)
 		expectMarkAsReadTransaction(txManager, outerCtx, txCtx)
-		service := NewMessagesService(repository, chatsRepository, txManager)
+		service := NewMessagesService(repository, chatsRepository, txManager, NewMockNotifier(t))
 
 		err := service.MarkAsRead(outerCtx, command)
 
@@ -91,7 +91,7 @@ func TestMarkAsRead(t *testing.T) {
 			Return(domain.Chat{}, lockErr)
 		txManager := NewMockTXManager(t)
 		expectMarkAsReadTransaction(txManager, outerCtx, txCtx)
-		service := NewMessagesService(repository, chatsRepository, txManager)
+		service := NewMessagesService(repository, chatsRepository, txManager, NewMockNotifier(t))
 
 		err := service.MarkAsRead(outerCtx, command)
 
@@ -111,7 +111,7 @@ func TestMarkAsRead(t *testing.T) {
 			Return(newMarkAsReadTestChat(chatID), nil)
 		txManager := NewMockTXManager(t)
 		expectMarkAsReadTransaction(txManager, outerCtx, txCtx)
-		service := NewMessagesService(repository, chatsRepository, txManager)
+		service := NewMessagesService(repository, chatsRepository, txManager, NewMockNotifier(t))
 
 		err := service.MarkAsRead(outerCtx, command)
 
@@ -125,7 +125,7 @@ func TestMarkAsRead(t *testing.T) {
 		txManager := NewMockTXManager(t)
 		txManager.EXPECT().WithinTransaction(t.Context(), mock.Anything).
 			Return(transactionErr)
-		service := NewMessagesService(repository, NewMockChatsRepository(t), txManager)
+		service := NewMessagesService(repository, NewMockChatsRepository(t), txManager, NewMockNotifier(t))
 
 		err := service.MarkAsRead(t.Context(), command)
 
