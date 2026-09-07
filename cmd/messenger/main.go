@@ -139,7 +139,8 @@ func main() {
 	messagesHTTP := messages_transport_http.NewMessagesHandler(messagesService)
 
 	logger.Debug("initializing feature", zap.String("feature", "realtime"))
-	realtimeWS := realtime_transport_ws.NewWSHandler(ctx, jwtProvider)
+	realtimeHub := realtime_transport_ws.NewHub()
+	realtimeWS := realtime_transport_ws.NewWSHandler(ctx, jwtProvider, realtimeHub)
 
 	logger.Debug("initializing HTTP server")
 	httpConfig := http_server.NewConfigMust()

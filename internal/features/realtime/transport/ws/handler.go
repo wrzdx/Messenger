@@ -9,20 +9,17 @@ import (
 	"github.com/coder/websocket/wsjson"
 )
 
-const (
-	authReqType = "authenticate"
-	authResType = "authenticated"
-)
-
 type Handler struct {
 	jwtProvider TokenProvider
 	ctx         context.Context
+	hub         *Hub
 }
 
-func NewWSHandler(ctx context.Context, tp TokenProvider) *Handler {
+func NewWSHandler(ctx context.Context, tp TokenProvider, hub *Hub) *Handler {
 	return &Handler{
 		jwtProvider: tp,
 		ctx:         ctx,
+		hub:         hub,
 	}
 }
 
@@ -32,6 +29,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer conn.CloseNow()
+	conn.SetReadLimit(4096)
 
 	var request AuthRequest
 	authCtx, cancel := context.WithTimeout(h.ctx, 5*time.Second)
@@ -54,7 +52,17 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx, cancelExpired := context.WithDeadline(h.ctx, claims.ExpiresAt)
 	defer cancelExpired()
 
-	writeCtx, cancelWrite := context.WithTimeout(ctx, 5*time.Second)
+	client := NewClient(ctx, conn)
+	// Register before acknowledging so events published after the client sees
+	// authenticated cannot fall into a registration gap. Run starts after the
+	// acknowledgement, so queued events cannot overtake it on the wire.
+	h.hub.Register(claims.UserID, client)
+	defer func() {
+		client.Stop()
+		h.hub.Unregister(claims.UserID, client)
+	}()
+
+	writeCtx, cancelWrite := context.WithTimeout(client.ctx, writeTimeout)
 	err = wsjson.Write(writeCtx, conn, AuthResponse{
 		Type: authResType,
 	})
@@ -64,15 +72,6 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	closed := conn.CloseRead(ctx)
-	<-closed.Done()
-}
-
-type AuthRequest struct {
-	Type        string `json:"type"`
-	AccessToken string `json:"access_token"`
-}
-
-type AuthResponse struct {
-	Type string `json:"type"`
+	// Any exit ends this connection; deferred cleanup removes its registration.
+	_ = client.Run()
 }

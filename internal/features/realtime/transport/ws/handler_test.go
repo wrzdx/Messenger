@@ -13,6 +13,7 @@ import (
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,7 +28,7 @@ func (s tokenProviderStub) ParseAccessToken(token string) (auth.ParsedAccessToke
 func TestHandlerAuthenticatesConnection(t *testing.T) {
 	userID := uuid.New()
 	provider := tokenProviderStub{parse: func(token string) (auth.ParsedAccessToken, error) {
-		require.Equal(t, "access-token", token)
+		assert.Equal(t, "access-token", token)
 		return auth.ParsedAccessToken{
 			AccessTokenClaims: auth.AccessTokenClaims{UserID: userID},
 			ExpiresAt:         time.Now().Add(time.Minute),
@@ -44,8 +45,8 @@ func TestHandlerAuthenticatesConnection(t *testing.T) {
 
 func TestHandlerRejectsUnexpectedFirstMessage(t *testing.T) {
 	provider := tokenProviderStub{parse: func(string) (auth.ParsedAccessToken, error) {
-		t.Fatal("token provider must not be called")
-		return auth.ParsedAccessToken{}, nil
+		t.Error("token provider must not be called")
+		return auth.ParsedAccessToken{}, auth.ErrInvalidToken
 	}}
 
 	conn := dialHandler(t, context.Background(), provider)
@@ -67,8 +68,8 @@ func TestHandlerRejectsInvalidToken(t *testing.T) {
 
 func TestHandlerClosesConnectionOnMalformedJSON(t *testing.T) {
 	provider := tokenProviderStub{parse: func(string) (auth.ParsedAccessToken, error) {
-		t.Fatal("token provider must not be called")
-		return auth.ParsedAccessToken{}, nil
+		t.Error("token provider must not be called")
+		return auth.ParsedAccessToken{}, auth.ErrInvalidToken
 	}}
 
 	conn := dialHandler(t, context.Background(), provider)
@@ -76,10 +77,7 @@ func TestHandlerClosesConnectionOnMalformedJSON(t *testing.T) {
 	defer cancel()
 	require.NoError(t, conn.Write(writeCtx, websocket.MessageText, []byte("{")))
 
-	readCtx, cancelRead := context.WithTimeout(context.Background(), time.Second)
-	defer cancelRead()
-	_, _, err := conn.Read(readCtx)
-	require.Error(t, err)
+	requireConnectionClosed(t, conn)
 }
 
 func TestHandlerClosesConnectionWhenTokenExpires(t *testing.T) {
@@ -100,6 +98,7 @@ func TestHandlerClosesConnectionWhenTokenExpires(t *testing.T) {
 
 func TestHandlerClosesConnectionWhenApplicationStops(t *testing.T) {
 	appCtx, stop := context.WithCancel(context.Background())
+	t.Cleanup(stop)
 	provider := tokenProviderStub{parse: func(string) (auth.ParsedAccessToken, error) {
 		return auth.ParsedAccessToken{
 			AccessTokenClaims: auth.AccessTokenClaims{UserID: uuid.New()},
@@ -119,7 +118,7 @@ func TestHandlerClosesConnectionWhenApplicationStops(t *testing.T) {
 func dialHandler(t *testing.T, appCtx context.Context, provider TokenProvider) *websocket.Conn {
 	t.Helper()
 
-	server := httptest.NewServer(NewWSHandler(appCtx, provider))
+	server := httptest.NewServer(NewWSHandler(appCtx, provider, NewHub()))
 	t.Cleanup(server.Close)
 
 	url := "ws" + strings.TrimPrefix(server.URL, "http")
